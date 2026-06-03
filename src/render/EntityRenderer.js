@@ -75,25 +75,27 @@ export class EntityRenderer {
   render(ctx, entityManager, camera, tileMap) {
     this._tiempo = performance.now();
 
-    // Verificar que el entityManager existe y tiene entidades
-    if (!entityManager || typeof entityManager.getEntities !== 'function') {
+    // Verificar que el entityManager existe y tiene el método correcto
+    if (!entityManager || typeof entityManager.getEntitiesWithComponents !== 'function') {
       return;
     }
 
-    const entidades = entityManager.getEntities();
+    const entidades = entityManager.getEntitiesWithComponents('position');
 
-    for (const entidad of entidades) {
+    for (const entityId of entidades) {
+      const pos = entityManager.getComponent(entityId, 'position');
+      
       // Solo dibujar entidades en tiles actualmente visibles
-      if (tileMap.getVisibility(entidad.x, entidad.y) !== 2) continue;
+      if (tileMap.getVisibility(pos.x, pos.y) !== 2) continue;
 
       // Solo dibujar entidades dentro del viewport de la cámara
-      if (!camera.isVisible(entidad.x, entidad.y)) continue;
+      if (!camera.isVisible(pos.x, pos.y)) continue;
 
       // Elegir método de renderizado según tipo de entidad
-      if (entidad.type === 'pokemon') {
-        this._dibujarPokemon(ctx, entidad, camera);
-      } else if (entidad.type === 'item') {
-        this._dibujarItem(ctx, entidad, camera);
+      if (entityManager.hasComponent(entityId, 'pokemonInfo')) {
+        this._dibujarPokemon(ctx, entityId, entityManager, camera, pos);
+      } else if (entityManager.hasComponent(entityId, 'itemDrop')) {
+        this._dibujarItem(ctx, entityId, entityManager, camera, pos);
       }
     }
   }
@@ -102,20 +104,28 @@ export class EntityRenderer {
    * Dibuja un Pokémon en el mapa con su sprite, barra de HP e indicador de equipo.
    * 
    * @param {CanvasRenderingContext2D} ctx - Contexto del canvas
-   * @param {Object} entidad - Entidad Pokémon con {x, y, name, spriteUrl, hp, maxHp, isParty, isEnemy}
+   * @param {number} entityId - ID de la entidad
+   * @param {Object} entityManager - Gestor de entidades ECS
    * @param {import('./Camera.js').Camera} camera - Cámara actual
+   * @param {Object} pos - Componente de posición {x, y}
    * @private
    */
-  _dibujarPokemon(ctx, entidad, camera) {
+  _dibujarPokemon(ctx, entityId, entityManager, camera, pos) {
     const tileSize = camera.tileSize;
-    const screenPos = camera.worldToScreen(entidad.x, entidad.y);
+    const screenPos = camera.worldToScreen(pos.x, pos.y);
     const sx = screenPos.x;
     const sy = screenPos.y;
 
+    const pokemonInfo = entityManager.getComponent(entityId, 'pokemonInfo');
+    const sprite = entityManager.getComponent(entityId, 'sprite');
+    const fighter = entityManager.getComponent(entityId, 'fighter');
+    const partyMember = entityManager.getComponent(entityId, 'partyMember');
+    const isEnemy = entityManager.hasComponent(entityId, 'aiControlled');
+
     // Indicador de aliado/enemigo (borde coloreado detrás del sprite)
-    if (entidad.isParty) {
+    if (partyMember) {
       this._dibujarIndicadorEquipo(ctx, sx, sy, tileSize, INDICADOR_ALIADO);
-    } else if (entidad.isEnemy) {
+    } else if (isEnemy) {
       this._dibujarIndicadorEquipo(ctx, sx, sy, tileSize, INDICADOR_ENEMIGO);
     }
 
@@ -126,17 +136,17 @@ export class EntityRenderer {
 
     this.spriteManager.drawSprite(
       ctx,
-      entidad.spriteUrl || '',
+      sprite ? sprite.url : '',
       sx + margen,
       sy + margen,
       spriteSize,
       spriteSize,
-      entidad.name || '?'
+      pokemonInfo ? pokemonInfo.name : '?'
     );
 
     // Dibujar barra de HP si el Pokémon tiene datos de vida
-    if (entidad.hp !== undefined && entidad.maxHp !== undefined) {
-      this._dibujarBarraHP(ctx, sx, sy, tileSize, entidad.hp, entidad.maxHp);
+    if (fighter && fighter.hp !== undefined && fighter.maxHp !== undefined) {
+      this._dibujarBarraHP(ctx, sx, sy, tileSize, fighter.hp, fighter.maxHp);
     }
   }
 
@@ -207,16 +217,20 @@ export class EntityRenderer {
    * Dibuja un item en el mapa como un orbe coloreado con animación de rebote.
    * 
    * @param {CanvasRenderingContext2D} ctx - Contexto del canvas
-   * @param {Object} entidad - Entidad item con {x, y, itemType, name}
+   * @param {number} entityId - ID de la entidad
+   * @param {Object} entityManager - Gestor de entidades ECS
    * @param {import('./Camera.js').Camera} camera - Cámara actual
+   * @param {Object} pos - Componente de posición {x, y}
    * @private
    */
-  _dibujarItem(ctx, entidad, camera) {
+  _dibujarItem(ctx, entityId, entityManager, camera, pos) {
     const tileSize = camera.tileSize;
-    const screenPos = camera.worldToScreen(entidad.x, entidad.y);
+    const screenPos = camera.worldToScreen(pos.x, pos.y);
+
+    const itemDrop = entityManager.getComponent(entityId, 'itemDrop');
 
     // Animación de rebote: cada item tiene fase diferente basada en su posición
-    const fase = (entidad.x * 7 + entidad.y * 13) + this._tiempo * REBOTE_VELOCIDAD;
+    const fase = (pos.x * 7 + pos.y * 13) + this._tiempo * REBOTE_VELOCIDAD;
     const offsetY = Math.sin(fase) * REBOTE_AMPLITUD;
 
     // Centro del tile con offset de rebote
@@ -227,7 +241,7 @@ export class EntityRenderer {
     const radio = tileSize * 0.25;
 
     // Color según tipo de item
-    const tipoItem = (entidad.itemType || 'default').toLowerCase();
+    const tipoItem = (itemDrop && itemDrop.itemId) ? itemDrop.itemId.toLowerCase() : 'default';
     const color = ITEM_COLORES[tipoItem] || ITEM_COLORES.default;
 
     // Dibujar el orbe con brillo
