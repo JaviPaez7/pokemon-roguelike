@@ -64,7 +64,7 @@ export class SpriteManager {
     // Crear nueva promesa de carga
     const promesaCarga = new Promise((resolve, reject) => {
       const imagen = new Image();
-      imagen.crossOrigin = 'Anonymous';
+      imagen.crossOrigin = 'anonymous';
       
       imagen.onload = () => {
         // Almacenar en caché y limpiar la promesa de carga

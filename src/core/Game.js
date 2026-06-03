@@ -179,7 +179,8 @@ export class Game {
         types: p.types,
         baseStats: p.stats,
         learnset: p.moves,
-        sprite: p.sprite
+        sprite: p.sprite,
+        spriteUrl: p.sprite
       };
     });
 
@@ -429,14 +430,17 @@ export class Game {
     this._updateCamera();
     this._updateFOV();
 
+    // Pre-cargar sprites visibles en el piso
+    this._preloadVisibleSprites();
+
     // Mensaje de bienvenida
     this.eventBus.emit('show_dialog', {
-      text: `¡Bienvenido a la mazmorra de PokéRogue!\\n\\nEstás en el Piso 1: ${this.zoneName}. ¡Encuentra las escaleras descendentes para avanzar!`,
+      text: `¡Bienvenido a la mazmorra de PokéRogue!\n\nEstás en el Piso 1: ${this.zoneName}. ¡Encuentra las escaleras descendentes para avanzar!`,
       callback: () => {
         this.changeState(GAME_STATES.EXPLORING);
       }
     });
-    
+
     this.needsRender = true;
   }
 
@@ -574,6 +578,7 @@ export class Game {
 
     // Generar nuevos enemigos
     this._spawnEnemies();
+    this._preloadVisibleSprites();
 
     // Actualizar cámara y FOV
     this._updateCamera();
@@ -591,7 +596,7 @@ export class Game {
     const zone = this._getZoneConfig();
     if (zone && zone.boss && this._currentFloor === zone.floors[1] && zone.boss.name === 'Mewtwo') {
       this.eventBus.emit('show_dialog', {
-        text: '¡Una presencia abrumadora te acecha en este laboratorio!\\n\\n¡Mewtwo bloquea el camino de salida!'
+        text: '¡Una presencia abrumadora te acecha en este laboratorio!\n\n¡Mewtwo bloquea el camino de salida!'
       });
     }
 
@@ -983,7 +988,7 @@ export class Game {
             if (evoResult.messages) {
               for (const msg of evoResult.messages) {
                 // Diálogo tipo RPG para evolución
-                this.eventBus.emit('show_dialog', { text: evoResult.messages.join('\\n') });
+                this.eventBus.emit('show_dialog', { text: evoResult.messages.join('\n') });
               }
             }
           }
@@ -1053,7 +1058,7 @@ export class Game {
 
       // Mostrar diálogos secuenciales del lanzamiento
       this.eventBus.emit('show_dialog', {
-        text: captureResult.messages.join('\\n\\n'),
+        text: captureResult.messages.join('\n\n'),
         callback: () => {
           if (captureResult.success) {
             this.stats.pokemonCaptured++;
@@ -1102,6 +1107,24 @@ export class Game {
   }
 
   // ─── Renderizado ──────────────────────────────────────────────────────────
+
+  /**
+   * Pre-carga sprites de todas las entidades con componente sprite.
+   * @private
+   */
+  _preloadVisibleSprites() {
+    if (!this.renderer?.spriteManager) return;
+
+    const entityIds = this.entityManager.getEntitiesWithComponents('sprite');
+    for (const entityId of entityIds) {
+      const sprite = this.entityManager.getComponent(entityId, 'sprite');
+      if (sprite?.url) {
+        this.renderer.spriteManager.loadSprite(sprite.url).then(() => {
+          this.needsRender = true;
+        });
+      }
+    }
+  }
 
   render() {
     if (this.renderer) {

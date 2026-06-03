@@ -371,8 +371,13 @@ export class EntityManager {
     });
 
     // Sprite (se carga asíncronamente después)
+    const spriteUrl = species?.sprite
+      ?? species?.spriteUrl
+      ?? (typeof speciesId === 'number'
+        ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${speciesId}.png`
+        : '');
     this.setComponent(id, 'sprite', {
-      url: species?.spriteUrl ?? `assets/sprites/${speciesId}.png`,
+      url: spriteUrl,
       image: null,
       loaded: false
     });

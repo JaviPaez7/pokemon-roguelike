@@ -161,6 +161,7 @@ export class UIManager {
     this.selectedItem = null;
     this.selectedPokemon = null;
 
+    this.overlay.classList.remove('dialog-mode');
     this.overlay.classList.add('hidden');
     this.menuContainer.innerHTML = '';
 
@@ -176,7 +177,7 @@ export class UIManager {
    */
   showMenu(type, htmlContent) {
     this.currentMenuType = type;
-    this.overlay.classList.remove('hidden');
+    this.overlay.classList.remove('hidden', 'dialog-mode');
     this.menuContainer.innerHTML = htmlContent;
     this.updateSelectionVisuals();
   }
@@ -263,7 +264,7 @@ export class UIManager {
    */
   showControlsDialog() {
     this.showDialog(
-      'Controles:\\nWASD / Flechas - Mover y Atacar\\nZ - Confirmar / Interactuar / Escaleras\\nX - Mochila / Volver\\nC - Ver Equipo\\n1,2,3,4 - Ataque rápido\\nM - Mapa\\nEsc - Pausa',
+      'Controles:\nWASD / Flechas - Mover y Atacar\nZ - Confirmar / Interactuar / Escaleras\nX - Mochila / Volver\nC - Ver Equipo\n1,2,3,4 - Ataque rápido\nM - Mapa\nEsc - Pausa',
       () => this.openTitleScreen()
     );
   }
@@ -880,9 +881,10 @@ export class UIManager {
 
     this.game.inputHandler.setContext('dialog');
     this.overlay.classList.remove('hidden');
+    this.overlay.classList.add('dialog-mode');
 
     const html = `
-      <div class="game-panel" style="position: absolute; bottom: 8px; left: 8px; width: calc(100% - 16px); min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; border-color: var(--border-glow); padding: 12px;">
+      <div class="game-panel dialog-panel" style="display: flex; flex-direction: column; justify-content: space-between; border-color: var(--border-glow); padding: 12px;">
         <div id="dialog-text" style="font-size: 8px; line-height: 1.8; white-space: pre-wrap; color: var(--text-primary);"></div>
         <div style="text-align: right; font-size: 6px; color: var(--text-accent); animation: loadingDots 1s infinite alternate;">PULSA Z PARA CONTINUAR...</div>
       </div>
@@ -966,6 +968,7 @@ export class UIManager {
   closeDialog() {
     this.currentMenuType = null;
     this.currentDialogCallback = null;
+    this.overlay.classList.remove('dialog-mode');
     this.overlay.classList.add('hidden');
     this.menuContainer.innerHTML = '';
     

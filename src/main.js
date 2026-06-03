@@ -19,7 +19,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Instanciar la máquina de estados y núcleo del juego
   const game = new Game(canvas);
-  
+  window.game = game;
+
   try {
     // Cargar datos estáticos e inicializar variables del juego
     await game.init();
