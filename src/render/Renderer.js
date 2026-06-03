@@ -16,6 +16,7 @@ import { MapRenderer } from './MapRenderer.js';
 import { EntityRenderer } from './EntityRenderer.js';
 import { SpriteManager } from './SpriteManager.js';
 import { HUD } from '../ui/HUD.js';
+import { GAME_STATES } from '../constants.js';
 
 /** Color de fondo del canvas (negro puro para las áreas no exploradas) */
 const COLOR_FONDO = '#0a0a0f';
@@ -163,9 +164,18 @@ export class Renderer {
     // Asegurar que imageSmoothingEnabled siga desactivado
     ctx.imageSmoothingEnabled = false;
 
-    // Verificar que tenemos los datos mínimos para renderizar
+    // Sin mapa aún: pantalla de menú (HTML encima) o carga real
     if (!game || !game.tileMap || !game.camera) {
-      this._dibujarPantallaError(ctx, 'Cargando aventura...');
+      const state = game?.getState?.();
+      const isMenuScreen = state === GAME_STATES.TITLE
+        || state === GAME_STATES.STARTER_SELECT
+        || state === GAME_STATES.MENU
+        || state === GAME_STATES.GAME_OVER
+        || state === GAME_STATES.VICTORY
+        || state === GAME_STATES.DIALOG;
+      if (!isMenuScreen) {
+        this._dibujarPantallaError(ctx, 'Cargando aventura...');
+      }
       return;
     }
 
@@ -196,7 +206,8 @@ export class Renderer {
    */
   _dibujarPantallaError(ctx, mensaje) {
     ctx.fillStyle = '#ffffff';
-    ctx.font = '8px "Press Start 2P", monospace';
+    const fontSize = Math.max(10, Math.floor(this.canvas.width / 40));
+    ctx.font = `${fontSize}px "Press Start 2P", monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(mensaje, this.canvas.width / 2, this.canvas.height / 2);
