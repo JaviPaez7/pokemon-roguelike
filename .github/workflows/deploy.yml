@@ -1,27 +1,22 @@
-name: Deploy to GitHub Pages
+name: CI
 
 on:
   push:
     branches:
       - master
-
-permissions:
-  contents: write
+      - main
+  pull_request:
 
 jobs:
-  build-and-deploy:
-    concurrency: ci-${{ github.ref }}
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout 🛎️
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install and Build 🔧
-        run: |
-          npm ci
-          npm run build
-
-      - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@v4
+      - uses: actions/setup-node@v4
         with:
-          folder: dist
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
