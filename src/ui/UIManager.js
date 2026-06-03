@@ -196,7 +196,12 @@ export class UIManager {
    * Pantalla de título
    */
   openTitleScreen() {
-    const hasSave = localStorage.getItem('pokerogue_save') !== null;
+    let hasSave = false;
+    try {
+      hasSave = localStorage.getItem('pokerogue_save') !== null;
+    } catch (e) {
+      console.warn('localStorage no está disponible:', e);
+    }
     
     const html = `
       <div class="game-panel" style="text-align: center; width: 340px;">
@@ -718,7 +723,9 @@ export class UIManager {
     this.menuOptions = [
       () => {
         // Borrar el save completado
-        localStorage.removeItem('pokerogue_save');
+        try {
+          localStorage.removeItem('pokerogue_save');
+        } catch (e) {}
         this.game.changeState(GAME_STATES.TITLE);
       }
     ];
