@@ -433,9 +433,11 @@ export class Game {
     // Pre-cargar sprites visibles en el piso
     this._preloadVisibleSprites();
 
-    // Mensaje de bienvenida
+    // Diálogo de bienvenida — usar estado DIALOG para que el input funcione
+    this.changeState(GAME_STATES.DIALOG);
     this.eventBus.emit('show_dialog', {
       text: `¡Bienvenido a la mazmorra de PokéRogue!\n\nEstás en el Piso 1: ${this.zoneName}. ¡Encuentra las escaleras descendentes para avanzar!`,
+      instant: true,
       callback: () => {
         this.changeState(GAME_STATES.EXPLORING);
       }
@@ -521,6 +523,8 @@ export class Game {
     // Cargar mapa
     this._currentFloor--; // Para que al hacer changeFloor suba al piso correcto
     this.changeFloor('down');
+    this._preloadVisibleSprites();
+    this.changeState(GAME_STATES.EXPLORING);
   }
 
   /**
@@ -796,7 +800,7 @@ export class Game {
           if (entityId === this._playerId) {
             // Si es Mewtwo el jefe final y está vivo, bloquear salida
             const MewtwoFighter = this.entityManager.getEntitiesWithComponents('aiControlled').find(id => {
-              const info = this.game.entityManager.getComponent(id, 'pokemonInfo');
+              const info = this.entityManager.getComponent(id, 'pokemonInfo');
               return info && info.name.includes('Mewtwo');
             });
             if (MewtwoFighter) {

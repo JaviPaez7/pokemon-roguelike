@@ -129,7 +129,7 @@ export class UIManager {
 
     // Escuchar peticiones de diálogos desde cualquier parte del juego
     this.eventBus.on('show_dialog', (data) => {
-      this.showDialog(data.text, data.callback);
+      this.showDialog(data.text, data.callback, data.instant);
     });
 
     // SFX de combate y progresión
@@ -194,7 +194,13 @@ export class UIManager {
         this.openStarterSelectScreen();
         break;
       case GAME_STATES.EXPLORING:
-        this.closeMenu();
+        // Solo cerrar menús si no estamos mostrando un diálogo activo
+        if (this.currentMenuType !== 'dialog') {
+          this.closeMenu();
+        }
+        break;
+      case GAME_STATES.DIALOG:
+        // El diálogo se gestiona vía showDialog; no abrir menús aquí
         break;
       case GAME_STATES.MENU:
         // Si entra a MENU por pausa
@@ -857,9 +863,10 @@ export class UIManager {
    * Encola un diálogo RPG y lo muestra si es el único
    * @param {string} text - Texto del diálogo
    * @param {Function} [callback] - Función a llamar cuando finalice el diálogo
+   * @param {boolean} [instant=false] - Mostrar texto completo sin animación
    */
-  showDialog(text, callback = null) {
-    this.dialogQueue.push({ text, callback });
+  showDialog(text, callback = null, instant = false) {
+    this.dialogQueue.push({ text, callback, instant });
 
     // Si es el único en cola, mostrarlo de inmediato
     if (this.dialogQueue.length === 1) {
@@ -876,7 +883,7 @@ export class UIManager {
       return;
     }
 
-    const { text, callback } = this.dialogQueue[0];
+    const { text, callback, instant } = this.dialogQueue[0];
     this.currentDialogCallback = callback;
 
     this.game.inputHandler.setContext('dialog');
@@ -884,17 +891,22 @@ export class UIManager {
     this.overlay.classList.add('dialog-mode');
 
     const html = `
-      <div class="game-panel dialog-panel" style="display: flex; flex-direction: column; justify-content: space-between; border-color: var(--border-glow); padding: 12px;">
+      <div class="game-panel dialog-panel" style="display: flex; flex-direction: column; justify-content: space-between; border-color: var(--border-glow); padding: 12px; z-index: 20;">
         <div id="dialog-text" style="font-size: 8px; line-height: 1.8; white-space: pre-wrap; color: var(--text-primary);"></div>
-        <div style="text-align: right; font-size: 6px; color: var(--text-accent); animation: loadingDots 1s infinite alternate;">PULSA Z PARA CONTINUAR...</div>
+        <div style="text-align: right; font-size: 6px; color: var(--text-accent); animation: loadingDots 1s infinite alternate; margin-top: 8px;">PULSA Z PARA CONTINUAR ▶</div>
       </div>
     `;
 
     this.menuContainer.innerHTML = html;
     this.currentMenuType = 'dialog';
 
-    // Animación letra por letra del diálogo
-    this.animateText(text);
+    if (instant) {
+      const el = document.getElementById('dialog-text');
+      if (el) el.textContent = text;
+      this.dialogTextRaw = text;
+    } else {
+      this.animateText(text);
+    }
   }
 
   /**

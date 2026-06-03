@@ -49,7 +49,7 @@
   /* Canvas lógico (píxeles internos) y escala visual */
   --canvas-width: 504px;
   --canvas-height: 360px;
-  --game-scale: min(2.5, calc((100vw - 80px) / 504), calc((100vh - 120px) / 360));
+  --game-scale: max(2, min(3, calc((100vw - 80px) / 504), calc((100vh - 120px) / 360)));
 
   /* Fuente */
   --font-pixel: 'Press Start 2P', monospace;
@@ -160,16 +160,16 @@ html, body {
   width: calc(var(--canvas-width) * var(--game-scale));
   height: calc(var(--canvas-height) * var(--game-scale));
   pointer-events: none;
-  z-index: 10;
+  z-index: 20;
   border-radius: 4px;
   overflow: hidden;
 }
 
 #ui-overlay.dialog-mode {
   pointer-events: all;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 
 #ui-overlay:not(.hidden) {
@@ -203,7 +203,9 @@ html, body {
 #ui-overlay.dialog-mode .dialog-panel {
   width: calc(100% - 16px);
   margin: 0 8px 8px;
-  min-height: 80px;
+  min-height: 90px;
+  border: 2px solid var(--neon-glow);
+  box-shadow: 0 0 20px rgba(100, 180, 255, 0.25);
 }
 
 /* ============================================
