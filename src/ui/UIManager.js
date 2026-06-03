@@ -152,6 +152,13 @@ export class UIManager {
   }
 
   /**
+   * @returns {boolean} true si hay un diálogo RPG abierto
+   */
+  hasOpenDialog() {
+    return this.currentMenuType === 'dialog';
+  }
+
+  /**
    * Cierra cualquier menú abierto y vuelve a exploración
    */
   closeMenu() {
@@ -194,13 +201,9 @@ export class UIManager {
         this.openStarterSelectScreen();
         break;
       case GAME_STATES.EXPLORING:
-        // Solo cerrar menús si no estamos mostrando un diálogo activo
-        if (this.currentMenuType !== 'dialog') {
-          this.closeMenu();
-        }
+        this.closeMenu();
         break;
       case GAME_STATES.DIALOG:
-        // El diálogo se gestiona vía showDialog; no abrir menús aquí
         break;
       case GAME_STATES.MENU:
         // Si entra a MENU por pausa

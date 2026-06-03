@@ -48,7 +48,8 @@ export class TurnManager {
   addEntity(entityId, speed, isPlayer = false) {
     this._entities.set(entityId, {
       speed: speed,
-      energy: 0
+      // Enemigos empiezan con energía parcial para actuar pronto tras el jugador
+      energy: isPlayer ? 0 : 80
     });
 
     if (isPlayer) {
@@ -148,6 +149,13 @@ export class TurnManager {
     }
 
     // ── 2. Turnos enemigos ──
+    // Acumular energía hasta que algún enemigo pueda actuar (máx. ~2 turnos de espera)
+    let preTickSafety = 0;
+    while (this.getNextActor() === null && preTickSafety < 12) {
+      this._tickEnergy();
+      preTickSafety++;
+    }
+
     // Procesar todos los enemigos que tengan suficiente energía
     let nextActor = this.getNextActor();
     let safetyCounter = 0;
@@ -176,6 +184,9 @@ export class TurnManager {
           action: enemyAction,
           result: enemyResult
         });
+      } else {
+        // Sin acción válida (ej. wander bloqueado): esperar turno
+        executeAction(nextActor, { type: 'wait' });
       }
 
       // Consumir energía del enemigo

@@ -433,14 +433,12 @@ export class Game {
     // Pre-cargar sprites visibles en el piso
     this._preloadVisibleSprites();
 
-    // Diálogo de bienvenida — usar estado DIALOG para que el input funcione
-    this.changeState(GAME_STATES.DIALOG);
+    // Diálogo de bienvenida (estado EXPLORING; el diálogo bloquea input vía UIManager)
+    this.changeState(GAME_STATES.EXPLORING);
     this.eventBus.emit('show_dialog', {
       text: `¡Bienvenido a la mazmorra de PokéRogue!\n\nEstás en el Piso 1: ${this.zoneName}. ¡Encuentra las escaleras descendentes para avanzar!`,
       instant: true,
-      callback: () => {
-        this.changeState(GAME_STATES.EXPLORING);
-      }
+      callback: () => {}
     });
 
     this.needsRender = true;
@@ -744,6 +742,7 @@ export class Game {
    */
   update() {
     if (this._state !== GAME_STATES.EXPLORING) return;
+    if (this.uiManager.hasOpenDialog()) return;
 
     const action = this.inputHandler.getAction();
     if (!action) return;
@@ -1019,6 +1018,10 @@ export class Game {
     // Si la acción es ataque, re-mapear para que use el CombatSystem
     if (action && action.type === 'attack') {
       return { type: ACTIONS.ATTACK, targetId: action.targetId };
+    }
+
+    if (action && action.type === 'move') {
+      return { type: ACTIONS.MOVE, dx: action.dx, dy: action.dy };
     }
 
     return action;

@@ -130,9 +130,9 @@ function fleeAction(entityId, pos, playerPos, tileMap, entityManager) {
 /**
  * Moverse aleatoriamente
  */
-function wanderAction(entityId, pos, tileMap, entityManager) {
-  // 30% de probabilidad de quedarse quieto
-  if (Math.random() < 0.3) return null;
+function   wanderAction(entityId, pos, tileMap, entityManager) {
+  // 15% de probabilidad de quedarse quieto
+  if (Math.random() < 0.15) return { type: 'wait' };
 
   // Direcciones cardinales aleatorias
   const directions = [
