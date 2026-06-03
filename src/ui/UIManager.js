@@ -42,14 +42,16 @@ export class UIManager {
 
     // Soporte para clics del ratón (delegación de eventos en el contenedor de menús)
     this.menuContainer.addEventListener('click', (event) => {
-      // Ignorar clics si la entrada de teclado/juego está deshabilitada
-      if (!this.game.inputHandler.enabled) return;
-
-      if (this.currentMenuType === 'dialog') {
-        // En diálogos, un clic equivale a avanzar
+      const ctx = this.game.inputHandler.currentContext;
+      
+      // Si estamos en un diálogo, avanzar con el clic
+      if (ctx === 'dialog') {
         this.handleDialogInput({ action: 'advance' });
         return;
       }
+      
+      // Ignorar clics si la entrada de teclado está explorando
+      if (ctx !== 'menu' && ctx !== 'game_over' && ctx !== 'victory') return;
 
       const optionEl = event.target.closest('.menu-option');
       if (!optionEl) return;

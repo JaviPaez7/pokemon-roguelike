@@ -419,6 +419,8 @@ export class Game {
         this.changeState(GAME_STATES.EXPLORING);
       }
     });
+    
+    this.needsRender = true;
   }
 
   /**
