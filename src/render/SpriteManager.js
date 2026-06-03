@@ -140,7 +140,11 @@ export class SpriteManager {
 
       // Intentar cargar el sprite para la próxima vez que se dibuje
       if (url && !this._loading.has(url)) {
-        this.loadSprite(url);
+        this.loadSprite(url).then(() => {
+          if (window.game) {
+            window.game.needsRender = true;
+          }
+        });
       }
     }
   }

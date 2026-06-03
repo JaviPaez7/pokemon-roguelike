@@ -163,7 +163,6 @@ export class Game {
   async init() {
     console.log('[Game] Inicializando PokéRogue...');
 
-    // Asignar datos de Pokémon, movimientos y efectividad estáticos
     this.pokemonData = pokemonData;
     this.movesData = movesData;
     this.typesData = typesData;
@@ -171,7 +170,23 @@ export class Game {
     this.itemsData = itemsData;
     this.floorsData = floorsData;
 
-    this.entityManager.loadData(pokemonData, movesData);
+    const speciesDict = {};
+    pokemonData.forEach(p => {
+      speciesDict[p.id] = {
+        name: p.name,
+        types: p.types,
+        baseStats: p.stats,
+        learnset: p.moves,
+        sprite: p.sprite
+      };
+    });
+
+    const movesDict = {};
+    movesData.forEach(m => {
+      movesDict[m.id] = m;
+    });
+
+    this.entityManager.loadData(speciesDict, movesDict);
     this.typeChart = typesData;
     
     console.log('[Game] Datos del juego enlazados localmente.');
