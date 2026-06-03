@@ -40,6 +40,38 @@ export class UIManager {
       }, 1000);
     }
 
+    // Soporte para clics del ratón (delegación de eventos en el contenedor de menús)
+    this.menuContainer.addEventListener('click', (event) => {
+      // Ignorar clics si la entrada de teclado/juego está deshabilitada
+      if (!this.game.inputHandler.enabled) return;
+
+      if (this.currentMenuType === 'dialog') {
+        // En diálogos, un clic equivale a avanzar
+        this.handleDialogInput({ action: 'advance' });
+        return;
+      }
+
+      const optionEl = event.target.closest('.menu-option');
+      if (!optionEl) return;
+
+      const idx = parseInt(optionEl.getAttribute('data-index'), 10);
+      if (isNaN(idx)) return;
+
+      // Si hacemos clic en la opción que ya está seleccionada, la confirmamos.
+      // Si hacemos clic en otra opción, la seleccionamos.
+      if (this.selectedIndex === idx) {
+        const callback = this.menuOptions[this.selectedIndex];
+        if (callback) {
+          this.playConfirmSound();
+          callback();
+        }
+      } else {
+        this.selectedIndex = idx;
+        this.updateSelectionVisuals();
+        this.playMenuSound();
+      }
+    });
+
     this._setupEventListeners();
   }
 
