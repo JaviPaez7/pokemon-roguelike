@@ -57,15 +57,23 @@ export class UIManager {
       const idx = parseInt(optionEl.getAttribute('data-index'), 10);
       if (isNaN(idx)) return;
 
-      // Si hacemos clic en la opción que ya está seleccionada, la confirmamos.
-      // Si hacemos clic en otra opción, la seleccionamos.
-      if (this.selectedIndex === idx) {
-        const callback = this.menuOptions[this.selectedIndex];
-        if (callback) {
-          this.playConfirmSound();
-          callback();
-        }
-      } else {
+      // Un clic directamente selecciona y confirma la opción
+      this.selectedIndex = idx;
+      this.updateSelectionVisuals();
+      const callback = this.menuOptions[this.selectedIndex];
+      if (callback) {
+        this.playConfirmSound();
+        callback();
+      }
+    });
+
+    // Soporte para hover del ratón (actualiza la selección visualmente)
+    this.menuContainer.addEventListener('mouseover', (event) => {
+      if (!this.game.inputHandler.enabled || this.currentMenuType === 'dialog') return;
+      const optionEl = event.target.closest('.menu-option');
+      if (!optionEl) return;
+      const idx = parseInt(optionEl.getAttribute('data-index'), 10);
+      if (!isNaN(idx) && this.selectedIndex !== idx) {
         this.selectedIndex = idx;
         this.updateSelectionVisuals();
         this.playMenuSound();
@@ -277,7 +285,7 @@ export class UIManager {
     this.menuOptions = starters.map(s => () => {
       // Confirmar starter y empezar partida
       this.closeMenu();
-      this.game.startNewGame(s.name.toLowerCase());
+      this.game.startNewGame(s.id);
     });
 
     this.selectedIndex = 0;
