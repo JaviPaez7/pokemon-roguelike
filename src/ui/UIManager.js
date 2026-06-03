@@ -131,6 +131,24 @@ export class UIManager {
     this.eventBus.on('show_dialog', (data) => {
       this.showDialog(data.text, data.callback);
     });
+
+    // SFX de combate y progresión
+    this.eventBus.on('damage_dealt', () => {
+      this.playDamageSound();
+    });
+
+    this.eventBus.on('level_up', () => {
+      this.playLevelUpSound();
+    });
+
+    this.eventBus.on('capture_attempt', (data) => {
+      for (let i = 0; i < data.shakes; i++) {
+        setTimeout(() => this.playCaptureShakeSound(i), i * 400);
+      }
+      if (data.success) {
+        setTimeout(() => this.playLevelUpSound(), data.shakes * 400 + 200);
+      }
+    });
   }
 
   /**
@@ -960,52 +978,144 @@ export class UIManager {
     }
   }
 
-  // ─── EFECTOS DE SONIDO SUTILES ───────────────────────────────────────────
+  // ─── EFECTOS DE SONIDO CHIPTUNE ───────────────────────────────────────────
+
+  /** @type {AudioContext|null} */
+  _audioCtx = null;
+
+  /**
+   * Obtiene o crea el AudioContext compartido.
+   * @returns {AudioContext|null}
+   * @private
+   */
+  _getAudioContext() {
+    try {
+      if (!this._audioCtx) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return null;
+        this._audioCtx = new Ctx();
+      }
+      if (this._audioCtx.state === 'suspended') {
+        this._audioCtx.resume();
+      }
+      return this._audioCtx;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
+   * Reproduce una nota con envolvente ADSR simple.
+   * @param {number} freq - Frecuencia en Hz
+   * @param {number} startTime - Tiempo de inicio en el contexto
+   * @param {number} duration - Duración en segundos
+   * @param {string} [waveform='square']
+   * @param {number} [volume=0.03]
+   * @private
+   */
+  _playTone(freq, startTime, duration, waveform = 'square', volume = 0.03) {
+    const ctx = this._getAudioContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = waveform;
+    osc.frequency.setValueAtTime(freq, startTime);
+    gain.gain.setValueAtTime(volume, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+  }
 
   playMenuSound() {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.setValueAtTime(450, ctx.currentTime);
-      gain.gain.setValueAtTime(0.01, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.05);
+      const ctx = this._getAudioContext();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      this._playTone(880, t, 0.025, 'square', 0.015);
+      this._playTone(660, t + 0.02, 0.02, 'square', 0.01);
     } catch (e) {}
   }
 
   playConfirmSound() {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.setValueAtTime(600, ctx.currentTime);
-      osc.frequency.setValueAtTime(800, ctx.currentTime + 0.04);
-      gain.gain.setValueAtTime(0.02, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.12);
+      const ctx = this._getAudioContext();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      this._playTone(523, t, 0.06, 'square', 0.025);
+      this._playTone(659, t + 0.06, 0.08, 'square', 0.025);
     } catch (e) {}
   }
 
   playCancelSound() {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = this._getAudioContext();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      this._playTone(392, t, 0.05, 'triangle', 0.02);
+      this._playTone(262, t + 0.05, 0.06, 'triangle', 0.015);
+    } catch (e) {}
+  }
+
+  playDamageSound() {
+    try {
+      const ctx = this._getAudioContext();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      const bufferSize = ctx.sampleRate * 0.15;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+      }
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(400, t);
+      filter.frequency.exponentialRampToValueAtTime(80, t + 0.15);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.06, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      source.start(t);
+      source.stop(t + 0.2);
+    } catch (e) {}
+  }
+
+  playLevelUpSound() {
+    try {
+      const ctx = this._getAudioContext();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      const notes = [523, 659, 784, 1047];
+      notes.forEach((freq, i) => {
+        this._playTone(freq, t + i * 0.1, 0.12, 'square', 0.02);
+      });
+    } catch (e) {}
+  }
+
+  playCaptureShakeSound(shakeIndex) {
+    try {
+      const ctx = this._getAudioContext();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      const freq = 440 + shakeIndex * 80;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, t);
+      osc.frequency.linearRampToValueAtTime(freq + 60, t + 0.3);
+      gain.gain.setValueAtTime(0.025, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.frequency.setValueAtTime(300, ctx.currentTime);
-      osc.frequency.setValueAtTime(220, ctx.currentTime + 0.04);
-      gain.gain.setValueAtTime(0.02, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.1);
+      osc.start(t);
+      osc.stop(t + 0.35);
     } catch (e) {}
   }
 }

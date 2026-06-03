@@ -130,7 +130,9 @@ export class Game {
     this.camera = new Camera(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, TILE_SIZE);
 
     /** @type {Renderer} Orquestador de renderizado en canvas */
-    this.renderer = new Renderer(canvas);
+    this.renderer = new Renderer(canvas, this.eventBus, () => {
+      this.needsRender = true;
+    });
 
     /** @type {UIManager} Gestor de overlays HTML */
     this.uiManager = new UIManager(this);
@@ -1032,6 +1034,12 @@ export class Game {
       }
 
       const captureResult = attemptCapture(targetFighter, targetInfo, itemData, this.pokemonData);
+
+      this.eventBus.emit('capture_attempt', {
+        targetId: targetPokemonId,
+        shakes: captureResult.shakes,
+        success: captureResult.success,
+      });
       
       // Consumir ball
       const slot = this.inventory.find(s => s.itemId === itemId);
@@ -1096,7 +1104,12 @@ export class Game {
   // ─── Renderizado ──────────────────────────────────────────────────────────
 
   render() {
-    if (!this.needsRender) return;
+    if (this.renderer) {
+      this.renderer.update(performance.now());
+    }
+
+    const animating = this.renderer && this.renderer.hasActiveAnimations();
+    if (!this.needsRender && !animating) return;
     this.needsRender = false;
 
     if (this.renderer) {

@@ -49,6 +49,19 @@ const ITEM_COLORES = {
 const REBOTE_VELOCIDAD = 0.005;
 const REBOTE_AMPLITUD = 2; // píxeles
 
+/** Duración de efectos VFX en ms */
+const FLOAT_DURATION = 800;
+const FLASH_DURATION = 150;
+
+/** Iconos de estado sobre el sprite */
+const STATUS_ICONS = {
+  sleep: { text: 'zZz', color: '#a8b8ff' },
+  poison: { text: '~', color: '#a040a0' },
+  burn: { text: '*', color: '#f08030' },
+  paralyze: { text: '~', color: '#f8d030' },
+  freeze: { text: '*', color: '#98d8d8' },
+};
+
 export class EntityRenderer {
   /**
    * Crea el renderizador de entidades.
@@ -61,6 +74,62 @@ export class EntityRenderer {
 
     /** Timestamp para animaciones */
     this._tiempo = 0;
+
+    /** @type {Array<{entityId: number, text: string, startTime: number, duration: number, color: string}>} */
+    this._danosFlotantes = [];
+
+    /** @type {Array<{entityId: number, startTime: number, duration: number}>} */
+    this._damageFlashes = [];
+  }
+
+  /**
+   * Añade un número de daño flotante sobre un Pokémon.
+   * @param {number} entityId
+   * @param {number} damage
+   * @param {boolean} isCritical
+   */
+  spawnFloatingDamage(entityId, damage, isCritical) {
+    const text = isCritical ? `CRIT! -${damage}` : `-${damage}`;
+    const color = isCritical ? '#ff8800' : '#ff4444';
+    this._danosFlotantes.push({
+      entityId,
+      text,
+      startTime: performance.now(),
+      duration: FLOAT_DURATION,
+      color,
+    });
+  }
+
+  /**
+   * Activa parpadeo de daño en el sprite del Pokémon.
+   * @param {number} entityId
+   */
+  spawnDamageFlash(entityId) {
+    this._damageFlashes.push({
+      entityId,
+      startTime: performance.now(),
+      duration: FLASH_DURATION,
+    });
+  }
+
+  /**
+   * Actualiza y elimina efectos VFX expirados.
+   * @param {number} now - Timestamp actual (performance.now)
+   */
+  update(now) {
+    this._danosFlotantes = this._danosFlotantes.filter(
+      (d) => now - d.startTime < d.duration
+    );
+    this._damageFlashes = this._damageFlashes.filter(
+      (f) => now - f.startTime < f.duration
+    );
+  }
+
+  /**
+   * @returns {boolean} true si hay animaciones VFX activas
+   */
+  hasActiveEffects() {
+    return this._danosFlotantes.length > 0 || this._damageFlashes.length > 0;
   }
 
   /**
@@ -98,6 +167,8 @@ export class EntityRenderer {
         this._dibujarItem(ctx, entityId, entityManager, camera, pos);
       }
     }
+
+    this._dibujarDanosFlotantes(ctx, entityManager, camera, tileMap);
   }
 
   /**
@@ -144,10 +215,111 @@ export class EntityRenderer {
       pokemonInfo ? pokemonInfo.name : '?'
     );
 
+    // Parpadeo de daño sobre el sprite
+    if (this._isFlashing(entityId)) {
+      const flashProgress = this._getFlashProgress(entityId);
+      const alpha = 0.6 * (1 - flashProgress);
+      ctx.fillStyle = flashProgress < 0.5 ? `rgba(255, 255, 255, ${alpha})` : `rgba(255, 60, 60, ${alpha})`;
+      ctx.fillRect(sx + margen, sy + margen, spriteSize, spriteSize);
+    }
+
+    // Indicadores de alerta y estado
+    this._dibujarIndicadoresEstado(ctx, entityId, entityManager, sx, sy, tileSize);
+
     // Dibujar barra de HP si el Pokémon tiene datos de vida
     if (fighter && fighter.hp !== undefined && fighter.maxHp !== undefined) {
       this._dibujarBarraHP(ctx, sx, sy, tileSize, fighter.hp, fighter.maxHp);
     }
+  }
+
+  /**
+   * @param {number} entityId
+   * @returns {boolean}
+   * @private
+   */
+  _isFlashing(entityId) {
+    return this._damageFlashes.some((f) => f.entityId === entityId);
+  }
+
+  /**
+   * @param {number} entityId
+   * @returns {number} Progreso 0-1 del flash activo
+   * @private
+   */
+  _getFlashProgress(entityId) {
+    const flash = this._damageFlashes.find((f) => f.entityId === entityId);
+    if (!flash) return 1;
+    return Math.min(1, (this._tiempo - flash.startTime) / flash.duration);
+  }
+
+  /**
+   * Dibuja iconos de alerta (!) y estados alterados sobre el Pokémon.
+   * @private
+   */
+  _dibujarIndicadoresEstado(ctx, entityId, entityManager, sx, sy, tileSize) {
+    const ai = entityManager.getComponent(entityId, 'aiControlled');
+    const fighter = entityManager.getComponent(entityId, 'fighter');
+
+    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Alerta de persecución
+    if (ai && ai.behavior === 'chase' && ai.alertedTo !== null) {
+      const pulse = 0.7 + Math.sin(this._tiempo * 0.012) * 0.3;
+      ctx.fillStyle = `rgba(255, 204, 68, ${pulse})`;
+      ctx.fillText('!', sx + tileSize / 2, sy - 4);
+    }
+
+    // Estados alterados (primero encontrado)
+    if (fighter && fighter.statusEffects && fighter.statusEffects.length > 0) {
+      const effect = fighter.statusEffects[0];
+      const icon = STATUS_ICONS[effect];
+      if (icon) {
+        ctx.fillStyle = icon.color;
+        ctx.fillText(icon.text, sx + tileSize - 6, sy + 8);
+      }
+    }
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  /**
+   * Dibuja todos los números de daño flotantes activos.
+   * @private
+   */
+  _dibujarDanosFlotantes(ctx, entityManager, camera, tileMap) {
+    if (this._danosFlotantes.length === 0) return;
+
+    ctx.font = '7px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    for (const dano of this._danosFlotantes) {
+      const pos = entityManager.getComponent(dano.entityId, 'position');
+      if (!pos || tileMap.getVisibility(pos.x, pos.y) !== 2) continue;
+      if (!camera.isVisible(pos.x, pos.y)) continue;
+
+      const tileSize = camera.tileSize;
+      const screenPos = camera.worldToScreen(pos.x, pos.y);
+      const elapsed = this._tiempo - dano.startTime;
+      const progress = Math.min(1, elapsed / dano.duration);
+      const offsetY = progress * 30;
+      const alpha = 1 - progress;
+
+      ctx.fillStyle = dano.color;
+      ctx.globalAlpha = alpha;
+      ctx.fillText(
+        dano.text,
+        screenPos.x + tileSize / 2,
+        screenPos.y + tileSize * 0.3 - offsetY
+      );
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
   }
 
   /**

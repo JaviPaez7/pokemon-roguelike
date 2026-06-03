@@ -39,6 +39,13 @@
   --type-bug: #a8b820;
   --type-normal: #a8a878;
 
+  /* Glassmorphism / neón */
+  --glass-bg: hsla(240, 30%, 12%, 0.65);
+  --glass-border: hsla(260, 80%, 70%, 0.4);
+  --neon-glow: hsla(200, 100%, 60%, 0.6);
+  --console-metal: hsla(220, 15%, 25%, 1);
+  --console-led: hsla(190, 100%, 50%, 0.5);
+
   /* Fuente */
   --font-pixel: 'Press Start 2P', monospace;
   --font-size-xs: 6px;
@@ -71,6 +78,54 @@ html, body {
   background: radial-gradient(ellipse at center, #0f0f2a 0%, #050510 100%);
 }
 
+/* Marco consola Pokédex / terminal sci-fi */
+#game-wrapper {
+  position: relative;
+  padding: 16px 20px 24px;
+  background: linear-gradient(145deg, var(--console-metal) 0%, hsla(240, 20%, 12%, 1) 100%);
+  border-radius: 12px;
+  border: 2px solid hsla(220, 30%, 40%, 0.8);
+  box-shadow:
+    0 0 30px rgba(74, 144, 226, 0.15),
+    0 0 80px rgba(138, 74, 226, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.5);
+}
+
+#game-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--console-led), transparent);
+  border-radius: 2px;
+  opacity: 0.7;
+}
+
+.console-bezel {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 20px rgba(0, 0, 0, 0.6),
+    0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.console-bezel::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
 #game-canvas {
   display: block;
   image-rendering: pixelated;
@@ -100,8 +155,9 @@ html, body {
 
 #ui-overlay:not(.hidden) {
   pointer-events: all;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .hidden {
@@ -255,13 +311,16 @@ html, body {
    Panel genérico (para menús)
    ============================================ */
 .game-panel {
-  background: var(--bg-panel);
-  border: 2px solid var(--border-color);
-  border-radius: 4px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
   padding: 16px;
   box-shadow: 
-    0 4px 20px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 4px 24px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(138, 74, 226, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .game-panel-title {
@@ -284,27 +343,40 @@ html, body {
   padding: 8px 12px;
   cursor: pointer;
   border: 1px solid transparent;
-  border-radius: 2px;
-  transition: all 0.15s ease;
+  border-radius: 4px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.menu-option:hover,
+.menu-option:hover {
+  background: hsla(260, 50%, 30%, 0.4);
+  border-color: var(--glass-border);
+}
+
 .menu-option.selected {
-  background: rgba(255, 204, 68, 0.1);
-  border-color: var(--text-accent);
+  background: hsla(260, 60%, 25%, 0.5);
+  border-color: var(--neon-glow);
   color: var(--text-accent);
+  box-shadow: 0 0 12px rgba(100, 180, 255, 0.2);
+  transform: translateX(2px);
 }
 
 .menu-option .cursor {
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity 0.2s ease, text-shadow 0.2s ease;
 }
 
 .menu-option.selected .cursor {
   opacity: 1;
+  text-shadow: 0 0 8px var(--neon-glow), 0 0 16px var(--text-accent);
+  animation: cursorPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes cursorPulse {
+  0%, 100% { opacity: 1; text-shadow: 0 0 8px var(--neon-glow); }
+  50% { opacity: 0.85; text-shadow: 0 0 14px var(--neon-glow), 0 0 24px var(--text-accent); }
 }
 
 /* ============================================
@@ -375,26 +447,8 @@ html, body {
 .type-badge.dragon { background: var(--type-dragon); }
 
 /* ============================================
-   Animaciones de daño y efectos
+   Animaciones UI
    ============================================ */
-@keyframes damageFlash {
-  0%, 100% { opacity: 1; }
-  25% { opacity: 0.3; }
-  50% { opacity: 1; }
-  75% { opacity: 0.3; }
-}
-
-@keyframes floatUp {
-  0% { transform: translateY(0); opacity: 1; }
-  100% { transform: translateY(-30px); opacity: 0; }
-}
-
-@keyframes shakeX {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
-}
-
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

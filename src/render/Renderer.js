@@ -7,9 +7,9 @@
  * 
  * Orden de renderizado (capas):
  * 1. Limpiar canvas con color de fondo
- * 2. MapRenderer - tiles del mapa con FOV
- * 3. EntityRenderer - Pokémon e items visibles
- * 4. HUD - información del jugador, equipo, controles y minimapa
+ * 2. MapRenderer - tiles del mapa con FOV (con screen shake)
+ * 3. EntityRenderer - Pokémon e items visibles (con screen shake)
+ * 4. HUD - información del jugador, equipo, controles y minimapa (sin shake)
  */
 
 import { MapRenderer } from './MapRenderer.js';
@@ -25,8 +25,10 @@ export class Renderer {
    * Crea el renderizador principal.
    * 
    * @param {HTMLCanvasElement} canvas - Elemento canvas del DOM
+   * @param {import('../core/EventBus.js').EventBus} eventBus - Bus de eventos del juego
+   * @param {() => void} [onRenderRequested] - Callback para solicitar un frame de render
    */
-  constructor(canvas) {
+  constructor(canvas, eventBus, onRenderRequested) {
     /** @type {HTMLCanvasElement} */
     this.canvas = canvas;
 
@@ -47,6 +49,103 @@ export class Renderer {
 
     /** @type {HUD} HUD del juego (minimap, equipo, log) */
     this.hud = new HUD();
+
+    /** @type {() => void} */
+    this._onRenderRequested = onRenderRequested || (() => {});
+
+    /** @type {{ intensity: number, duration: number, startTime: number }|null} */
+    this._screenShake = null;
+
+    /** @type {number} */
+    this._lastUpdateTime = 0;
+
+    if (eventBus) {
+      this._setupEventListeners(eventBus);
+    }
+  }
+
+  /**
+   * Suscribe a eventos de combate para disparar VFX.
+   * @param {import('../core/EventBus.js').EventBus} eventBus
+   * @private
+   */
+  _setupEventListeners(eventBus) {
+    eventBus.on('damage_dealt', (data) => {
+      this.entityRenderer.spawnFloatingDamage(
+        data.defenderId,
+        data.damage,
+        data.isCritical
+      );
+      this.entityRenderer.spawnDamageFlash(data.defenderId);
+
+      if (data.isCritical || data.damage >= 20) {
+        this.addScreenShake(
+          data.isCritical ? 6 : 3,
+          data.isCritical ? 300 : 150
+        );
+      }
+
+      this._onRenderRequested();
+    });
+  }
+
+  /**
+   * Activa sacudida de pantalla temporal.
+   * @param {number} intensity - Amplitud máxima en píxeles
+   * @param {number} durationMs - Duración en milisegundos
+   */
+  addScreenShake(intensity, durationMs) {
+    this._screenShake = {
+      intensity,
+      duration: durationMs,
+      startTime: performance.now(),
+    };
+    this._onRenderRequested();
+  }
+
+  /**
+   * Actualiza animaciones (shake + VFX de entidades).
+   * @param {number} now - Timestamp actual
+   */
+  update(now) {
+    this._lastUpdateTime = now;
+    this.entityRenderer.update(now);
+
+    if (this._screenShake) {
+      const elapsed = now - this._screenShake.startTime;
+      if (elapsed >= this._screenShake.duration) {
+        this._screenShake = null;
+      }
+    }
+  }
+
+  /**
+   * @returns {boolean} true si hay animaciones activas que requieren frames continuos
+   */
+  hasActiveAnimations() {
+    return (
+      this._screenShake !== null ||
+      this.entityRenderer.hasActiveEffects()
+    );
+  }
+
+  /**
+   * Calcula el offset de sacudida actual con decaimiento.
+   * @returns {{ x: number, y: number }}
+   * @private
+   */
+  _getShakeOffset() {
+    if (!this._screenShake) return { x: 0, y: 0 };
+
+    const elapsed = this._lastUpdateTime - this._screenShake.startTime;
+    const progress = Math.min(1, elapsed / this._screenShake.duration);
+    const decay = 1 - progress;
+    const intensity = this._screenShake.intensity * decay;
+
+    return {
+      x: (Math.random() - 0.5) * 2 * intensity,
+      y: (Math.random() - 0.5) * 2 * intensity,
+    };
   }
 
   /**
@@ -70,15 +169,21 @@ export class Renderer {
       return;
     }
 
-    // === CAPA 2: Renderizar mapa de tiles ===
+    const shake = this._getShakeOffset();
+
+    // === CAPAS 2-3: Mapa y entidades (con screen shake) ===
+    ctx.save();
+    ctx.translate(shake.x, shake.y);
+
     this.mapRenderer.render(ctx, game.tileMap, game.camera);
 
-    // === CAPA 3: Renderizar entidades (Pokémon, items) ===
     if (game.entityManager) {
       this.entityRenderer.render(ctx, game.entityManager, game.camera, game.tileMap);
     }
 
-    // === CAPA 4: HUD (Heads-Up Display) ===
+    ctx.restore();
+
+    // === CAPA 4: HUD (sin shake, legible) ===
     this.hud.render(ctx, game, canvas.width, canvas.height);
   }
 
