@@ -42,7 +42,7 @@ export class UIManager {
 
     // Soporte para clics del ratón (delegación de eventos en el contenedor de menús)
     this.menuContainer.addEventListener('click', (event) => {
-      const ctx = this.game.inputHandler.currentContext;
+      const ctx = this.game.inputHandler._context;
       
       // Si estamos en un diálogo, avanzar con el clic
       if (ctx === 'dialog') {
