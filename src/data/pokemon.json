@@ -1,0 +1,1754 @@
+[
+  {
+    "id": 1, "name": "Bulbasaur", "types": ["grass", "poison"],
+    "stats": { "hp": 45, "attack": 49, "defense": 49, "spAtk": 65, "spDef": 65, "speed": 45 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 73, "level": 7 }, { "moveId": 22, "level": 13 },
+      { "moveId": 77, "level": 20 }, { "moveId": 75, "level": 27 },
+      { "moveId": 74, "level": 34 }, { "moveId": 79, "level": 41 },
+      { "moveId": 76, "level": 48 }
+    ],
+    "baseExp": 64, "captureRate": 45
+  },
+  {
+    "id": 2, "name": "Ivysaur", "types": ["grass", "poison"],
+    "stats": { "hp": 60, "attack": 62, "defense": 63, "spAtk": 80, "spDef": 80, "speed": 60 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/2.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 73, "level": 7 }, { "moveId": 22, "level": 13 },
+      { "moveId": 77, "level": 22 }, { "moveId": 75, "level": 30 },
+      { "moveId": 74, "level": 38 }, { "moveId": 79, "level": 46 },
+      { "moveId": 76, "level": 54 }
+    ],
+    "baseExp": 142, "captureRate": 45
+  },
+  {
+    "id": 3, "name": "Venusaur", "types": ["grass", "poison"],
+    "stats": { "hp": 80, "attack": 82, "defense": 83, "spAtk": 100, "spDef": 100, "speed": 80 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/3.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 73, "level": 7 }, { "moveId": 22, "level": 13 },
+      { "moveId": 77, "level": 22 }, { "moveId": 75, "level": 30 },
+      { "moveId": 74, "level": 43 }, { "moveId": 79, "level": 55 },
+      { "moveId": 76, "level": 65 }
+    ],
+    "baseExp": 236, "captureRate": 45
+  },
+  {
+    "id": 4, "name": "Charmander", "types": ["fire"],
+    "stats": { "hp": 39, "attack": 52, "defense": 43, "spAtk": 60, "spDef": 50, "speed": 65 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 52, "level": 9 }, { "moveId": 43, "level": 15 },
+      { "moveId": 99, "level": 22 }, { "moveId": 163, "level": 30 },
+      { "moveId": 53, "level": 38 }, { "moveId": 83, "level": 46 }
+    ],
+    "baseExp": 62, "captureRate": 45
+  },
+  {
+    "id": 5, "name": "Charmeleon", "types": ["fire"],
+    "stats": { "hp": 58, "attack": 64, "defense": 58, "spAtk": 80, "spDef": 65, "speed": 80 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/5.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 52, "level": 9 }, { "moveId": 43, "level": 15 },
+      { "moveId": 99, "level": 24 }, { "moveId": 163, "level": 33 },
+      { "moveId": 53, "level": 42 }, { "moveId": 83, "level": 56 }
+    ],
+    "baseExp": 142, "captureRate": 45
+  },
+  {
+    "id": 6, "name": "Charizard", "types": ["fire", "flying"],
+    "stats": { "hp": 78, "attack": 84, "defense": 78, "spAtk": 109, "spDef": 85, "speed": 100 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 52, "level": 9 }, { "moveId": 43, "level": 15 },
+      { "moveId": 99, "level": 24 }, { "moveId": 163, "level": 36 },
+      { "moveId": 53, "level": 46 }, { "moveId": 83, "level": 55 }
+    ],
+    "baseExp": 240, "captureRate": 45
+  },
+  {
+    "id": 7, "name": "Squirtle", "types": ["water"],
+    "stats": { "hp": 44, "attack": 48, "defense": 65, "spAtk": 50, "spDef": 64, "speed": 43 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 39, "level": 1 },
+      { "moveId": 145, "level": 8 }, { "moveId": 55, "level": 15 },
+      { "moveId": 44, "level": 22 }, { "moveId": 110, "level": 28 },
+      { "moveId": 129, "level": 35 }, { "moveId": 56, "level": 42 }
+    ],
+    "baseExp": 63, "captureRate": 45
+  },
+  {
+    "id": 8, "name": "Wartortle", "types": ["water"],
+    "stats": { "hp": 59, "attack": 63, "defense": 80, "spAtk": 65, "spDef": 80, "speed": 58 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/8.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 39, "level": 1 },
+      { "moveId": 145, "level": 8 }, { "moveId": 55, "level": 15 },
+      { "moveId": 44, "level": 24 }, { "moveId": 110, "level": 31 },
+      { "moveId": 129, "level": 39 }, { "moveId": 56, "level": 47 }
+    ],
+    "baseExp": 142, "captureRate": 45
+  },
+  {
+    "id": 9, "name": "Blastoise", "types": ["water"],
+    "stats": { "hp": 79, "attack": 83, "defense": 100, "spAtk": 85, "spDef": 105, "speed": 78 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 39, "level": 1 },
+      { "moveId": 145, "level": 8 }, { "moveId": 55, "level": 15 },
+      { "moveId": 44, "level": 24 }, { "moveId": 110, "level": 31 },
+      { "moveId": 129, "level": 42 }, { "moveId": 56, "level": 52 }
+    ],
+    "baseExp": 239, "captureRate": 45
+  },
+  {
+    "id": 10, "name": "Caterpie", "types": ["bug"],
+    "stats": { "hp": 45, "attack": 30, "defense": 35, "spAtk": 20, "spDef": 20, "speed": 45 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 81, "level": 1 }
+    ],
+    "baseExp": 39, "captureRate": 255
+  },
+  {
+    "id": 11, "name": "Metapod", "types": ["bug"],
+    "stats": { "hp": 50, "attack": 20, "defense": 55, "spAtk": 25, "spDef": 25, "speed": 30 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/11.png",
+    "moves": [
+      { "moveId": 106, "level": 1 }
+    ],
+    "baseExp": 72, "captureRate": 120
+  },
+  {
+    "id": 12, "name": "Butterfree", "types": ["bug", "flying"],
+    "stats": { "hp": 60, "attack": 45, "defense": 50, "spAtk": 80, "spDef": 80, "speed": 70 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/12.png",
+    "moves": [
+      { "moveId": 93, "level": 12 }, { "moveId": 77, "level": 15 },
+      { "moveId": 78, "level": 17 }, { "moveId": 79, "level": 21 },
+      { "moveId": 48, "level": 26 }, { "moveId": 18, "level": 32 },
+      { "moveId": 60, "level": 34 }
+    ],
+    "baseExp": 178, "captureRate": 45
+  },
+  {
+    "id": 13, "name": "Weedle", "types": ["bug", "poison"],
+    "stats": { "hp": 40, "attack": 35, "defense": 30, "spAtk": 20, "spDef": 20, "speed": 50 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/13.png",
+    "moves": [
+      { "moveId": 40, "level": 1 }, { "moveId": 81, "level": 1 }
+    ],
+    "baseExp": 39, "captureRate": 255
+  },
+  {
+    "id": 14, "name": "Kakuna", "types": ["bug", "poison"],
+    "stats": { "hp": 45, "attack": 25, "defense": 50, "spAtk": 25, "spDef": 25, "speed": 35 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/14.png",
+    "moves": [
+      { "moveId": 106, "level": 1 }
+    ],
+    "baseExp": 72, "captureRate": 120
+  },
+  {
+    "id": 15, "name": "Beedrill", "types": ["bug", "poison"],
+    "stats": { "hp": 65, "attack": 80, "defense": 40, "spAtk": 45, "spDef": 80, "speed": 75 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/15.png",
+    "moves": [
+      { "moveId": 31, "level": 12 }, { "moveId": 116, "level": 16 },
+      { "moveId": 41, "level": 20 }, { "moveId": 99, "level": 25 },
+      { "moveId": 42, "level": 30 }, { "moveId": 97, "level": 35 }
+    ],
+    "baseExp": 178, "captureRate": 45
+  },
+  {
+    "id": 16, "name": "Pidgey", "types": ["normal", "flying"],
+    "stats": { "hp": 40, "attack": 45, "defense": 40, "spAtk": 35, "spDef": 35, "speed": 56 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/16.png",
+    "moves": [
+      { "moveId": 16, "level": 1 }, { "moveId": 28, "level": 5 },
+      { "moveId": 98, "level": 12 }, { "moveId": 18, "level": 19 },
+      { "moveId": 17, "level": 28 }, { "moveId": 97, "level": 36 },
+      { "moveId": 65, "level": 44 }
+    ],
+    "baseExp": 50, "captureRate": 255
+  },
+  {
+    "id": 17, "name": "Pidgeotto", "types": ["normal", "flying"],
+    "stats": { "hp": 63, "attack": 60, "defense": 55, "spAtk": 50, "spDef": 50, "speed": 71 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/17.png",
+    "moves": [
+      { "moveId": 16, "level": 1 }, { "moveId": 28, "level": 5 },
+      { "moveId": 98, "level": 12 }, { "moveId": 18, "level": 21 },
+      { "moveId": 17, "level": 31 }, { "moveId": 97, "level": 40 },
+      { "moveId": 65, "level": 49 }
+    ],
+    "baseExp": 122, "captureRate": 120
+  },
+  {
+    "id": 18, "name": "Pidgeot", "types": ["normal", "flying"],
+    "stats": { "hp": 83, "attack": 80, "defense": 75, "spAtk": 70, "spDef": 70, "speed": 91 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/18.png",
+    "moves": [
+      { "moveId": 16, "level": 1 }, { "moveId": 28, "level": 5 },
+      { "moveId": 98, "level": 12 }, { "moveId": 18, "level": 21 },
+      { "moveId": 17, "level": 31 }, { "moveId": 97, "level": 44 },
+      { "moveId": 65, "level": 54 }
+    ],
+    "baseExp": 216, "captureRate": 45
+  },
+  {
+    "id": 19, "name": "Rattata", "types": ["normal"],
+    "stats": { "hp": 30, "attack": 56, "defense": 35, "spAtk": 25, "spDef": 35, "speed": 72 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/19.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 39, "level": 1 },
+      { "moveId": 98, "level": 7 }, { "moveId": 158, "level": 14 },
+      { "moveId": 116, "level": 23 }, { "moveId": 162, "level": 34 }
+    ],
+    "baseExp": 51, "captureRate": 255
+  },
+  {
+    "id": 20, "name": "Raticate", "types": ["normal"],
+    "stats": { "hp": 55, "attack": 81, "defense": 60, "spAtk": 50, "spDef": 70, "speed": 97 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/20.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 39, "level": 1 },
+      { "moveId": 98, "level": 7 }, { "moveId": 158, "level": 14 },
+      { "moveId": 116, "level": 27 }, { "moveId": 162, "level": 41 }
+    ],
+    "baseExp": 145, "captureRate": 127
+  },
+  {
+    "id": 21, "name": "Spearow", "types": ["normal", "flying"],
+    "stats": { "hp": 40, "attack": 60, "defense": 30, "spAtk": 31, "spDef": 31, "speed": 70 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/21.png",
+    "moves": [
+      { "moveId": 64, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 43, "level": 9 }, { "moveId": 31, "level": 15 },
+      { "moveId": 65, "level": 22 }, { "moveId": 97, "level": 29 },
+      { "moveId": 65, "level": 36 }
+    ],
+    "baseExp": 58, "captureRate": 255
+  },
+  {
+    "id": 22, "name": "Fearow", "types": ["normal", "flying"],
+    "stats": { "hp": 65, "attack": 90, "defense": 65, "spAtk": 61, "spDef": 61, "speed": 100 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/22.png",
+    "moves": [
+      { "moveId": 64, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 43, "level": 9 }, { "moveId": 31, "level": 15 },
+      { "moveId": 65, "level": 25 }, { "moveId": 97, "level": 34 },
+      { "moveId": 65, "level": 43 }
+    ],
+    "baseExp": 162, "captureRate": 90
+  },
+  {
+    "id": 23, "name": "Ekans", "types": ["poison"],
+    "stats": { "hp": 35, "attack": 60, "defense": 44, "spAtk": 40, "spDef": 54, "speed": 55 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/23.png",
+    "moves": [
+      { "moveId": 35, "level": 1 }, { "moveId": 43, "level": 1 },
+      { "moveId": 40, "level": 10 }, { "moveId": 44, "level": 17 },
+      { "moveId": 137, "level": 24 }, { "moveId": 103, "level": 31 },
+      { "moveId": 51, "level": 38 }
+    ],
+    "baseExp": 58, "captureRate": 255
+  },
+  {
+    "id": 24, "name": "Arbok", "types": ["poison"],
+    "stats": { "hp": 60, "attack": 85, "defense": 69, "spAtk": 65, "spDef": 79, "speed": 80 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/24.png",
+    "moves": [
+      { "moveId": 35, "level": 1 }, { "moveId": 43, "level": 1 },
+      { "moveId": 40, "level": 10 }, { "moveId": 44, "level": 17 },
+      { "moveId": 137, "level": 27 }, { "moveId": 103, "level": 36 },
+      { "moveId": 51, "level": 47 }
+    ],
+    "baseExp": 153, "captureRate": 90
+  },
+  {
+    "id": 25, "name": "Pikachu", "types": ["electric"],
+    "stats": { "hp": 35, "attack": 55, "defense": 30, "spAtk": 50, "spDef": 40, "speed": 90 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png",
+    "moves": [
+      { "moveId": 84, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 86, "level": 9 }, { "moveId": 98, "level": 16 },
+      { "moveId": 128, "level": 26 }, { "moveId": 97, "level": 33 },
+      { "moveId": 85, "level": 43 }
+    ],
+    "baseExp": 112, "captureRate": 190
+  },
+  {
+    "id": 26, "name": "Raichu", "types": ["electric"],
+    "stats": { "hp": 60, "attack": 90, "defense": 55, "spAtk": 90, "spDef": 80, "speed": 100 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/26.png",
+    "moves": [
+      { "moveId": 84, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 86, "level": 1 }, { "moveId": 85, "level": 1 },
+      { "moveId": 87, "level": 1 }
+    ],
+    "baseExp": 218, "captureRate": 75
+  },
+  {
+    "id": 27, "name": "Sandshrew", "types": ["ground"],
+    "stats": { "hp": 50, "attack": 75, "defense": 85, "spAtk": 20, "spDef": 30, "speed": 40 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/27.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 28, "level": 10 },
+      { "moveId": 163, "level": 17 }, { "moveId": 40, "level": 24 },
+      { "moveId": 128, "level": 31 }, { "moveId": 154, "level": 38 }
+    ],
+    "baseExp": 60, "captureRate": 255
+  },
+  {
+    "id": 28, "name": "Sandslash", "types": ["ground"],
+    "stats": { "hp": 75, "attack": 100, "defense": 110, "spAtk": 45, "spDef": 55, "speed": 65 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/28.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 28, "level": 10 },
+      { "moveId": 163, "level": 17 }, { "moveId": 40, "level": 27 },
+      { "moveId": 128, "level": 36 }, { "moveId": 154, "level": 47 }
+    ],
+    "baseExp": 158, "captureRate": 90
+  },
+  {
+    "id": 29, "name": "Nidoran♀", "types": ["poison"],
+    "stats": { "hp": 55, "attack": 47, "defense": 52, "spAtk": 40, "spDef": 40, "speed": 41 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/29.png",
+    "moves": [
+      { "moveId": 45, "level": 1 }, { "moveId": 33, "level": 1 },
+      { "moveId": 10, "level": 8 }, { "moveId": 40, "level": 14 },
+      { "moveId": 39, "level": 21 }, { "moveId": 44, "level": 29 },
+      { "moveId": 154, "level": 36 }, { "moveId": 24, "level": 43 }
+    ],
+    "baseExp": 55, "captureRate": 235
+  },
+  {
+    "id": 30, "name": "Nidorina", "types": ["poison"],
+    "stats": { "hp": 70, "attack": 62, "defense": 67, "spAtk": 55, "spDef": 55, "speed": 56 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/30.png",
+    "moves": [
+      { "moveId": 45, "level": 1 }, { "moveId": 33, "level": 1 },
+      { "moveId": 10, "level": 8 }, { "moveId": 40, "level": 14 },
+      { "moveId": 44, "level": 23 }, { "moveId": 154, "level": 32 },
+      { "moveId": 24, "level": 41 }
+    ],
+    "baseExp": 128, "captureRate": 120
+  },
+  {
+    "id": 31, "name": "Nidoqueen", "types": ["poison", "ground"],
+    "stats": { "hp": 90, "attack": 82, "defense": 87, "spAtk": 75, "spDef": 85, "speed": 76 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/31.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 10, "level": 1 },
+      { "moveId": 39, "level": 1 }, { "moveId": 34, "level": 23 },
+      { "moveId": 44, "level": 1 }, { "moveId": 89, "level": 1 }
+    ],
+    "baseExp": 227, "captureRate": 45
+  },
+  {
+    "id": 32, "name": "Nidoran♂", "types": ["poison"],
+    "stats": { "hp": 46, "attack": 57, "defense": 40, "spAtk": 40, "spDef": 40, "speed": 50 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/32.png",
+    "moves": [
+      { "moveId": 43, "level": 1 }, { "moveId": 33, "level": 1 },
+      { "moveId": 30, "level": 8 }, { "moveId": 40, "level": 14 },
+      { "moveId": 116, "level": 21 }, { "moveId": 31, "level": 29 },
+      { "moveId": 32, "level": 36 }, { "moveId": 24, "level": 43 }
+    ],
+    "baseExp": 55, "captureRate": 235
+  },
+  {
+    "id": 33, "name": "Nidorino", "types": ["poison"],
+    "stats": { "hp": 61, "attack": 72, "defense": 57, "spAtk": 55, "spDef": 55, "speed": 65 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/33.png",
+    "moves": [
+      { "moveId": 43, "level": 1 }, { "moveId": 33, "level": 1 },
+      { "moveId": 30, "level": 8 }, { "moveId": 40, "level": 14 },
+      { "moveId": 116, "level": 23 }, { "moveId": 31, "level": 32 },
+      { "moveId": 32, "level": 41 }
+    ],
+    "baseExp": 128, "captureRate": 120
+  },
+  {
+    "id": 34, "name": "Nidoking", "types": ["poison", "ground"],
+    "stats": { "hp": 81, "attack": 92, "defense": 77, "spAtk": 85, "spDef": 75, "speed": 85 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/34.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 30, "level": 1 },
+      { "moveId": 40, "level": 1 }, { "moveId": 37, "level": 23 },
+      { "moveId": 89, "level": 1 }, { "moveId": 85, "level": 1 }
+    ],
+    "baseExp": 227, "captureRate": 45
+  },
+  {
+    "id": 35, "name": "Clefairy", "types": ["normal"],
+    "stats": { "hp": 70, "attack": 45, "defense": 48, "spAtk": 60, "spDef": 65, "speed": 35 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/35.png",
+    "moves": [
+      { "moveId": 1, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 47, "level": 13 }, { "moveId": 3, "level": 18 },
+      { "moveId": 107, "level": 24 }, { "moveId": 118, "level": 31 },
+      { "moveId": 111, "level": 39 }, { "moveId": 113, "level": 48 }
+    ],
+    "baseExp": 113, "captureRate": 150
+  },
+  {
+    "id": 36, "name": "Clefable", "types": ["normal"],
+    "stats": { "hp": 95, "attack": 70, "defense": 73, "spAtk": 85, "spDef": 90, "speed": 60 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/36.png",
+    "moves": [
+      { "moveId": 47, "level": 1 }, { "moveId": 3, "level": 1 },
+      { "moveId": 118, "level": 1 }, { "moveId": 107, "level": 1 }
+    ],
+    "baseExp": 217, "captureRate": 25
+  },
+  {
+    "id": 37, "name": "Vulpix", "types": ["fire"],
+    "stats": { "hp": 38, "attack": 41, "defense": 40, "spAtk": 50, "spDef": 65, "speed": 65 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/37.png",
+    "moves": [
+      { "moveId": 52, "level": 1 }, { "moveId": 39, "level": 1 },
+      { "moveId": 98, "level": 16 }, { "moveId": 46, "level": 21 },
+      { "moveId": 109, "level": 28 }, { "moveId": 53, "level": 35 },
+      { "moveId": 83, "level": 42 }
+    ],
+    "baseExp": 60, "captureRate": 190
+  },
+  {
+    "id": 38, "name": "Ninetales", "types": ["fire"],
+    "stats": { "hp": 73, "attack": 76, "defense": 75, "spAtk": 81, "spDef": 100, "speed": 100 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/38.png",
+    "moves": [
+      { "moveId": 52, "level": 1 }, { "moveId": 39, "level": 1 },
+      { "moveId": 98, "level": 1 }, { "moveId": 53, "level": 1 },
+      { "moveId": 109, "level": 1 }
+    ],
+    "baseExp": 177, "captureRate": 75
+  },
+  {
+    "id": 39, "name": "Jigglypuff", "types": ["normal"],
+    "stats": { "hp": 115, "attack": 45, "defense": 20, "spAtk": 45, "spDef": 25, "speed": 20 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/39.png",
+    "moves": [
+      { "moveId": 47, "level": 1 }, { "moveId": 1, "level": 1 },
+      { "moveId": 50, "level": 9 }, { "moveId": 111, "level": 14 },
+      { "moveId": 3, "level": 19 }, { "moveId": 156, "level": 24 },
+      { "moveId": 34, "level": 29 }, { "moveId": 38, "level": 34 }
+    ],
+    "baseExp": 95, "captureRate": 170
+  },
+  {
+    "id": 40, "name": "Wigglytuff", "types": ["normal"],
+    "stats": { "hp": 140, "attack": 70, "defense": 45, "spAtk": 75, "spDef": 50, "speed": 45 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/40.png",
+    "moves": [
+      { "moveId": 47, "level": 1 }, { "moveId": 50, "level": 1 },
+      { "moveId": 111, "level": 1 }, { "moveId": 3, "level": 1 },
+      { "moveId": 34, "level": 1 }, { "moveId": 63, "level": 1 }
+    ],
+    "baseExp": 196, "captureRate": 50
+  },
+  {
+    "id": 41, "name": "Zubat", "types": ["poison", "flying"],
+    "stats": { "hp": 40, "attack": 45, "defense": 35, "spAtk": 30, "spDef": 40, "speed": 55 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/41.png",
+    "moves": [
+      { "moveId": 141, "level": 1 }, { "moveId": 48, "level": 10 },
+      { "moveId": 44, "level": 15 }, { "moveId": 109, "level": 21 },
+      { "moveId": 17, "level": 28 }, { "moveId": 114, "level": 36 }
+    ],
+    "baseExp": 49, "captureRate": 255
+  },
+  {
+    "id": 42, "name": "Golbat", "types": ["poison", "flying"],
+    "stats": { "hp": 75, "attack": 80, "defense": 70, "spAtk": 65, "spDef": 75, "speed": 90 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/42.png",
+    "moves": [
+      { "moveId": 141, "level": 1 }, { "moveId": 48, "level": 10 },
+      { "moveId": 44, "level": 15 }, { "moveId": 109, "level": 21 },
+      { "moveId": 17, "level": 32 }, { "moveId": 114, "level": 43 }
+    ],
+    "baseExp": 159, "captureRate": 90
+  },
+  {
+    "id": 43, "name": "Oddish", "types": ["grass", "poison"],
+    "stats": { "hp": 45, "attack": 50, "defense": 55, "spAtk": 75, "spDef": 65, "speed": 30 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/43.png",
+    "moves": [
+      { "moveId": 71, "level": 1 }, { "moveId": 77, "level": 15 },
+      { "moveId": 78, "level": 17 }, { "moveId": 79, "level": 19 },
+      { "moveId": 51, "level": 24 }, { "moveId": 80, "level": 33 },
+      { "moveId": 76, "level": 46 }
+    ],
+    "baseExp": 64, "captureRate": 255
+  },
+  {
+    "id": 44, "name": "Gloom", "types": ["grass", "poison"],
+    "stats": { "hp": 60, "attack": 65, "defense": 70, "spAtk": 85, "spDef": 75, "speed": 40 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/44.png",
+    "moves": [
+      { "moveId": 71, "level": 1 }, { "moveId": 77, "level": 15 },
+      { "moveId": 78, "level": 17 }, { "moveId": 79, "level": 19 },
+      { "moveId": 51, "level": 28 }, { "moveId": 80, "level": 38 },
+      { "moveId": 76, "level": 52 }
+    ],
+    "baseExp": 138, "captureRate": 120
+  },
+  {
+    "id": 45, "name": "Vileplume", "types": ["grass", "poison"],
+    "stats": { "hp": 75, "attack": 80, "defense": 85, "spAtk": 100, "spDef": 90, "speed": 50 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/45.png",
+    "moves": [
+      { "moveId": 78, "level": 1 }, { "moveId": 77, "level": 1 },
+      { "moveId": 72, "level": 1 }, { "moveId": 80, "level": 1 },
+      { "moveId": 76, "level": 1 }
+    ],
+    "baseExp": 221, "captureRate": 45
+  },
+  {
+    "id": 46, "name": "Paras", "types": ["bug", "grass"],
+    "stats": { "hp": 35, "attack": 70, "defense": 55, "spAtk": 45, "spDef": 55, "speed": 25 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/46.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 78, "level": 13 },
+      { "moveId": 141, "level": 20 }, { "moveId": 147, "level": 27 },
+      { "moveId": 163, "level": 34 }, { "moveId": 74, "level": 41 }
+    ],
+    "baseExp": 57, "captureRate": 190
+  },
+  {
+    "id": 47, "name": "Parasect", "types": ["bug", "grass"],
+    "stats": { "hp": 60, "attack": 95, "defense": 80, "spAtk": 60, "spDef": 80, "speed": 30 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/47.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 78, "level": 13 },
+      { "moveId": 141, "level": 20 }, { "moveId": 147, "level": 30 },
+      { "moveId": 163, "level": 39 }, { "moveId": 74, "level": 48 }
+    ],
+    "baseExp": 142, "captureRate": 75
+  },
+  {
+    "id": 48, "name": "Venonat", "types": ["bug", "poison"],
+    "stats": { "hp": 60, "attack": 55, "defense": 50, "spAtk": 40, "spDef": 55, "speed": 45 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/48.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 50, "level": 1 },
+      { "moveId": 77, "level": 24 }, { "moveId": 141, "level": 27 },
+      { "moveId": 78, "level": 30 }, { "moveId": 94, "level": 35 },
+      { "moveId": 79, "level": 38 }
+    ],
+    "baseExp": 61, "captureRate": 190
+  },
+  {
+    "id": 49, "name": "Venomoth", "types": ["bug", "poison"],
+    "stats": { "hp": 70, "attack": 65, "defense": 60, "spAtk": 90, "spDef": 75, "speed": 90 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/49.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 50, "level": 1 },
+      { "moveId": 77, "level": 24 }, { "moveId": 141, "level": 27 },
+      { "moveId": 78, "level": 30 }, { "moveId": 94, "level": 38 },
+      { "moveId": 79, "level": 43 }
+    ],
+    "baseExp": 158, "captureRate": 75
+  },
+  {
+    "id": 50, "name": "Diglett", "types": ["ground"],
+    "stats": { "hp": 10, "attack": 55, "defense": 25, "spAtk": 35, "spDef": 45, "speed": 95 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/50.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 45, "level": 15 },
+      { "moveId": 91, "level": 19 }, { "moveId": 28, "level": 24 },
+      { "moveId": 163, "level": 31 }, { "moveId": 89, "level": 40 }
+    ],
+    "baseExp": 53, "captureRate": 255
+  },
+  {
+    "id": 51, "name": "Dugtrio", "types": ["ground"],
+    "stats": { "hp": 35, "attack": 80, "defense": 50, "spAtk": 50, "spDef": 70, "speed": 120 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/51.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 45, "level": 15 },
+      { "moveId": 91, "level": 19 }, { "moveId": 28, "level": 24 },
+      { "moveId": 163, "level": 35 }, { "moveId": 89, "level": 47 }
+    ],
+    "baseExp": 149, "captureRate": 50
+  },
+  {
+    "id": 52, "name": "Meowth", "types": ["normal"],
+    "stats": { "hp": 40, "attack": 45, "defense": 35, "spAtk": 40, "spDef": 40, "speed": 90 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/52.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 44, "level": 12 }, { "moveId": 6, "level": 17 },
+      { "moveId": 103, "level": 24 }, { "moveId": 154, "level": 33 },
+      { "moveId": 163, "level": 44 }
+    ],
+    "baseExp": 58, "captureRate": 255
+  },
+  {
+    "id": 53, "name": "Persian", "types": ["normal"],
+    "stats": { "hp": 65, "attack": 70, "defense": 60, "spAtk": 65, "spDef": 65, "speed": 115 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/53.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 44, "level": 12 }, { "moveId": 6, "level": 17 },
+      { "moveId": 103, "level": 24 }, { "moveId": 154, "level": 37 },
+      { "moveId": 163, "level": 51 }
+    ],
+    "baseExp": 154, "captureRate": 90
+  },
+  {
+    "id": 54, "name": "Psyduck", "types": ["water"],
+    "stats": { "hp": 50, "attack": 52, "defense": 48, "spAtk": 65, "spDef": 50, "speed": 55 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/54.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 39, "level": 1 },
+      { "moveId": 50, "level": 28 }, { "moveId": 93, "level": 31 },
+      { "moveId": 154, "level": 36 }, { "moveId": 56, "level": 43 }
+    ],
+    "baseExp": 64, "captureRate": 190
+  },
+  {
+    "id": 55, "name": "Golduck", "types": ["water"],
+    "stats": { "hp": 80, "attack": 82, "defense": 78, "spAtk": 95, "spDef": 80, "speed": 85 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/55.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 39, "level": 1 },
+      { "moveId": 50, "level": 28 }, { "moveId": 93, "level": 31 },
+      { "moveId": 154, "level": 39 }, { "moveId": 56, "level": 52 }
+    ],
+    "baseExp": 175, "captureRate": 75
+  },
+  {
+    "id": 56, "name": "Mankey", "types": ["fighting"],
+    "stats": { "hp": 40, "attack": 80, "defense": 35, "spAtk": 35, "spDef": 45, "speed": 70 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/56.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 43, "level": 1 },
+      { "moveId": 2, "level": 15 }, { "moveId": 154, "level": 21 },
+      { "moveId": 116, "level": 27 }, { "moveId": 69, "level": 33 },
+      { "moveId": 37, "level": 39 }
+    ],
+    "baseExp": 61, "captureRate": 190
+  },
+  {
+    "id": 57, "name": "Primeape", "types": ["fighting"],
+    "stats": { "hp": 65, "attack": 105, "defense": 60, "spAtk": 60, "spDef": 70, "speed": 95 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/57.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 43, "level": 1 },
+      { "moveId": 2, "level": 15 }, { "moveId": 154, "level": 21 },
+      { "moveId": 116, "level": 27 }, { "moveId": 69, "level": 37 },
+      { "moveId": 37, "level": 46 }
+    ],
+    "baseExp": 159, "captureRate": 75
+  },
+  {
+    "id": 58, "name": "Growlithe", "types": ["fire"],
+    "stats": { "hp": 55, "attack": 70, "defense": 45, "spAtk": 70, "spDef": 50, "speed": 60 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/58.png",
+    "moves": [
+      { "moveId": 44, "level": 1 }, { "moveId": 46, "level": 1 },
+      { "moveId": 52, "level": 18 }, { "moveId": 43, "level": 23 },
+      { "moveId": 36, "level": 30 }, { "moveId": 97, "level": 39 },
+      { "moveId": 53, "level": 50 }
+    ],
+    "baseExp": 70, "captureRate": 190
+  },
+  {
+    "id": 59, "name": "Arcanine", "types": ["fire"],
+    "stats": { "hp": 90, "attack": 110, "defense": 80, "spAtk": 100, "spDef": 80, "speed": 95 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/59.png",
+    "moves": [
+      { "moveId": 46, "level": 1 }, { "moveId": 52, "level": 1 },
+      { "moveId": 43, "level": 1 }, { "moveId": 36, "level": 1 },
+      { "moveId": 53, "level": 1 }, { "moveId": 125, "level": 1 }
+    ],
+    "baseExp": 194, "captureRate": 75
+  },
+  {
+    "id": 60, "name": "Poliwag", "types": ["water"],
+    "stats": { "hp": 40, "attack": 50, "defense": 40, "spAtk": 40, "spDef": 40, "speed": 90 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/60.png",
+    "moves": [
+      { "moveId": 145, "level": 1 }, { "moveId": 95, "level": 16 },
+      { "moveId": 55, "level": 19 }, { "moveId": 3, "level": 25 },
+      { "moveId": 34, "level": 31 }, { "moveId": 132, "level": 38 },
+      { "moveId": 56, "level": 45 }
+    ],
+    "baseExp": 60, "captureRate": 255
+  },
+  {
+    "id": 61, "name": "Poliwhirl", "types": ["water"],
+    "stats": { "hp": 65, "attack": 65, "defense": 65, "spAtk": 50, "spDef": 50, "speed": 90 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/61.png",
+    "moves": [
+      { "moveId": 145, "level": 1 }, { "moveId": 95, "level": 16 },
+      { "moveId": 55, "level": 19 }, { "moveId": 3, "level": 26 },
+      { "moveId": 34, "level": 33 }, { "moveId": 132, "level": 41 },
+      { "moveId": 56, "level": 49 }
+    ],
+    "baseExp": 135, "captureRate": 120
+  },
+  {
+    "id": 62, "name": "Poliwrath", "types": ["water", "fighting"],
+    "stats": { "hp": 90, "attack": 85, "defense": 95, "spAtk": 70, "spDef": 90, "speed": 70 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/62.png",
+    "moves": [
+      { "moveId": 95, "level": 1 }, { "moveId": 55, "level": 1 },
+      { "moveId": 3, "level": 1 }, { "moveId": 34, "level": 1 },
+      { "moveId": 66, "level": 1 }, { "moveId": 56, "level": 1 }
+    ],
+    "baseExp": 230, "captureRate": 45
+  },
+  {
+    "id": 63, "name": "Abra", "types": ["psychic"],
+    "stats": { "hp": 25, "attack": 20, "defense": 15, "spAtk": 105, "spDef": 55, "speed": 90 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/63.png",
+    "moves": [
+      { "moveId": 100, "level": 1 }
+    ],
+    "baseExp": 62, "captureRate": 200
+  },
+  {
+    "id": 64, "name": "Kadabra", "types": ["psychic"],
+    "stats": { "hp": 40, "attack": 35, "defense": 30, "spAtk": 120, "spDef": 70, "speed": 105 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/64.png",
+    "moves": [
+      { "moveId": 100, "level": 1 }, { "moveId": 93, "level": 16 },
+      { "moveId": 50, "level": 20 }, { "moveId": 60, "level": 27 },
+      { "moveId": 105, "level": 31 }, { "moveId": 94, "level": 38 },
+      { "moveId": 115, "level": 42 }
+    ],
+    "baseExp": 140, "captureRate": 100
+  },
+  {
+    "id": 65, "name": "Alakazam", "types": ["psychic"],
+    "stats": { "hp": 55, "attack": 50, "defense": 45, "spAtk": 135, "spDef": 85, "speed": 120 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/65.png",
+    "moves": [
+      { "moveId": 100, "level": 1 }, { "moveId": 93, "level": 16 },
+      { "moveId": 50, "level": 20 }, { "moveId": 60, "level": 27 },
+      { "moveId": 105, "level": 31 }, { "moveId": 94, "level": 38 },
+      { "moveId": 115, "level": 42 }
+    ],
+    "baseExp": 225, "captureRate": 50
+  },
+  {
+    "id": 66, "name": "Machop", "types": ["fighting"],
+    "stats": { "hp": 70, "attack": 80, "defense": 50, "spAtk": 35, "spDef": 35, "speed": 35 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/66.png",
+    "moves": [
+      { "moveId": 2, "level": 1 }, { "moveId": 67, "level": 20 },
+      { "moveId": 43, "level": 25 }, { "moveId": 116, "level": 32 },
+      { "moveId": 69, "level": 39 }, { "moveId": 66, "level": 46 }
+    ],
+    "baseExp": 61, "captureRate": 180
+  },
+  {
+    "id": 67, "name": "Machoke", "types": ["fighting"],
+    "stats": { "hp": 80, "attack": 100, "defense": 70, "spAtk": 50, "spDef": 60, "speed": 45 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/67.png",
+    "moves": [
+      { "moveId": 2, "level": 1 }, { "moveId": 67, "level": 20 },
+      { "moveId": 43, "level": 25 }, { "moveId": 116, "level": 36 },
+      { "moveId": 69, "level": 44 }, { "moveId": 66, "level": 52 }
+    ],
+    "baseExp": 142, "captureRate": 90
+  },
+  {
+    "id": 68, "name": "Machamp", "types": ["fighting"],
+    "stats": { "hp": 90, "attack": 130, "defense": 80, "spAtk": 65, "spDef": 85, "speed": 55 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/68.png",
+    "moves": [
+      { "moveId": 2, "level": 1 }, { "moveId": 67, "level": 20 },
+      { "moveId": 43, "level": 25 }, { "moveId": 116, "level": 36 },
+      { "moveId": 69, "level": 44 }, { "moveId": 66, "level": 52 }
+    ],
+    "baseExp": 227, "captureRate": 45
+  },
+  {
+    "id": 69, "name": "Bellsprout", "types": ["grass", "poison"],
+    "stats": { "hp": 50, "attack": 75, "defense": 35, "spAtk": 70, "spDef": 30, "speed": 40 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/69.png",
+    "moves": [
+      { "moveId": 22, "level": 1 }, { "moveId": 74, "level": 1 },
+      { "moveId": 35, "level": 13 }, { "moveId": 77, "level": 15 },
+      { "moveId": 79, "level": 18 }, { "moveId": 78, "level": 21 },
+      { "moveId": 51, "level": 26 }, { "moveId": 75, "level": 33 },
+      { "moveId": 21, "level": 42 }
+    ],
+    "baseExp": 60, "captureRate": 255
+  },
+  {
+    "id": 70, "name": "Weepinbell", "types": ["grass", "poison"],
+    "stats": { "hp": 65, "attack": 90, "defense": 50, "spAtk": 85, "spDef": 45, "speed": 55 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/70.png",
+    "moves": [
+      { "moveId": 22, "level": 1 }, { "moveId": 74, "level": 1 },
+      { "moveId": 35, "level": 13 }, { "moveId": 77, "level": 15 },
+      { "moveId": 79, "level": 18 }, { "moveId": 78, "level": 23 },
+      { "moveId": 51, "level": 29 }, { "moveId": 75, "level": 38 },
+      { "moveId": 21, "level": 49 }
+    ],
+    "baseExp": 137, "captureRate": 120
+  },
+  {
+    "id": 71, "name": "Victreebel", "types": ["grass", "poison"],
+    "stats": { "hp": 80, "attack": 105, "defense": 65, "spAtk": 100, "spDef": 60, "speed": 70 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/71.png",
+    "moves": [
+      { "moveId": 79, "level": 1 }, { "moveId": 78, "level": 1 },
+      { "moveId": 35, "level": 1 }, { "moveId": 75, "level": 1 },
+      { "moveId": 76, "level": 1 }
+    ],
+    "baseExp": 221, "captureRate": 45
+  },
+  {
+    "id": 72, "name": "Tentacool", "types": ["water", "poison"],
+    "stats": { "hp": 40, "attack": 40, "defense": 35, "spAtk": 50, "spDef": 100, "speed": 70 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/72.png",
+    "moves": [
+      { "moveId": 51, "level": 1 }, { "moveId": 48, "level": 7 },
+      { "moveId": 35, "level": 13 }, { "moveId": 40, "level": 18 },
+      { "moveId": 55, "level": 22 }, { "moveId": 131, "level": 27 },
+      { "moveId": 112, "level": 33 }, { "moveId": 56, "level": 40 }
+    ],
+    "baseExp": 67, "captureRate": 190
+  },
+  {
+    "id": 73, "name": "Tentacruel", "types": ["water", "poison"],
+    "stats": { "hp": 80, "attack": 70, "defense": 65, "spAtk": 80, "spDef": 120, "speed": 100 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/73.png",
+    "moves": [
+      { "moveId": 51, "level": 1 }, { "moveId": 48, "level": 7 },
+      { "moveId": 35, "level": 13 }, { "moveId": 40, "level": 18 },
+      { "moveId": 55, "level": 22 }, { "moveId": 131, "level": 27 },
+      { "moveId": 112, "level": 35 }, { "moveId": 56, "level": 43 }
+    ],
+    "baseExp": 180, "captureRate": 60
+  },
+  {
+    "id": 74, "name": "Geodude", "types": ["rock", "ground"],
+    "stats": { "hp": 40, "attack": 80, "defense": 100, "spAtk": 30, "spDef": 30, "speed": 20 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/74.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 111, "level": 1 },
+      { "moveId": 88, "level": 11 }, { "moveId": 119, "level": 16 },
+      { "moveId": 106, "level": 21 }, { "moveId": 89, "level": 26 },
+      { "moveId": 153, "level": 31 }
+    ],
+    "baseExp": 60, "captureRate": 255
+  },
+  {
+    "id": 75, "name": "Graveler", "types": ["rock", "ground"],
+    "stats": { "hp": 55, "attack": 95, "defense": 115, "spAtk": 45, "spDef": 45, "speed": 35 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/75.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 111, "level": 1 },
+      { "moveId": 88, "level": 11 }, { "moveId": 119, "level": 16 },
+      { "moveId": 106, "level": 21 }, { "moveId": 89, "level": 29 },
+      { "moveId": 153, "level": 36 }
+    ],
+    "baseExp": 137, "captureRate": 120
+  },
+  {
+    "id": 76, "name": "Golem", "types": ["rock", "ground"],
+    "stats": { "hp": 80, "attack": 110, "defense": 130, "spAtk": 55, "spDef": 65, "speed": 45 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/76.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 111, "level": 1 },
+      { "moveId": 88, "level": 11 }, { "moveId": 119, "level": 16 },
+      { "moveId": 106, "level": 21 }, { "moveId": 89, "level": 29 },
+      { "moveId": 153, "level": 36 }
+    ],
+    "baseExp": 223, "captureRate": 45
+  },
+  {
+    "id": 77, "name": "Ponyta", "types": ["fire"],
+    "stats": { "hp": 50, "attack": 85, "defense": 55, "spAtk": 65, "spDef": 65, "speed": 90 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/77.png",
+    "moves": [
+      { "moveId": 52, "level": 1 }, { "moveId": 39, "level": 1 },
+      { "moveId": 23, "level": 32 }, { "moveId": 45, "level": 37 },
+      { "moveId": 83, "level": 43 }, { "moveId": 36, "level": 48 },
+      { "moveId": 97, "level": 1 }
+    ],
+    "baseExp": 82, "captureRate": 190
+  },
+  {
+    "id": 78, "name": "Rapidash", "types": ["fire"],
+    "stats": { "hp": 65, "attack": 100, "defense": 70, "spAtk": 80, "spDef": 80, "speed": 105 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/78.png",
+    "moves": [
+      { "moveId": 52, "level": 1 }, { "moveId": 39, "level": 1 },
+      { "moveId": 23, "level": 32 }, { "moveId": 45, "level": 37 },
+      { "moveId": 83, "level": 47 }, { "moveId": 36, "level": 55 },
+      { "moveId": 97, "level": 1 }
+    ],
+    "baseExp": 175, "captureRate": 60
+  },
+  {
+    "id": 79, "name": "Slowpoke", "types": ["water", "psychic"],
+    "stats": { "hp": 90, "attack": 65, "defense": 65, "spAtk": 40, "spDef": 40, "speed": 15 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/79.png",
+    "moves": [
+      { "moveId": 93, "level": 1 }, { "moveId": 50, "level": 18 },
+      { "moveId": 29, "level": 22 }, { "moveId": 45, "level": 27 },
+      { "moveId": 55, "level": 33 }, { "moveId": 132, "level": 40 },
+      { "moveId": 94, "level": 48 }
+    ],
+    "baseExp": 63, "captureRate": 190
+  },
+  {
+    "id": 80, "name": "Slowbro", "types": ["water", "psychic"],
+    "stats": { "hp": 95, "attack": 75, "defense": 110, "spAtk": 100, "spDef": 80, "speed": 30 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/80.png",
+    "moves": [
+      { "moveId": 93, "level": 1 }, { "moveId": 50, "level": 18 },
+      { "moveId": 29, "level": 22 }, { "moveId": 45, "level": 27 },
+      { "moveId": 55, "level": 33 }, { "moveId": 110, "level": 37 },
+      { "moveId": 132, "level": 44 }, { "moveId": 94, "level": 55 }
+    ],
+    "baseExp": 172, "captureRate": 75
+  },
+  {
+    "id": 81, "name": "Magnemite", "types": ["electric"],
+    "stats": { "hp": 25, "attack": 35, "defense": 70, "spAtk": 95, "spDef": 55, "speed": 45 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/81.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 49, "level": 21 },
+      { "moveId": 84, "level": 25 }, { "moveId": 48, "level": 29 },
+      { "moveId": 85, "level": 35 }, { "moveId": 128, "level": 41 },
+      { "moveId": 103, "level": 47 }
+    ],
+    "baseExp": 65, "captureRate": 190
+  },
+  {
+    "id": 82, "name": "Magneton", "types": ["electric"],
+    "stats": { "hp": 50, "attack": 60, "defense": 95, "spAtk": 120, "spDef": 70, "speed": 70 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/82.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 49, "level": 21 },
+      { "moveId": 84, "level": 25 }, { "moveId": 48, "level": 29 },
+      { "moveId": 85, "level": 38 }, { "moveId": 128, "level": 46 },
+      { "moveId": 103, "level": 54 }
+    ],
+    "baseExp": 163, "captureRate": 60
+  },
+  {
+    "id": 83, "name": "Farfetch'd", "types": ["normal", "flying"],
+    "stats": { "hp": 52, "attack": 65, "defense": 55, "spAtk": 58, "spDef": 62, "speed": 60 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/83.png",
+    "moves": [
+      { "moveId": 64, "level": 1 }, { "moveId": 28, "level": 1 },
+      { "moveId": 43, "level": 7 }, { "moveId": 31, "level": 15 },
+      { "moveId": 14, "level": 23 }, { "moveId": 97, "level": 31 },
+      { "moveId": 163, "level": 39 }
+    ],
+    "baseExp": 94, "captureRate": 45
+  },
+  {
+    "id": 84, "name": "Doduo", "types": ["normal", "flying"],
+    "stats": { "hp": 35, "attack": 85, "defense": 45, "spAtk": 35, "spDef": 35, "speed": 75 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/84.png",
+    "moves": [
+      { "moveId": 64, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 31, "level": 20 }, { "moveId": 65, "level": 24 },
+      { "moveId": 99, "level": 30 }, { "moveId": 37, "level": 36 },
+      { "moveId": 97, "level": 40 }
+    ],
+    "baseExp": 62, "captureRate": 190
+  },
+  {
+    "id": 85, "name": "Dodrio", "types": ["normal", "flying"],
+    "stats": { "hp": 60, "attack": 110, "defense": 70, "spAtk": 60, "spDef": 60, "speed": 100 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/85.png",
+    "moves": [
+      { "moveId": 64, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 31, "level": 20 }, { "moveId": 65, "level": 24 },
+      { "moveId": 99, "level": 30 }, { "moveId": 37, "level": 39 },
+      { "moveId": 97, "level": 45 }
+    ],
+    "baseExp": 165, "captureRate": 45
+  },
+  {
+    "id": 86, "name": "Seel", "types": ["water"],
+    "stats": { "hp": 65, "attack": 45, "defense": 55, "spAtk": 45, "spDef": 70, "speed": 45 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/86.png",
+    "moves": [
+      { "moveId": 29, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 62, "level": 30 }, { "moveId": 156, "level": 35 },
+      { "moveId": 36, "level": 40 }, { "moveId": 58, "level": 45 }
+    ],
+    "baseExp": 65, "captureRate": 190
+  },
+  {
+    "id": 87, "name": "Dewgong", "types": ["water", "ice"],
+    "stats": { "hp": 90, "attack": 70, "defense": 80, "spAtk": 70, "spDef": 95, "speed": 70 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/87.png",
+    "moves": [
+      { "moveId": 29, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 62, "level": 30 }, { "moveId": 156, "level": 35 },
+      { "moveId": 36, "level": 44 }, { "moveId": 58, "level": 50 }
+    ],
+    "baseExp": 166, "captureRate": 75
+  },
+  {
+    "id": 88, "name": "Grimer", "types": ["poison"],
+    "stats": { "hp": 80, "attack": 80, "defense": 50, "spAtk": 40, "spDef": 50, "speed": 25 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/88.png",
+    "moves": [
+      { "moveId": 1, "level": 1 }, { "moveId": 50, "level": 1 },
+      { "moveId": 139, "level": 30 }, { "moveId": 107, "level": 33 },
+      { "moveId": 123, "level": 37 }, { "moveId": 106, "level": 42 },
+      { "moveId": 103, "level": 48 }, { "moveId": 151, "level": 55 }
+    ],
+    "baseExp": 65, "captureRate": 190
+  },
+  {
+    "id": 89, "name": "Muk", "types": ["poison"],
+    "stats": { "hp": 105, "attack": 105, "defense": 75, "spAtk": 65, "spDef": 100, "speed": 50 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/89.png",
+    "moves": [
+      { "moveId": 1, "level": 1 }, { "moveId": 50, "level": 1 },
+      { "moveId": 139, "level": 30 }, { "moveId": 107, "level": 33 },
+      { "moveId": 123, "level": 37 }, { "moveId": 106, "level": 45 },
+      { "moveId": 103, "level": 53 }, { "moveId": 151, "level": 60 }
+    ],
+    "baseExp": 175, "captureRate": 75
+  },
+  {
+    "id": 90, "name": "Shellder", "types": ["water"],
+    "stats": { "hp": 30, "attack": 65, "defense": 100, "spAtk": 45, "spDef": 25, "speed": 40 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/90.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 110, "level": 1 },
+      { "moveId": 48, "level": 18 }, { "moveId": 127, "level": 23 },
+      { "moveId": 62, "level": 30 }, { "moveId": 43, "level": 39 },
+      { "moveId": 58, "level": 50 }
+    ],
+    "baseExp": 61, "captureRate": 190
+  },
+  {
+    "id": 91, "name": "Cloyster", "types": ["water", "ice"],
+    "stats": { "hp": 50, "attack": 95, "defense": 180, "spAtk": 85, "spDef": 45, "speed": 70 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/91.png",
+    "moves": [
+      { "moveId": 110, "level": 1 }, { "moveId": 48, "level": 1 },
+      { "moveId": 127, "level": 1 }, { "moveId": 62, "level": 1 },
+      { "moveId": 130, "level": 1 }, { "moveId": 58, "level": 1 }
+    ],
+    "baseExp": 184, "captureRate": 60
+  },
+  {
+    "id": 92, "name": "Gastly", "types": ["ghost", "poison"],
+    "stats": { "hp": 30, "attack": 35, "defense": 30, "spAtk": 100, "spDef": 35, "speed": 80 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/92.png",
+    "moves": [
+      { "moveId": 121, "level": 1 }, { "moveId": 109, "level": 1 },
+      { "moveId": 101, "level": 1 }, { "moveId": 95, "level": 27 },
+      { "moveId": 138, "level": 35 }
+    ],
+    "baseExp": 62, "captureRate": 190
+  },
+  {
+    "id": 93, "name": "Haunter", "types": ["ghost", "poison"],
+    "stats": { "hp": 45, "attack": 50, "defense": 45, "spAtk": 115, "spDef": 55, "speed": 95 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/93.png",
+    "moves": [
+      { "moveId": 121, "level": 1 }, { "moveId": 109, "level": 1 },
+      { "moveId": 101, "level": 1 }, { "moveId": 95, "level": 29 },
+      { "moveId": 138, "level": 38 }
+    ],
+    "baseExp": 142, "captureRate": 90
+  },
+  {
+    "id": 94, "name": "Gengar", "types": ["ghost", "poison"],
+    "stats": { "hp": 60, "attack": 65, "defense": 60, "spAtk": 130, "spDef": 75, "speed": 110 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/94.png",
+    "moves": [
+      { "moveId": 121, "level": 1 }, { "moveId": 109, "level": 1 },
+      { "moveId": 101, "level": 1 }, { "moveId": 95, "level": 29 },
+      { "moveId": 138, "level": 38 }
+    ],
+    "baseExp": 225, "captureRate": 45
+  },
+  {
+    "id": 95, "name": "Onix", "types": ["rock", "ground"],
+    "stats": { "hp": 35, "attack": 45, "defense": 160, "spAtk": 30, "spDef": 45, "speed": 70 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/95.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 103, "level": 1 },
+      { "moveId": 20, "level": 15 }, { "moveId": 88, "level": 19 },
+      { "moveId": 99, "level": 25 }, { "moveId": 21, "level": 33 },
+      { "moveId": 106, "level": 43 }
+    ],
+    "baseExp": 77, "captureRate": 45
+  },
+  {
+    "id": 96, "name": "Drowzee", "types": ["psychic"],
+    "stats": { "hp": 60, "attack": 48, "defense": 45, "spAtk": 43, "spDef": 90, "speed": 42 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/96.png",
+    "moves": [
+      { "moveId": 1, "level": 1 }, { "moveId": 95, "level": 1 },
+      { "moveId": 50, "level": 12 }, { "moveId": 93, "level": 17 },
+      { "moveId": 29, "level": 24 }, { "moveId": 139, "level": 29 },
+      { "moveId": 94, "level": 32 }, { "moveId": 96, "level": 37 }
+    ],
+    "baseExp": 66, "captureRate": 190
+  },
+  {
+    "id": 97, "name": "Hypno", "types": ["psychic"],
+    "stats": { "hp": 85, "attack": 73, "defense": 70, "spAtk": 73, "spDef": 115, "speed": 67 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/97.png",
+    "moves": [
+      { "moveId": 1, "level": 1 }, { "moveId": 95, "level": 1 },
+      { "moveId": 50, "level": 12 }, { "moveId": 93, "level": 17 },
+      { "moveId": 29, "level": 24 }, { "moveId": 139, "level": 33 },
+      { "moveId": 94, "level": 37 }, { "moveId": 96, "level": 43 }
+    ],
+    "baseExp": 169, "captureRate": 75
+  },
+  {
+    "id": 98, "name": "Krabby", "types": ["water"],
+    "stats": { "hp": 30, "attack": 105, "defense": 90, "spAtk": 25, "spDef": 25, "speed": 50 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/98.png",
+    "moves": [
+      { "moveId": 145, "level": 1 }, { "moveId": 43, "level": 1 },
+      { "moveId": 11, "level": 20 }, { "moveId": 12, "level": 25 },
+      { "moveId": 23, "level": 30 }, { "moveId": 152, "level": 35 },
+      { "moveId": 106, "level": 40 }
+    ],
+    "baseExp": 65, "captureRate": 225
+  },
+  {
+    "id": 99, "name": "Kingler", "types": ["water"],
+    "stats": { "hp": 55, "attack": 130, "defense": 115, "spAtk": 50, "spDef": 50, "speed": 75 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/99.png",
+    "moves": [
+      { "moveId": 145, "level": 1 }, { "moveId": 43, "level": 1 },
+      { "moveId": 11, "level": 20 }, { "moveId": 12, "level": 25 },
+      { "moveId": 23, "level": 34 }, { "moveId": 152, "level": 42 },
+      { "moveId": 106, "level": 49 }
+    ],
+    "baseExp": 166, "captureRate": 60
+  },
+  {
+    "id": 100, "name": "Voltorb", "types": ["electric"],
+    "stats": { "hp": 40, "attack": 30, "defense": 50, "spAtk": 55, "spDef": 55, "speed": 100 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/100.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 103, "level": 1 },
+      { "moveId": 49, "level": 17 }, { "moveId": 119, "level": 22 },
+      { "moveId": 84, "level": 29 }, { "moveId": 128, "level": 36 },
+      { "moveId": 153, "level": 43 }
+    ],
+    "baseExp": 66, "captureRate": 190
+  },
+  {
+    "id": 101, "name": "Electrode", "types": ["electric"],
+    "stats": { "hp": 60, "attack": 50, "defense": 70, "spAtk": 80, "spDef": 80, "speed": 140 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/101.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 103, "level": 1 },
+      { "moveId": 49, "level": 17 }, { "moveId": 119, "level": 22 },
+      { "moveId": 84, "level": 29 }, { "moveId": 128, "level": 40 },
+      { "moveId": 153, "level": 50 }
+    ],
+    "baseExp": 172, "captureRate": 60
+  },
+  {
+    "id": 102, "name": "Exeggcute", "types": ["grass", "psychic"],
+    "stats": { "hp": 60, "attack": 40, "defense": 80, "spAtk": 60, "spDef": 45, "speed": 40 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/102.png",
+    "moves": [
+      { "moveId": 140, "level": 1 }, { "moveId": 95, "level": 1 },
+      { "moveId": 115, "level": 25 }, { "moveId": 73, "level": 28 },
+      { "moveId": 78, "level": 32 }, { "moveId": 77, "level": 37 },
+      { "moveId": 76, "level": 42 }
+    ],
+    "baseExp": 65, "captureRate": 90
+  },
+  {
+    "id": 103, "name": "Exeggutor", "types": ["grass", "psychic"],
+    "stats": { "hp": 95, "attack": 95, "defense": 85, "spAtk": 125, "spDef": 65, "speed": 55 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/103.png",
+    "moves": [
+      { "moveId": 140, "level": 1 }, { "moveId": 95, "level": 1 },
+      { "moveId": 23, "level": 28 }, { "moveId": 120, "level": 1 },
+      { "moveId": 76, "level": 1 }, { "moveId": 94, "level": 1 }
+    ],
+    "baseExp": 186, "captureRate": 45
+  },
+  {
+    "id": 104, "name": "Cubone", "types": ["ground"],
+    "stats": { "hp": 50, "attack": 50, "defense": 95, "spAtk": 40, "spDef": 50, "speed": 35 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/104.png",
+    "moves": [
+      { "moveId": 124, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 43, "level": 25 }, { "moveId": 116, "level": 31 },
+      { "moveId": 155, "level": 38 }, { "moveId": 37, "level": 43 },
+      { "moveId": 167, "level": 46 }
+    ],
+    "baseExp": 64, "captureRate": 190
+  },
+  {
+    "id": 105, "name": "Marowak", "types": ["ground"],
+    "stats": { "hp": 60, "attack": 80, "defense": 110, "spAtk": 50, "spDef": 80, "speed": 45 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/105.png",
+    "moves": [
+      { "moveId": 124, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 43, "level": 25 }, { "moveId": 116, "level": 33 },
+      { "moveId": 155, "level": 41 }, { "moveId": 37, "level": 48 },
+      { "moveId": 167, "level": 55 }
+    ],
+    "baseExp": 149, "captureRate": 75
+  },
+  {
+    "id": 106, "name": "Hitmonlee", "types": ["fighting"],
+    "stats": { "hp": 50, "attack": 120, "defense": 53, "spAtk": 35, "spDef": 110, "speed": 87 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/106.png",
+    "moves": [
+      { "moveId": 24, "level": 1 }, { "moveId": 96, "level": 1 },
+      { "moveId": 27, "level": 33 }, { "moveId": 26, "level": 38 },
+      { "moveId": 116, "level": 43 }, { "moveId": 136, "level": 48 },
+      { "moveId": 25, "level": 53 }
+    ],
+    "baseExp": 159, "captureRate": 45
+  },
+  {
+    "id": 107, "name": "Hitmonchan", "types": ["fighting"],
+    "stats": { "hp": 50, "attack": 105, "defense": 79, "spAtk": 35, "spDef": 110, "speed": 76 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/107.png",
+    "moves": [
+      { "moveId": 166, "level": 1 }, { "moveId": 97, "level": 1 },
+      { "moveId": 7, "level": 33 }, { "moveId": 8, "level": 38 },
+      { "moveId": 9, "level": 43 }, { "moveId": 5, "level": 48 },
+      { "moveId": 68, "level": 53 }
+    ],
+    "baseExp": 159, "captureRate": 45
+  },
+  {
+    "id": 108, "name": "Lickitung", "types": ["normal"],
+    "stats": { "hp": 90, "attack": 55, "defense": 75, "spAtk": 60, "spDef": 75, "speed": 30 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/108.png",
+    "moves": [
+      { "moveId": 35, "level": 1 }, { "moveId": 48, "level": 1 },
+      { "moveId": 23, "level": 7 }, { "moveId": 50, "level": 15 },
+      { "moveId": 111, "level": 23 }, { "moveId": 21, "level": 31 },
+      { "moveId": 103, "level": 39 }
+    ],
+    "baseExp": 77, "captureRate": 45
+  },
+  {
+    "id": 109, "name": "Koffing", "types": ["poison"],
+    "stats": { "hp": 40, "attack": 65, "defense": 95, "spAtk": 60, "spDef": 45, "speed": 35 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/109.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 122, "level": 1 },
+      { "moveId": 123, "level": 32 }, { "moveId": 108, "level": 37 },
+      { "moveId": 119, "level": 40 }, { "moveId": 114, "level": 45 },
+      { "moveId": 153, "level": 48 }
+    ],
+    "baseExp": 68, "captureRate": 190
+  },
+  {
+    "id": 110, "name": "Weezing", "types": ["poison"],
+    "stats": { "hp": 65, "attack": 90, "defense": 120, "spAtk": 85, "spDef": 70, "speed": 60 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/110.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 122, "level": 1 },
+      { "moveId": 123, "level": 32 }, { "moveId": 108, "level": 39 },
+      { "moveId": 119, "level": 43 }, { "moveId": 114, "level": 49 },
+      { "moveId": 153, "level": 53 }
+    ],
+    "baseExp": 172, "captureRate": 60
+  },
+  {
+    "id": 111, "name": "Rhyhorn", "types": ["ground", "rock"],
+    "stats": { "hp": 80, "attack": 85, "defense": 95, "spAtk": 30, "spDef": 30, "speed": 25 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/111.png",
+    "moves": [
+      { "moveId": 30, "level": 1 }, { "moveId": 39, "level": 1 },
+      { "moveId": 23, "level": 30 }, { "moveId": 31, "level": 35 },
+      { "moveId": 32, "level": 40 }, { "moveId": 43, "level": 45 },
+      { "moveId": 36, "level": 50 }
+    ],
+    "baseExp": 69, "captureRate": 120
+  },
+  {
+    "id": 112, "name": "Rhydon", "types": ["ground", "rock"],
+    "stats": { "hp": 105, "attack": 130, "defense": 120, "spAtk": 45, "spDef": 45, "speed": 40 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/112.png",
+    "moves": [
+      { "moveId": 30, "level": 1 }, { "moveId": 39, "level": 1 },
+      { "moveId": 23, "level": 30 }, { "moveId": 31, "level": 35 },
+      { "moveId": 32, "level": 40 }, { "moveId": 43, "level": 48 },
+      { "moveId": 36, "level": 55 }, { "moveId": 89, "level": 1 }
+    ],
+    "baseExp": 170, "captureRate": 60
+  },
+  {
+    "id": 113, "name": "Chansey", "types": ["normal"],
+    "stats": { "hp": 250, "attack": 5, "defense": 5, "spAtk": 35, "spDef": 105, "speed": 50 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/113.png",
+    "moves": [
+      { "moveId": 1, "level": 1 }, { "moveId": 3, "level": 1 },
+      { "moveId": 47, "level": 12 }, { "moveId": 45, "level": 24 },
+      { "moveId": 107, "level": 30 }, { "moveId": 111, "level": 38 },
+      { "moveId": 113, "level": 44 }, { "moveId": 38, "level": 54 },
+      { "moveId": 135, "level": 1 }
+    ],
+    "baseExp": 395, "captureRate": 30
+  },
+  {
+    "id": 114, "name": "Tangela", "types": ["grass"],
+    "stats": { "hp": 65, "attack": 55, "defense": 115, "spAtk": 100, "spDef": 40, "speed": 60 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/114.png",
+    "moves": [
+      { "moveId": 131, "level": 1 }, { "moveId": 20, "level": 1 },
+      { "moveId": 71, "level": 29 }, { "moveId": 77, "level": 32 },
+      { "moveId": 78, "level": 36 }, { "moveId": 79, "level": 39 },
+      { "moveId": 74, "level": 45 }, { "moveId": 21, "level": 49 }
+    ],
+    "baseExp": 87, "captureRate": 45
+  },
+  {
+    "id": 115, "name": "Kangaskhan", "types": ["normal"],
+    "stats": { "hp": 105, "attack": 95, "defense": 80, "spAtk": 40, "spDef": 80, "speed": 90 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/115.png",
+    "moves": [
+      { "moveId": 166, "level": 1 }, { "moveId": 99, "level": 1 },
+      { "moveId": 44, "level": 26 }, { "moveId": 39, "level": 31 },
+      { "moveId": 5, "level": 36 }, { "moveId": 146, "level": 41 },
+      { "moveId": 68, "level": 46 }
+    ],
+    "baseExp": 172, "captureRate": 45
+  },
+  {
+    "id": 116, "name": "Horsea", "types": ["water"],
+    "stats": { "hp": 30, "attack": 40, "defense": 70, "spAtk": 70, "spDef": 25, "speed": 60 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/116.png",
+    "moves": [
+      { "moveId": 145, "level": 1 }, { "moveId": 108, "level": 19 },
+      { "moveId": 43, "level": 24 }, { "moveId": 55, "level": 30 },
+      { "moveId": 97, "level": 37 }, { "moveId": 56, "level": 45 }
+    ],
+    "baseExp": 59, "captureRate": 225
+  },
+  {
+    "id": 117, "name": "Seadra", "types": ["water"],
+    "stats": { "hp": 55, "attack": 65, "defense": 95, "spAtk": 95, "spDef": 45, "speed": 85 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/117.png",
+    "moves": [
+      { "moveId": 145, "level": 1 }, { "moveId": 108, "level": 19 },
+      { "moveId": 43, "level": 24 }, { "moveId": 55, "level": 30 },
+      { "moveId": 97, "level": 41 }, { "moveId": 56, "level": 52 }
+    ],
+    "baseExp": 154, "captureRate": 75
+  },
+  {
+    "id": 118, "name": "Goldeen", "types": ["water"],
+    "stats": { "hp": 45, "attack": 67, "defense": 60, "spAtk": 35, "spDef": 50, "speed": 63 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/118.png",
+    "moves": [
+      { "moveId": 64, "level": 1 }, { "moveId": 39, "level": 1 },
+      { "moveId": 48, "level": 19 }, { "moveId": 30, "level": 24 },
+      { "moveId": 31, "level": 30 }, { "moveId": 126, "level": 37 },
+      { "moveId": 32, "level": 45 }, { "moveId": 97, "level": 54 }
+    ],
+    "baseExp": 64, "captureRate": 225
+  },
+  {
+    "id": 119, "name": "Seaking", "types": ["water"],
+    "stats": { "hp": 80, "attack": 92, "defense": 65, "spAtk": 65, "spDef": 80, "speed": 68 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/119.png",
+    "moves": [
+      { "moveId": 64, "level": 1 }, { "moveId": 39, "level": 1 },
+      { "moveId": 48, "level": 19 }, { "moveId": 30, "level": 24 },
+      { "moveId": 31, "level": 30 }, { "moveId": 126, "level": 39 },
+      { "moveId": 32, "level": 48 }, { "moveId": 97, "level": 54 }
+    ],
+    "baseExp": 158, "captureRate": 60
+  },
+  {
+    "id": 120, "name": "Staryu", "types": ["water"],
+    "stats": { "hp": 30, "attack": 45, "defense": 55, "spAtk": 70, "spDef": 55, "speed": 85 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/120.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 55, "level": 17 },
+      { "moveId": 106, "level": 22 }, { "moveId": 105, "level": 27 },
+      { "moveId": 128, "level": 32 }, { "moveId": 107, "level": 37 },
+      { "moveId": 113, "level": 42 }, { "moveId": 56, "level": 47 }
+    ],
+    "baseExp": 68, "captureRate": 225
+  },
+  {
+    "id": 121, "name": "Starmie", "types": ["water", "psychic"],
+    "stats": { "hp": 60, "attack": 75, "defense": 85, "spAtk": 100, "spDef": 85, "speed": 115 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/121.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 55, "level": 1 },
+      { "moveId": 106, "level": 1 }, { "moveId": 128, "level": 1 },
+      { "moveId": 94, "level": 1 }, { "moveId": 56, "level": 1 }
+    ],
+    "baseExp": 182, "captureRate": 60
+  },
+  {
+    "id": 122, "name": "Mr. Mime", "types": ["psychic"],
+    "stats": { "hp": 40, "attack": 45, "defense": 65, "spAtk": 100, "spDef": 120, "speed": 90 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/122.png",
+    "moves": [
+      { "moveId": 93, "level": 1 }, { "moveId": 112, "level": 1 },
+      { "moveId": 113, "level": 23 }, { "moveId": 3, "level": 31 },
+      { "moveId": 96, "level": 39 }, { "moveId": 164, "level": 47 }
+    ],
+    "baseExp": 161, "captureRate": 45
+  },
+  {
+    "id": 123, "name": "Scyther", "types": ["bug", "flying"],
+    "stats": { "hp": 70, "attack": 110, "defense": 80, "spAtk": 55, "spDef": 80, "speed": 105 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/123.png",
+    "moves": [
+      { "moveId": 98, "level": 1 }, { "moveId": 43, "level": 1 },
+      { "moveId": 116, "level": 17 }, { "moveId": 163, "level": 20 },
+      { "moveId": 104, "level": 24 }, { "moveId": 14, "level": 29 },
+      { "moveId": 97, "level": 35 }, { "moveId": 17, "level": 42 }
+    ],
+    "baseExp": 100, "captureRate": 45
+  },
+  {
+    "id": 124, "name": "Jynx", "types": ["ice", "psychic"],
+    "stats": { "hp": 65, "attack": 50, "defense": 35, "spAtk": 115, "spDef": 95, "speed": 95 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/124.png",
+    "moves": [
+      { "moveId": 1, "level": 1 }, { "moveId": 142, "level": 1 },
+      { "moveId": 121, "level": 18 }, { "moveId": 3, "level": 23 },
+      { "moveId": 34, "level": 31 }, { "moveId": 37, "level": 39 },
+      { "moveId": 59, "level": 47 }, { "moveId": 94, "level": 58 }
+    ],
+    "baseExp": 159, "captureRate": 45
+  },
+  {
+    "id": 125, "name": "Electabuzz", "types": ["electric"],
+    "stats": { "hp": 65, "attack": 83, "defense": 57, "spAtk": 95, "spDef": 85, "speed": 105 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/125.png",
+    "moves": [
+      { "moveId": 98, "level": 1 }, { "moveId": 43, "level": 1 },
+      { "moveId": 84, "level": 34 }, { "moveId": 103, "level": 37 },
+      { "moveId": 85, "level": 42 }, { "moveId": 113, "level": 49 },
+      { "moveId": 87, "level": 54 }
+    ],
+    "baseExp": 172, "captureRate": 45
+  },
+  {
+    "id": 126, "name": "Magmar", "types": ["fire"],
+    "stats": { "hp": 65, "attack": 95, "defense": 57, "spAtk": 100, "spDef": 85, "speed": 93 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/126.png",
+    "moves": [
+      { "moveId": 52, "level": 1 }, { "moveId": 43, "level": 1 },
+      { "moveId": 109, "level": 36 }, { "moveId": 108, "level": 39 },
+      { "moveId": 53, "level": 43 }, { "moveId": 125, "level": 48 },
+      { "moveId": 83, "level": 52 }
+    ],
+    "baseExp": 173, "captureRate": 45
+  },
+  {
+    "id": 127, "name": "Pinsir", "types": ["bug"],
+    "stats": { "hp": 65, "attack": 125, "defense": 100, "spAtk": 55, "spDef": 70, "speed": 85 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/127.png",
+    "moves": [
+      { "moveId": 11, "level": 1 }, { "moveId": 69, "level": 25 },
+      { "moveId": 12, "level": 30 }, { "moveId": 116, "level": 36 },
+      { "moveId": 163, "level": 43 }, { "moveId": 14, "level": 49 },
+      { "moveId": 66, "level": 54 }
+    ],
+    "baseExp": 175, "captureRate": 45
+  },
+  {
+    "id": 128, "name": "Tauros", "types": ["normal"],
+    "stats": { "hp": 75, "attack": 100, "defense": 95, "spAtk": 40, "spDef": 70, "speed": 110 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/128.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 23, "level": 1 },
+      { "moveId": 39, "level": 21 }, { "moveId": 43, "level": 28 },
+      { "moveId": 99, "level": 35 }, { "moveId": 36, "level": 44 },
+      { "moveId": 37, "level": 51 }
+    ],
+    "baseExp": 172, "captureRate": 45
+  },
+  {
+    "id": 129, "name": "Magikarp", "types": ["water"],
+    "stats": { "hp": 20, "attack": 10, "defense": 55, "spAtk": 15, "spDef": 20, "speed": 80 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/129.png",
+    "moves": [
+      { "moveId": 150, "level": 1 }, { "moveId": 33, "level": 15 }
+    ],
+    "baseExp": 20, "captureRate": 255
+  },
+  {
+    "id": 130, "name": "Gyarados", "types": ["water", "flying"],
+    "stats": { "hp": 95, "attack": 125, "defense": 79, "spAtk": 60, "spDef": 100, "speed": 81 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/130.png",
+    "moves": [
+      { "moveId": 44, "level": 1 }, { "moveId": 82, "level": 1 },
+      { "moveId": 43, "level": 20 }, { "moveId": 37, "level": 25 },
+      { "moveId": 56, "level": 32 }, { "moveId": 63, "level": 41 }
+    ],
+    "baseExp": 189, "captureRate": 45
+  },
+  {
+    "id": 131, "name": "Lapras", "types": ["water", "ice"],
+    "stats": { "hp": 130, "attack": 85, "defense": 80, "spAtk": 85, "spDef": 95, "speed": 60 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/131.png",
+    "moves": [
+      { "moveId": 55, "level": 1 }, { "moveId": 45, "level": 1 },
+      { "moveId": 47, "level": 16 }, { "moveId": 54, "level": 20 },
+      { "moveId": 34, "level": 25 }, { "moveId": 109, "level": 31 },
+      { "moveId": 58, "level": 38 }, { "moveId": 56, "level": 46 }
+    ],
+    "baseExp": 187, "captureRate": 45
+  },
+  {
+    "id": 132, "name": "Ditto", "types": ["normal"],
+    "stats": { "hp": 48, "attack": 48, "defense": 48, "spAtk": 48, "spDef": 48, "speed": 48 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/132.png",
+    "moves": [
+      { "moveId": 144, "level": 1 }
+    ],
+    "baseExp": 101, "captureRate": 35
+  },
+  {
+    "id": 133, "name": "Eevee", "types": ["normal"],
+    "stats": { "hp": 55, "attack": 55, "defense": 50, "spAtk": 45, "spDef": 65, "speed": 55 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 28, "level": 1 },
+      { "moveId": 98, "level": 27 }, { "moveId": 39, "level": 31 },
+      { "moveId": 44, "level": 37 }, { "moveId": 36, "level": 45 }
+    ],
+    "baseExp": 65, "captureRate": 45
+  },
+  {
+    "id": 134, "name": "Vaporeon", "types": ["water"],
+    "stats": { "hp": 130, "attack": 65, "defense": 60, "spAtk": 110, "spDef": 95, "speed": 65 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/134.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 28, "level": 1 },
+      { "moveId": 98, "level": 27 }, { "moveId": 55, "level": 31 },
+      { "moveId": 39, "level": 37 }, { "moveId": 44, "level": 40 },
+      { "moveId": 151, "level": 42 }, { "moveId": 114, "level": 44 },
+      { "moveId": 54, "level": 48 }, { "moveId": 56, "level": 54 }
+    ],
+    "baseExp": 184, "captureRate": 45
+  },
+  {
+    "id": 135, "name": "Jolteon", "types": ["electric"],
+    "stats": { "hp": 65, "attack": 65, "defense": 60, "spAtk": 110, "spDef": 95, "speed": 130 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/135.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 28, "level": 1 },
+      { "moveId": 98, "level": 27 }, { "moveId": 84, "level": 31 },
+      { "moveId": 39, "level": 37 }, { "moveId": 86, "level": 40 },
+      { "moveId": 104, "level": 42 }, { "moveId": 97, "level": 44 },
+      { "moveId": 42, "level": 48 }, { "moveId": 87, "level": 54 }
+    ],
+    "baseExp": 184, "captureRate": 45
+  },
+  {
+    "id": 136, "name": "Flareon", "types": ["fire"],
+    "stats": { "hp": 65, "attack": 130, "defense": 60, "spAtk": 95, "spDef": 110, "speed": 65 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/136.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 28, "level": 1 },
+      { "moveId": 98, "level": 27 }, { "moveId": 52, "level": 31 },
+      { "moveId": 39, "level": 37 }, { "moveId": 44, "level": 40 },
+      { "moveId": 43, "level": 42 }, { "moveId": 83, "level": 44 },
+      { "moveId": 99, "level": 48 }, { "moveId": 53, "level": 54 }
+    ],
+    "baseExp": 184, "captureRate": 45
+  },
+  {
+    "id": 137, "name": "Porygon", "types": ["normal"],
+    "stats": { "hp": 65, "attack": 60, "defense": 70, "spAtk": 85, "spDef": 75, "speed": 40 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/137.png",
+    "moves": [
+      { "moveId": 33, "level": 1 }, { "moveId": 159, "level": 1 },
+      { "moveId": 160, "level": 1 }, { "moveId": 60, "level": 23 },
+      { "moveId": 105, "level": 28 }, { "moveId": 97, "level": 35 },
+      { "moveId": 161, "level": 42 }
+    ],
+    "baseExp": 79, "captureRate": 45
+  },
+  {
+    "id": 138, "name": "Omanyte", "types": ["rock", "water"],
+    "stats": { "hp": 35, "attack": 40, "defense": 100, "spAtk": 90, "spDef": 55, "speed": 35 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/138.png",
+    "moves": [
+      { "moveId": 55, "level": 1 }, { "moveId": 110, "level": 1 },
+      { "moveId": 30, "level": 34 }, { "moveId": 43, "level": 39 },
+      { "moveId": 130, "level": 46 }, { "moveId": 56, "level": 53 }
+    ],
+    "baseExp": 71, "captureRate": 45
+  },
+  {
+    "id": 139, "name": "Omastar", "types": ["rock", "water"],
+    "stats": { "hp": 70, "attack": 60, "defense": 125, "spAtk": 115, "spDef": 70, "speed": 55 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/139.png",
+    "moves": [
+      { "moveId": 55, "level": 1 }, { "moveId": 110, "level": 1 },
+      { "moveId": 30, "level": 34 }, { "moveId": 43, "level": 39 },
+      { "moveId": 130, "level": 44 }, { "moveId": 56, "level": 49 }
+    ],
+    "baseExp": 173, "captureRate": 45
+  },
+  {
+    "id": 140, "name": "Kabuto", "types": ["rock", "water"],
+    "stats": { "hp": 30, "attack": 80, "defense": 90, "spAtk": 55, "spDef": 45, "speed": 55 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/140.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 106, "level": 1 },
+      { "moveId": 71, "level": 34 }, { "moveId": 163, "level": 39 },
+      { "moveId": 43, "level": 44 }, { "moveId": 56, "level": 49 }
+    ],
+    "baseExp": 71, "captureRate": 45
+  },
+  {
+    "id": 141, "name": "Kabutops", "types": ["rock", "water"],
+    "stats": { "hp": 60, "attack": 115, "defense": 105, "spAtk": 65, "spDef": 70, "speed": 80 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/141.png",
+    "moves": [
+      { "moveId": 10, "level": 1 }, { "moveId": 106, "level": 1 },
+      { "moveId": 71, "level": 34 }, { "moveId": 163, "level": 39 },
+      { "moveId": 43, "level": 46 }, { "moveId": 56, "level": 53 }
+    ],
+    "baseExp": 173, "captureRate": 45
+  },
+  {
+    "id": 142, "name": "Aerodactyl", "types": ["rock", "flying"],
+    "stats": { "hp": 80, "attack": 105, "defense": 65, "spAtk": 60, "spDef": 75, "speed": 130 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/142.png",
+    "moves": [
+      { "moveId": 17, "level": 1 }, { "moveId": 97, "level": 1 },
+      { "moveId": 48, "level": 33 }, { "moveId": 44, "level": 38 },
+      { "moveId": 36, "level": 45 }, { "moveId": 63, "level": 54 }
+    ],
+    "baseExp": 180, "captureRate": 45
+  },
+  {
+    "id": 143, "name": "Snorlax", "types": ["normal"],
+    "stats": { "hp": 160, "attack": 110, "defense": 65, "spAtk": 65, "spDef": 110, "speed": 30 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/143.png",
+    "moves": [
+      { "moveId": 29, "level": 1 }, { "moveId": 132, "level": 1 },
+      { "moveId": 156, "level": 1 }, { "moveId": 34, "level": 35 },
+      { "moveId": 106, "level": 41 }, { "moveId": 38, "level": 48 },
+      { "moveId": 63, "level": 56 }
+    ],
+    "baseExp": 189, "captureRate": 25
+  },
+  {
+    "id": 144, "name": "Articuno", "types": ["ice", "flying"],
+    "stats": { "hp": 90, "attack": 85, "defense": 100, "spAtk": 95, "spDef": 125, "speed": 85 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/144.png",
+    "moves": [
+      { "moveId": 64, "level": 1 }, { "moveId": 58, "level": 1 },
+      { "moveId": 59, "level": 51 }, { "moveId": 97, "level": 55 },
+      { "moveId": 54, "level": 60 }
+    ],
+    "baseExp": 261, "captureRate": 3
+  },
+  {
+    "id": 145, "name": "Zapdos", "types": ["electric", "flying"],
+    "stats": { "hp": 90, "attack": 90, "defense": 85, "spAtk": 125, "spDef": 90, "speed": 100 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/145.png",
+    "moves": [
+      { "moveId": 84, "level": 1 }, { "moveId": 65, "level": 1 },
+      { "moveId": 87, "level": 51 }, { "moveId": 97, "level": 55 },
+      { "moveId": 113, "level": 60 }
+    ],
+    "baseExp": 261, "captureRate": 3
+  },
+  {
+    "id": 146, "name": "Moltres", "types": ["fire", "flying"],
+    "stats": { "hp": 90, "attack": 100, "defense": 90, "spAtk": 125, "spDef": 85, "speed": 90 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/146.png",
+    "moves": [
+      { "moveId": 64, "level": 1 }, { "moveId": 83, "level": 1 },
+      { "moveId": 43, "level": 51 }, { "moveId": 97, "level": 55 },
+      { "moveId": 143, "level": 60 }
+    ],
+    "baseExp": 261, "captureRate": 3
+  },
+  {
+    "id": 147, "name": "Dratini", "types": ["dragon"],
+    "stats": { "hp": 41, "attack": 64, "defense": 45, "spAtk": 50, "spDef": 50, "speed": 50 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/147.png",
+    "moves": [
+      { "moveId": 35, "level": 1 }, { "moveId": 43, "level": 1 },
+      { "moveId": 86, "level": 10 }, { "moveId": 97, "level": 20 },
+      { "moveId": 21, "level": 30 }, { "moveId": 82, "level": 40 },
+      { "moveId": 63, "level": 50 }
+    ],
+    "baseExp": 60, "captureRate": 45
+  },
+  {
+    "id": 148, "name": "Dragonair", "types": ["dragon"],
+    "stats": { "hp": 61, "attack": 84, "defense": 65, "spAtk": 70, "spDef": 70, "speed": 70 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/148.png",
+    "moves": [
+      { "moveId": 35, "level": 1 }, { "moveId": 43, "level": 1 },
+      { "moveId": 86, "level": 10 }, { "moveId": 97, "level": 20 },
+      { "moveId": 21, "level": 35 }, { "moveId": 82, "level": 45 },
+      { "moveId": 63, "level": 55 }
+    ],
+    "baseExp": 147, "captureRate": 45
+  },
+  {
+    "id": 149, "name": "Dragonite", "types": ["dragon", "flying"],
+    "stats": { "hp": 91, "attack": 134, "defense": 95, "spAtk": 100, "spDef": 100, "speed": 80 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/149.png",
+    "moves": [
+      { "moveId": 35, "level": 1 }, { "moveId": 43, "level": 1 },
+      { "moveId": 86, "level": 10 }, { "moveId": 97, "level": 20 },
+      { "moveId": 21, "level": 35 }, { "moveId": 82, "level": 45 },
+      { "moveId": 63, "level": 60 }, { "moveId": 17, "level": 1 }
+    ],
+    "baseExp": 270, "captureRate": 45
+  },
+  {
+    "id": 150, "name": "Mewtwo", "types": ["psychic"],
+    "stats": { "hp": 106, "attack": 110, "defense": 90, "spAtk": 154, "spDef": 90, "speed": 130 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png",
+    "moves": [
+      { "moveId": 93, "level": 1 }, { "moveId": 50, "level": 1 },
+      { "moveId": 128, "level": 1 }, { "moveId": 112, "level": 63 },
+      { "moveId": 94, "level": 66 }, { "moveId": 105, "level": 70 },
+      { "moveId": 54, "level": 75 }, { "moveId": 132, "level": 81 }
+    ],
+    "baseExp": 306, "captureRate": 3
+  },
+  {
+    "id": 151, "name": "Mew", "types": ["psychic"],
+    "stats": { "hp": 100, "attack": 100, "defense": 100, "spAtk": 100, "spDef": 100, "speed": 100 },
+    "sprite": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png",
+    "moves": [
+      { "moveId": 1, "level": 1 }, { "moveId": 144, "level": 1 },
+      { "moveId": 118, "level": 10 }, { "moveId": 5, "level": 20 },
+      { "moveId": 94, "level": 30 }, { "moveId": 112, "level": 40 },
+      { "moveId": 132, "level": 50 }
+    ],
+    "baseExp": 270, "captureRate": 45
+  }
+]

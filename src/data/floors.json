@@ -1,0 +1,143 @@
+{
+  "zones": [
+    {
+      "name": "Bosque Verde",
+      "floors": [1, 5],
+      "theme": "forest",
+      "colors": { "floor": "#2d4a2d", "wall": "#1a2e1a", "accent": "#4a7a4a" },
+      "pokemon": [
+        { "id": 10, "weight": 3 },
+        { "id": 13, "weight": 3 },
+        { "id": 16, "weight": 3 },
+        { "id": 19, "weight": 3 },
+        { "id": 21, "weight": 2 },
+        { "id": 29, "weight": 1 },
+        { "id": 32, "weight": 1 },
+        { "id": 43, "weight": 2 }
+      ],
+      "levelRange": [3, 7],
+      "enemiesPerFloor": [4, 7],
+      "itemsPerFloor": [3, 5],
+      "boss": null
+    },
+    {
+      "name": "Cueva Oscura",
+      "floors": [6, 10],
+      "theme": "cave",
+      "colors": { "floor": "#3a3040", "wall": "#1f1828", "accent": "#5a4a6a" },
+      "pokemon": [
+        { "id": 41, "weight": 3 },
+        { "id": 74, "weight": 3 },
+        { "id": 50, "weight": 2 },
+        { "id": 66, "weight": 2 },
+        { "id": 23, "weight": 2 },
+        { "id": 27, "weight": 1 },
+        { "id": 35, "weight": 1 }
+      ],
+      "levelRange": [7, 12],
+      "enemiesPerFloor": [5, 8],
+      "itemsPerFloor": [2, 4],
+      "boss": { "id": 95, "level": 15, "name": "Onix" }
+    },
+    {
+      "name": "Ruta Eléctrica",
+      "floors": [11, 15],
+      "theme": "electric",
+      "colors": { "floor": "#3a3a20", "wall": "#28280f", "accent": "#ffcc00" },
+      "pokemon": [
+        { "id": 25, "weight": 2 },
+        { "id": 81, "weight": 3 },
+        { "id": 100, "weight": 3 },
+        { "id": 82, "weight": 1 },
+        { "id": 125, "weight": 1 },
+        { "id": 26, "weight": 1 },
+        { "id": 101, "weight": 1 }
+      ],
+      "levelRange": [12, 18],
+      "enemiesPerFloor": [5, 9],
+      "itemsPerFloor": [2, 4],
+      "boss": { "id": 26, "level": 22, "name": "Raichu" }
+    },
+    {
+      "name": "Monte Lunar",
+      "floors": [16, 20],
+      "theme": "mountain",
+      "colors": { "floor": "#2e2e3e", "wall": "#1a1a28", "accent": "#8888cc" },
+      "pokemon": [
+        { "id": 35, "weight": 2 },
+        { "id": 36, "weight": 1 },
+        { "id": 39, "weight": 2 },
+        { "id": 56, "weight": 2 },
+        { "id": 67, "weight": 2 },
+        { "id": 75, "weight": 2 },
+        { "id": 105, "weight": 1 }
+      ],
+      "levelRange": [18, 25],
+      "enemiesPerFloor": [6, 10],
+      "itemsPerFloor": [2, 3],
+      "boss": { "id": 36, "level": 30, "name": "Clefable" }
+    },
+    {
+      "name": "Profundidades Oscuras",
+      "floors": [21, 30],
+      "theme": "dark",
+      "colors": { "floor": "#1e1e2e", "wall": "#0f0f1a", "accent": "#6a4a8a" },
+      "pokemon": [
+        { "id": 92, "weight": 3 },
+        { "id": 93, "weight": 2 },
+        { "id": 42, "weight": 2 },
+        { "id": 89, "weight": 1 },
+        { "id": 110, "weight": 2 },
+        { "id": 24, "weight": 2 },
+        { "id": 49, "weight": 1 },
+        { "id": 97, "weight": 1 }
+      ],
+      "levelRange": [25, 35],
+      "enemiesPerFloor": [7, 12],
+      "itemsPerFloor": [2, 3],
+      "boss": { "id": 94, "level": 40, "name": "Gengar" }
+    },
+    {
+      "name": "Isla Volcánica",
+      "floors": [31, 40],
+      "theme": "volcano",
+      "colors": { "floor": "#3e1e1e", "wall": "#2a0f0f", "accent": "#ff4444" },
+      "pokemon": [
+        { "id": 58, "weight": 2 },
+        { "id": 59, "weight": 1 },
+        { "id": 77, "weight": 2 },
+        { "id": 78, "weight": 1 },
+        { "id": 126, "weight": 1 },
+        { "id": 5, "weight": 1 },
+        { "id": 76, "weight": 2 },
+        { "id": 112, "weight": 1 }
+      ],
+      "levelRange": [35, 45],
+      "enemiesPerFloor": [8, 13],
+      "itemsPerFloor": [1, 3],
+      "boss": { "id": 59, "level": 48, "name": "Arcanine" }
+    },
+    {
+      "name": "Laboratorio Final",
+      "floors": [41, 50],
+      "theme": "lab",
+      "colors": { "floor": "#2e3040", "wall": "#1a1c28", "accent": "#aa88ff" },
+      "pokemon": [
+        { "id": 64, "weight": 2 },
+        { "id": 65, "weight": 1 },
+        { "id": 94, "weight": 1 },
+        { "id": 103, "weight": 1 },
+        { "id": 113, "weight": 2 },
+        { "id": 121, "weight": 1 },
+        { "id": 130, "weight": 1 },
+        { "id": 131, "weight": 1 },
+        { "id": 143, "weight": 1 },
+        { "id": 149, "weight": 1 }
+      ],
+      "levelRange": [45, 55],
+      "enemiesPerFloor": [8, 14],
+      "itemsPerFloor": [1, 2],
+      "boss": { "id": 150, "level": 70, "name": "Mewtwo" }
+    }
+  ]
+}

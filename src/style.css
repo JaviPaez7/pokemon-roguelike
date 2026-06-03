@@ -1,0 +1,418 @@
+/* ============================================
+   PokéRogue — Estilos Globales
+   ============================================ */
+
+/* Reset básico */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Paleta de colores */
+  --bg-dark: #0a0a14;
+  --bg-panel: #12121e;
+  --bg-panel-light: #1a1a2e;
+  --border-color: #2a2a4a;
+  --border-glow: #4a4a8a;
+  --text-primary: #e0e0f0;
+  --text-secondary: #8888aa;
+  --text-accent: #ffcc44;
+  --hp-green: #4ade80;
+  --hp-yellow: #fbbf24;
+  --hp-red: #ef4444;
+  --xp-blue: #60a5fa;
+  --type-fire: #f08030;
+  --type-water: #6890f0;
+  --type-grass: #78c850;
+  --type-electric: #f8d030;
+  --type-psychic: #f85888;
+  --type-ice: #98d8d8;
+  --type-dragon: #7038f8;
+  --type-ghost: #705898;
+  --type-poison: #a040a0;
+  --type-ground: #e0c068;
+  --type-flying: #a890f0;
+  --type-fighting: #c03028;
+  --type-rock: #b8a038;
+  --type-bug: #a8b820;
+  --type-normal: #a8a878;
+
+  /* Fuente */
+  --font-pixel: 'Press Start 2P', monospace;
+  --font-size-xs: 6px;
+  --font-size-sm: 8px;
+  --font-size-md: 10px;
+  --font-size-lg: 14px;
+  --font-size-xl: 20px;
+  --font-size-xxl: 28px;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-dark);
+  font-family: var(--font-pixel);
+  color: var(--text-primary);
+}
+
+/* ============================================
+   Contenedor del juego
+   ============================================ */
+#game-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, #0f0f2a 0%, #050510 100%);
+}
+
+#game-canvas {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  border: 2px solid var(--border-color);
+  box-shadow: 
+    0 0 20px rgba(74, 74, 138, 0.3),
+    0 0 60px rgba(74, 74, 138, 0.1),
+    inset 0 0 30px rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+}
+
+/* ============================================
+   Overlay UI
+   ============================================ */
+#ui-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#ui-overlay:not(.hidden) {
+  pointer-events: all;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+}
+
+.hidden {
+  display: none !important;
+}
+
+#menu-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 300px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* ============================================
+   Pantalla de carga
+   ============================================ */
+#loading-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2a 50%, #0a0a1a 100%);
+  z-index: 100;
+  transition: opacity 0.5s ease;
+}
+
+#loading-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.loading-title {
+  font-family: var(--font-pixel);
+  font-size: var(--font-size-xxl);
+  color: var(--text-accent);
+  text-shadow: 
+    0 0 10px rgba(255, 204, 68, 0.5),
+    0 0 30px rgba(255, 204, 68, 0.3),
+    2px 2px 0 #cc9900;
+  letter-spacing: 4px;
+  animation: titlePulse 2s ease-in-out infinite;
+}
+
+@keyframes titlePulse {
+  0%, 100% { text-shadow: 0 0 10px rgba(255, 204, 68, 0.5), 0 0 30px rgba(255, 204, 68, 0.3), 2px 2px 0 #cc9900; }
+  50% { text-shadow: 0 0 20px rgba(255, 204, 68, 0.8), 0 0 50px rgba(255, 204, 68, 0.5), 2px 2px 0 #cc9900; }
+}
+
+/* Poké Ball animada */
+.loading-pokeball {
+  width: 48px;
+  height: 48px;
+  position: relative;
+  animation: pokeBallSpin 1.5s ease-in-out infinite;
+}
+
+.pokeball-top {
+  width: 48px;
+  height: 24px;
+  background: #ef4444;
+  border-radius: 24px 24px 0 0;
+  border: 3px solid #333;
+  border-bottom: none;
+}
+
+.pokeball-center {
+  width: 48px;
+  height: 6px;
+  background: #333;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pokeball-center::after {
+  content: '';
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border: 3px solid #333;
+  border-radius: 50%;
+  position: absolute;
+  top: -4px;
+}
+
+.pokeball-bottom {
+  width: 48px;
+  height: 24px;
+  background: #fff;
+  border-radius: 0 0 24px 24px;
+  border: 3px solid #333;
+  border-top: none;
+}
+
+@keyframes pokeBallSpin {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(15deg); }
+  50% { transform: rotate(0deg); }
+  75% { transform: rotate(-15deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.loading-text {
+  font-family: var(--font-pixel);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  animation: loadingDots 1.5s ease-in-out infinite;
+}
+
+@keyframes loadingDots {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.loading-bar-container {
+  width: 200px;
+  height: 8px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.loading-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--type-electric) 0%, var(--text-accent) 100%);
+  transition: width 0.3s ease;
+  border-radius: 4px;
+  box-shadow: 0 0 6px rgba(248, 208, 48, 0.5);
+}
+
+/* ============================================
+   Panel genérico (para menús)
+   ============================================ */
+.game-panel {
+  background: var(--bg-panel);
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  padding: 16px;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.game-panel-title {
+  font-family: var(--font-pixel);
+  font-size: var(--font-size-md);
+  color: var(--text-accent);
+  text-align: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* ============================================
+   Menú de opciones
+   ============================================ */
+.menu-option {
+  font-family: var(--font-pixel);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-option:hover,
+.menu-option.selected {
+  background: rgba(255, 204, 68, 0.1);
+  border-color: var(--text-accent);
+  color: var(--text-accent);
+}
+
+.menu-option .cursor {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.menu-option.selected .cursor {
+  opacity: 1;
+}
+
+/* ============================================
+   Barras de HP / XP
+   ============================================ */
+.hp-bar-container {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-dark);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.hp-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.hp-bar-fill.high { background: var(--hp-green); }
+.hp-bar-fill.medium { background: var(--hp-yellow); }
+.hp-bar-fill.low { background: var(--hp-red); }
+
+.xp-bar-container {
+  width: 100%;
+  height: 4px;
+  background: var(--bg-dark);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.xp-bar-fill {
+  height: 100%;
+  background: var(--xp-blue);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* ============================================
+   Tipo badge
+   ============================================ */
+.type-badge {
+  font-family: var(--font-pixel);
+  font-size: var(--font-size-xs);
+  padding: 2px 6px;
+  border-radius: 2px;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+}
+
+.type-badge.normal { background: var(--type-normal); }
+.type-badge.fire { background: var(--type-fire); }
+.type-badge.water { background: var(--type-water); }
+.type-badge.electric { background: var(--type-electric); }
+.type-badge.grass { background: var(--type-grass); }
+.type-badge.ice { background: var(--type-ice); }
+.type-badge.fighting { background: var(--type-fighting); }
+.type-badge.poison { background: var(--type-poison); }
+.type-badge.ground { background: var(--type-ground); }
+.type-badge.flying { background: var(--type-flying); }
+.type-badge.psychic { background: var(--type-psychic); }
+.type-badge.bug { background: var(--type-bug); }
+.type-badge.rock { background: var(--type-rock); }
+.type-badge.ghost { background: var(--type-ghost); }
+.type-badge.dragon { background: var(--type-dragon); }
+
+/* ============================================
+   Animaciones de daño y efectos
+   ============================================ */
+@keyframes damageFlash {
+  0%, 100% { opacity: 1; }
+  25% { opacity: 0.3; }
+  50% { opacity: 1; }
+  75% { opacity: 0.3; }
+}
+
+@keyframes floatUp {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-30px); opacity: 0; }
+}
+
+@keyframes shakeX {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 768px) {
+  .loading-title {
+    font-size: var(--font-size-lg);
+  }
+  
+  .loading-bar-container {
+    width: 150px;
+  }
+}
