@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="PokéRogue - Un roguelike de Pokémon jugable en el navegador con los 151 Pokémon de Gen 1, mazmorras procedurales, y combate por turnos." />
+  <title>PokéRogue — Pokémon Roguelike</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/pokemon-roguelike/assets/index-D_vYLqG4.js"></script>
+  <link rel="stylesheet" crossorigin href="/pokemon-roguelike/assets/index-CRkyKRgm.css">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+    <!-- Overlay UI para menús y diálogos -->
+    <div id="ui-overlay" class="hidden">
+      <div id="menu-container"></div>
+    </div>
+    <!-- Pantalla de carga -->
+    <div id="loading-screen">
+      <div class="loading-content">
+        <h1 class="loading-title">PokéRogue</h1>
+        <div class="loading-pokeball">
+          <div class="pokeball-top"></div>
+          <div class="pokeball-center"></div>
+          <div class="pokeball-bottom"></div>
+        </div>
+        <p class="loading-text">Cargando...</p>
+        <div class="loading-bar-container">
+          <div class="loading-bar" id="loading-bar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
