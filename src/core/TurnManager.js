@@ -141,9 +141,9 @@ export class TurnManager {
     if (this._playerId !== null && this._entities.has(this._playerId)) {
       results.playerResult = executeAction(this._playerId, playerAction);
 
-      // Consumir energía del jugador (100 puntos por acción)
+      // Consumir energía del jugador solo si la acción fue exitosa
       const playerData = this._entities.get(this._playerId);
-      if (playerData) {
+      if (playerData && results.playerResult && results.playerResult.success) {
         playerData.energy -= 100;
       }
     }

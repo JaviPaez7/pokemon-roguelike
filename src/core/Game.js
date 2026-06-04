@@ -406,16 +406,41 @@ export class Game {
    * @private
    */
   _processPlayerAction(action) {
-    this.stats.turnsPlayed++;
-
     const results = this.turnManager.processTurn(
       action,
       (entityId, act) => this.combat.executeEntityAction(entityId, act),
       (entityId) => this.combat.getEnemyAIAction(entityId)
     );
 
-    if (this.stats.turnsPlayed % 5 === 0) {
-      this.saveGameData();
+    if (results.playerResult && results.playerResult.success) {
+      this.stats.turnsPlayed++;
+
+      const fighter = this.entityManager.getComponent(this._playerId, 'fighter');
+      if (fighter && fighter.belly !== undefined) {
+        // Consumir tripa (0.2 por turno = 1 tripa cada 5 turnos)
+        fighter.belly = Math.max(0, fighter.belly - 0.2);
+
+        if (fighter.belly === 0) {
+          // Daño por inanición
+          fighter.hp = Math.max(0, fighter.hp - 1);
+          if (this.stats.turnsPlayed % 10 === 0) {
+            this.eventBus.emit('message', '¡Estás desfalleciendo de hambre!');
+          }
+          if (fighter.hp <= 0) {
+            this.changeState(GAME_STATES.GAME_OVER);
+          }
+        } else if (fighter.hp < fighter.maxHp) {
+          // Regeneración natural solo si hay tripa
+          if (this.stats.turnsPlayed % 4 === 0) {
+            fighter.hp = Math.min(fighter.maxHp, fighter.hp + 1);
+          }
+        }
+        this.entityManager.setComponent(this._playerId, 'fighter', fighter);
+      }
+
+      if (this.stats.turnsPlayed % 5 === 0) {
+        this.saveGameData();
+      }
     }
 
     this._updateCamera();
@@ -508,6 +533,8 @@ export class Game {
         types: info.types,
         hp: fighter.hp,
         maxHp: fighter.maxHp,
+        belly: fighter.belly,
+        maxBelly: fighter.maxBelly,
         attack: fighter.attack,
         defense: fighter.defense,
         spAtk: fighter.spAtk,

@@ -341,7 +341,9 @@ export class EntityManager {
       spAtk: spAtk,
       spDef: spDef,
       speed: speed,
-      statusEffects: []
+      statusEffects: [],
+      belly: 100,
+      maxBelly: 100
     });
 
     // Sprite (se carga asíncronamente después)

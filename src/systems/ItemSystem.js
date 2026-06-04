@@ -237,6 +237,32 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
       break;
     }
 
+    case 'food': {
+      if (fighter.belly === undefined) {
+        messages.push(`¡${pokemonInfo.name} no tiene hambre!`);
+        break;
+      }
+      
+      let maxBoost = itemData.maxBellyBonus || 0;
+      if (maxBoost > 0) {
+        fighter.maxBelly += maxBoost;
+        messages.push(`¡La tripa máxima de ${pokemonInfo.name} aumentó en ${maxBoost}!`);
+      }
+      
+      if (fighter.belly >= fighter.maxBelly && maxBoost === 0) {
+        messages.push(`¡La tripa de ${pokemonInfo.name} ya está llena!`);
+        break;
+      }
+      
+      const oldBelly = fighter.belly;
+      fighter.belly = Math.min(fighter.maxBelly, fighter.belly + itemData.value);
+      const restored = Math.floor(fighter.belly - oldBelly);
+      
+      messages.push(`¡${pokemonInfo.name} comió ${itemData.name} y recuperó ${restored} de tripa!`);
+      consumed = true;
+      break;
+    }
+
     default:
       messages.push('No se puede usar este objeto.');
   }

@@ -138,8 +138,15 @@ export class HUD {
       ctx.fillStyle = '#888';
       ctx.fillText(`${poke.hp}/${poke.maxHp}`, barX + barWidth + 2 - 44, barY - 1);
 
+      // Tripa (Solo para el líder)
+      if (poke.isLeader && poke.belly !== undefined) {
+        ctx.fillStyle = '#ffaa00';
+        const displayBelly = Math.ceil(poke.belly);
+        ctx.fillText(`Tripa: ${displayBelly}/${poke.maxBelly}`, barX, barY + barHeight + 4);
+      }
+
       // Barra de XP
-      const xpBarY = barY + 6;
+      const xpBarY = barY + 12;
       const xpBarHeight = 2;
       
       let xpProgress = 0;

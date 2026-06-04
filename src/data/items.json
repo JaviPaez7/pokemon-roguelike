@@ -290,5 +290,36 @@
     "description": "Sube 1 nivel al Pokémon",
     "sprite": "🍬",
     "spriteUrl": "/sprites/items/rare_candy.png"
+  },
+  {
+    "id": "apple",
+    "name": "Manzana",
+    "type": "food",
+    "value": 50,
+    "rarity": 0.3,
+    "description": "Restaura 50 de Tripa",
+    "sprite": "🍎",
+    "spriteUrl": ""
+  },
+  {
+    "id": "big_apple",
+    "name": "Manzana Grande",
+    "type": "food",
+    "value": 100,
+    "rarity": 0.1,
+    "description": "Restaura 100 de Tripa",
+    "sprite": "🍏",
+    "spriteUrl": ""
+  },
+  {
+    "id": "golden_apple",
+    "name": "Manzana Dorada",
+    "type": "food",
+    "value": 100,
+    "maxBellyBonus": 50,
+    "rarity": 0.02,
+    "description": "Llena la Tripa y expande su límite",
+    "sprite": "🌟",
+    "spriteUrl": ""
   }
 ]
