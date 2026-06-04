@@ -101,6 +101,17 @@ export class MovementSystem {
       };
     }
 
+    // ── 4.5. Verificar si hay trampas ──
+    if (tileMap.isTrap && tileMap.isTrap(targetX, targetY)) {
+      this._moveEntity(position, targetX, targetY);
+      return {
+        success: true,
+        type: 'trap',
+        x: targetX,
+        y: targetY
+      };
+    }
+
     // ── 5. Verificar si hay un objeto en el suelo ──
     const itemEntity = entityManager.getItemAt(targetX, targetY);
 

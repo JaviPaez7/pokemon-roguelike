@@ -662,7 +662,7 @@ export class DungeonGenerator {
           if (x === stairsPos.x && y === stairsPos.y) continue;
 
           if (RNG.getUniform() < density) {
-            tileMap.setTile(x, y, TILES.TRAP.id);
+            tileMap.setTile(x, y, TILES.TRAP_HIDDEN.id);
           }
         }
       }

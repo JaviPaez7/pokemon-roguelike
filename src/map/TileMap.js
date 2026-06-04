@@ -115,6 +115,17 @@ export class TileMap {
   }
 
   /**
+   * Comprueba si un tile es una trampa sin revelar.
+   * @param {number} x - Coordenada X
+   * @param {number} y - Coordenada Y
+   * @returns {boolean} true si el tile es trampa oculta
+   */
+  isTrap(x, y) {
+    if (!this.isInBounds(x, y)) return false;
+    return this.tiles[y][x] === TILES.TRAP_HIDDEN.id;
+  }
+
+  /**
    * Comprueba si un tile es transparente (permite el paso de visión/luz).
    * Usado por el sistema FOV para determinar qué bloquea la línea de visión.
    * 

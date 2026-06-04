@@ -15,10 +15,8 @@ export function triggerTrap(entityId, entityManager, tileMap, eventBus) {
   
   if (!info || !fighter || !pos) return;
 
-  // Cambiar el tile de la trampa a suelo normal para que no se vuelva a pisar, 
-  // o dejarla visible pero inactiva. En Pokémon Mundo Misterioso, las trampas 
-  // se revelan y pueden volver a pisarse, pero para simplificar, la consumiremos.
-  tileMap.setTile(pos.x, pos.y, TILES.FLOOR.id);
+  // Cambiar el tile de la trampa para que quede a la vista (pero inactiva)
+  tileMap.setTile(pos.x, pos.y, TILES.TRAP_REVEALED.id);
   eventBus.emit('message', `¡${info.name} pisó una trampa oculta!`);
 
   const trapTypes = ['poison', 'explosion', 'sleep', 'warp', 'grudge'];

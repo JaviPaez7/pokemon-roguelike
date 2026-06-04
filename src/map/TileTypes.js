@@ -74,9 +74,18 @@ export const TILES = {
     colors: { floor: '#1a3a5c', wall: '#0f2a4a' }
   },
 
-  /** Trampa oculta - se vuelve visible al pisarla (transitable) */
-  TRAP: {
+  /** Trampa oculta - se ve igual que el suelo, pero es una trampa */
+  TRAP_HIDDEN: {
     id: 5,
+    walkable: true,
+    transparent: true,
+    char: '.',
+    colors: { floor: '#4a3f5d', wall: '#3d3350' } // Igual que FLOOR
+  },
+
+  /** Trampa revelada - se vuelve visible al pisarla (transitable) */
+  TRAP_REVEALED: {
+    id: 7,
     walkable: true,
     transparent: true,
     char: '^',
