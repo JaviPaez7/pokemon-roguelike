@@ -22,9 +22,32 @@ export class HUD {
     this.animationFrame++;
     
     this.renderFloorInfo(ctx, gameState, canvasWidth);
-    this.renderPartyStatus(ctx, gameState, canvasWidth, canvasHeight);
-    this.renderControls(ctx, canvasWidth, canvasHeight);
     
+    // Estado del equipo (arriba a la izquierda)
+    const team = [];
+    if (gameState._playerId) {
+      team.push(gameState._playerId);
+      const partyIds = gameState.teamManager?.getParty() || [];
+      partyIds.forEach(id => {
+        if (id !== gameState._playerId && !team.includes(id)) {
+          team.push(id);
+        }
+      });
+    }
+
+    if (team.length > 0) {
+      this.renderPartyStatus(ctx, gameState, canvasWidth, canvasHeight);
+    }
+
+    // Controles (abajo derecha)
+    this.renderControls(ctx, canvasWidth, canvasHeight);
+
+    // Movimientos del jugador (abajo izquierda)
+    if (gameState._playerId) {
+      this.renderPlayerMoves(ctx, gameState, canvasWidth, canvasHeight);
+    }
+
+    // Minimapa (arriba derecha)
     if (this.showMinimap && gameState.tileMap) {
       this.renderMinimap(ctx, gameState, canvasWidth);
     }
@@ -194,6 +217,60 @@ export class HUD {
 
     for (let i = 0; i < controls.length; i++) {
       ctx.fillText(controls[i], x + 6, y + 4 + i * lineHeight);
+    }
+
+    ctx.restore();
+  }
+
+  /**
+   * HUD de movimientos del jugador (esquina inferior izquierda)
+   */
+  renderPlayerMoves(ctx, game, canvasWidth, canvasHeight) {
+    const info = game.entityManager.getComponent(game._playerId, 'pokemonInfo');
+    if (!info || !info.currentMoves) return;
+
+    const moves = info.currentMoves;
+    const selectedIdx = game._selectedMoveIndex || 0;
+
+    const padding = 8;
+    const lineHeight = 12;
+    const bgHeight = moves.length * lineHeight + 8;
+    const bgWidth = 140;
+    const x = padding;
+    const y = canvasHeight - bgHeight - padding;
+
+    ctx.save();
+
+    // Fondo del panel de movimientos
+    ctx.fillStyle = 'rgba(10, 10, 26, 0.7)';
+    ctx.fillRect(x, y, bgWidth, bgHeight);
+    
+    // Borde
+    ctx.strokeStyle = 'rgba(74, 74, 106, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, bgWidth, bgHeight);
+
+    ctx.font = '6px "Press Start 2P", monospace';
+    ctx.textBaseline = 'top';
+
+    for (let i = 0; i < moves.length; i++) {
+      const moveData = moves[i];
+      const moveDef = game.movesData.find(m => m.id === moveData.moveId);
+      if (!moveDef) continue;
+
+      const isSelected = i === selectedIdx;
+      
+      // Resaltar el seleccionado
+      if (isSelected) {
+        ctx.fillStyle = 'rgba(255, 200, 50, 0.3)';
+        ctx.fillRect(x + 2, y + 2 + i * lineHeight, bgWidth - 4, lineHeight);
+        ctx.fillStyle = '#ffcc44'; // Texto amarillo brillante
+      } else {
+        ctx.fillStyle = '#a0a0c8'; // Texto apagado
+      }
+
+      const text = `[${i + 1}] ${moveDef.name} (${moveData.currentPP}/${moveData.maxPP})`;
+      ctx.fillText(text, x + 6, y + 5 + i * lineHeight);
     }
 
     ctx.restore();
