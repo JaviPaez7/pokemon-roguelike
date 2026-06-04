@@ -41,7 +41,7 @@ const CELL_PADDING = 1;
  * Densidad de puntos de aparición de enemigos e items.
  * Expresados como probabilidad por tile de suelo válido.
  */
-const ENEMY_DENSITY = 0.04;
+const ENEMY_DENSITY = 0.08;
 const ITEM_DENSITY = 0.02;
 const TRAP_DENSITY = 0.01;
 

@@ -28,7 +28,7 @@ export function openPauseMenu(ui) {
     () => {
       ui.game.saveGameData();
       ui.showDialog('Partida guardada correctamente.', () => {
-        ui.game.changeState(GAME_STATES.TITLE);
+        setTimeout(() => ui.game.changeState(GAME_STATES.TITLE), 0);
       });
     }
   ];

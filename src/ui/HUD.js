@@ -47,17 +47,16 @@ export class HUD {
     ctx.lineWidth = 1;
     ctx.strokeRect(padding, padding, width, height);
 
-    // Texto del piso
+    // Título de la zona
     ctx.font = '8px "Press Start 2P", monospace';
-    ctx.fillStyle = COLORS.UI_TEXT;
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.textBaseline = 'top';
+    ctx.fillText(gameState.zoneName || 'Mazmorra', padding + 8, padding + 8);
     
-    const zoneName = gameState.zoneName || 'Mazmorra';
-    ctx.fillStyle = '#ffcc44';
-    ctx.fillText(`${zoneName}`, padding + 8, padding + 10);
-    ctx.fillStyle = COLORS.UI_TEXT;
-    ctx.fillText(`Piso ${gameState.currentFloor || 1}`, padding + 8, padding + 22);
+    // Piso
+    ctx.font = '6px "Press Start 2P", monospace';
+    ctx.fillStyle = '#ffcc00';
+    ctx.fillText(`Piso ${gameState.floor || 1}`, padding + 8, padding + 22);
 
     ctx.restore();
   }
@@ -166,7 +165,8 @@ export class HUD {
     const controls = [
       'WASD:Mover  Z:Atacar',
       'X:Items  C:Equipo',
-      'M:Mapa   Esc:Pausa'
+      'M:Mapa   Esc:Pausa',
+      '1-4:Usar Movimiento'
     ];
 
     const padding = 8;

@@ -93,12 +93,26 @@ export function openItemActionsMenu(ui) {
         ui.closeMenu();
         const enemyEntities = ui.game.entityManager.getEntitiesWithComponents('aiControlled');
         if (item.type === 'capture') {
-          if (enemyEntities.length > 0) {
-            ui.game.useInventoryItem(item.id, enemyEntities[0]);
+          const playerId = ui.game.getPlayerId();
+          const pPos = ui.game.entityManager.getComponent(playerId, 'position');
+          let targetId = null;
+          
+          if (pPos) {
+            targetId = enemyEntities.find(id => {
+              const pos = ui.game.entityManager.getComponent(id, 'position');
+              if (!pos) return false;
+              const dx = Math.abs(pos.x - pPos.x);
+              const dy = Math.abs(pos.y - pPos.y);
+              return dx <= 4 && dy <= 4 && ui.game.tileMap.getVisibility(pos.x, pos.y) > 0;
+            });
+          }
+          
+          if (targetId) {
+            ui.game.useInventoryItem(item.id, targetId);
           } else {
             ui.showDialog('No hay ningún Pokémon salvaje cerca para capturar.', () => openInventoryMenu(ui));
           }
-        } else {
+        } else if (item.type === 'escape') {
           ui.game.useInventoryItem(item.id, ui.game.getPlayerId());
         }
       } else {
