@@ -51,6 +51,7 @@ export class HUD {
     ctx.font = '8px "Press Start 2P", monospace';
     ctx.fillStyle = COLORS.UI_TEXT;
     ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
     
     const zoneName = gameState.zoneName || 'Mazmorra';
     ctx.fillStyle = '#ffcc44';
