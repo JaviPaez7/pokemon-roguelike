@@ -4,6 +4,7 @@
  */
 
 import { COLORS } from '../constants.js';
+import { getAbility, applyPreAttackAbilities, applyPostAttackAbilities } from './AbilitySystem.js';
 
 /**
  * Calcula el daño de un movimiento
@@ -110,6 +111,22 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
   // Variación aleatoria (85% - 100%)
   const randomFactor = 0.85 + Math.random() * 0.15;
   damage = Math.max(1, Math.floor(damage * randomFactor));
+
+  // --- Sistema de Habilidades (Abilities) ---
+  const attackerAbility = getAbility(attackerInfo);
+  const defenderAbility = getAbility(defenderInfo);
+
+  const abilityResult = applyPreAttackAbilities(
+    attackerAbility, attacker,
+    defenderAbility, defender,
+    move, damage, effectiveness
+  );
+
+  damage = Math.floor(abilityResult.damage);
+  effectiveness = abilityResult.effectiveness;
+  if (abilityResult.messages && abilityResult.messages.length > 0) {
+    result.messages.push(...abilityResult.messages);
+  }
 
   result.damage = damage;
   return result;
@@ -243,6 +260,16 @@ export function executeMove(params) {
         if (effectApplied && eventBus && move.effect !== 'heal_self' && move.effect !== 'recoil') {
           eventBus.emit('status_applied', { targetId: defenderId, effect: move.effect });
         }
+      }
+
+      // Efectos Post-Golpe por Habilidades (ej. Elec. Estática)
+      const postAbilityResult = applyPostAttackAbilities(
+        getAbility(attackerInfo), attackerFighter,
+        getAbility(defenderInfo), defenderFighter,
+        move
+      );
+      if (postAbilityResult.messages.length > 0) {
+        messages.push(...postAbilityResult.messages);
       }
     }
 

@@ -1,4 +1,5 @@
 import { TILES } from '../map/TileTypes.js';
+import { getAbility } from '../combat/AbilitySystem.js';
 
 /**
  * Activa una trampa sobre una entidad.
@@ -14,6 +15,12 @@ export function triggerTrap(entityId, entityManager, tileMap, eventBus) {
   const pos = entityManager.getComponent(entityId, 'position');
   
   if (!info || !fighter || !pos) return;
+
+  const ability = getAbility(info);
+  if (ability === 'Levitate' || ability === 'Flying_Type') {
+    eventBus.emit('message', `${info.name} flota sobre la trampa oculta sin activarla.`);
+    return;
+  }
 
   // Cambiar el tile de la trampa para que quede a la vista (pero inactiva)
   tileMap.setTile(pos.x, pos.y, TILES.TRAP_REVEALED.id);
