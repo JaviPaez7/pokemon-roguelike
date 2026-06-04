@@ -283,6 +283,7 @@ export function executeMove(params) {
       const sprite = entityManager.getComponent(defenderId, 'sprite');
       eventBus.emit('pokemon_fainted', { 
         entityId: defenderId, 
+        attackerId: attackerId,
         speciesId: defenderInfo.speciesId,
         pos: pos ? { x: pos.x, y: pos.y } : null,
         spriteUrl: sprite ? sprite.url : ''

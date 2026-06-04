@@ -23,7 +23,38 @@ export function setupGameEventListeners(game) {
         game.stats.pokemonDefeated++;
       }
       game.turnManager.removeEntity(data.entityId);
-      game.entityManager.destroyEntity(data.entityId);
+
+      // Reclutamiento Post-Combate
+      const party = game.entityManager.getEntitiesWithComponents('partyMember');
+      if (data.attackerId === game._playerId && Math.random() < 0.15 && party.length < 4) {
+        const targetInfo = game.entityManager.getComponent(data.entityId, 'pokemonInfo');
+        const targetFighter = game.entityManager.getComponent(data.entityId, 'fighter');
+        
+        if (targetInfo && targetFighter) {
+          game.entityManager.setComponent(data.entityId, 'partyMember', {
+            slot: party.length,
+            isLeader: false
+          });
+          
+          const ai = game.entityManager.getComponent(data.entityId, 'aiControlled') || {};
+          ai.behavior = 'follower';
+          game.entityManager.setComponent(data.entityId, 'aiControlled', ai);
+
+          // Restaurar PS del nuevo aliado
+          targetFighter.hp = Math.floor(targetFighter.maxHp * 0.5);
+
+          game.stats.pokemonCaptured++;
+          
+          game.eventBus.emit('show_dialog', { text: `¡El ${targetInfo.name} enemigo está impresionado por tu fuerza!\n\n¡${targetInfo.name} se ha unido a tu equipo!` });
+          game.eventBus.emit('message', { text: `¡${targetInfo.name} se unió al equipo!`, color: '#00ffcc' });
+          game.saveGameData();
+        } else {
+          game.entityManager.destroyEntity(data.entityId);
+        }
+      } else {
+        game.entityManager.destroyEntity(data.entityId);
+      }
+      
       game.needsRender = true;
     }
   });
