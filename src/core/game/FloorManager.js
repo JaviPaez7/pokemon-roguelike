@@ -147,7 +147,6 @@ export class FloorManager {
 
     const zone = this.getZoneConfig();
     if (zone) {
-      game.zoneName = zone.name;
       if (game.uiManager && game.uiManager.music) {
         game.uiManager.music.playZone(zone.name);
       }
