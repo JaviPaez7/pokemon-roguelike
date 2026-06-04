@@ -1,6 +1,7 @@
 import { MAP_WIDTH, MAP_HEIGHT } from '../../constants.js';
 import { spawnItems } from '../../systems/ItemSystem.js';
 import { triggerFloorEvent } from '../../systems/FloorEvents.js';
+import { spawnTraps } from '../../systems/TrapSystem.js';
 
 /**
  * Generación de pisos, spawn de enemigos y pre-carga de sprites.
@@ -35,6 +36,10 @@ export class FloorManager {
     const maxItems = zone ? zone.itemsPerFloor[1] : 5;
     const count = minItems + Math.floor(Math.random() * (maxItems - minItems + 1));
     spawnItems(game._itemPoints, count, game.itemsData, game.entityManager);
+
+    // Spawn traps (2 a 4 trampas por piso)
+    const trapCount = 2 + Math.floor(Math.random() * 3);
+    spawnTraps(game._itemPoints, trapCount, game.entityManager); // Usamos itemPoints (suelo libre)
 
     if (game.weatherSystem) {
       game.weatherSystem.generateFloorWeather(game);

@@ -233,6 +233,24 @@ export class EntityManager {
     return null;
   }
 
+  /**
+   * Obtener la trampa (trap) en una posición específica.
+   * @param {number} x - Coordenada X
+   * @param {number} y - Coordenada Y
+   * @returns {number|null} ID de la entidad trampa, o null
+   */
+  getTrapAt(x, y) {
+    for (const [entityId, pos] of this._components.position) {
+      if (pos.x === x && pos.y === y && this._activeEntities.has(entityId)) {
+        if (this._components.trap.has(entityId)) {
+          return entityId;
+        }
+      }
+    }
+    return null;
+  }
+
+
   // ─── Fábricas de entidades preconfiguradas ────────────────────────────────
 
   /**
@@ -403,6 +421,38 @@ export class EntityManager {
       url: spriteUrl || '',
       image: null,
       loaded: false
+    });
+
+    return id;
+  }
+
+  /**
+   * Crear una entidad trampa en el suelo.
+   *
+   * @param {string} type - Tipo de trampa ('poison', 'sleep', etc.)
+   * @param {number} x - Posición X
+   * @param {number} y - Posición Y
+   * @param {boolean} isHidden - Si la trampa empieza oculta
+   * @returns {number} ID de la entidad creada
+   */
+  createTrapEntity(type, x, y, isHidden = true) {
+    const id = this.createEntity();
+
+    // Posición
+    this.setComponent(id, 'position', {
+      x: x,
+      y: y,
+      facing: 'down',
+      prevX: x,
+      prevY: y,
+      moveStartTime: 0
+    });
+
+    // Datos de la trampa
+    this.setComponent(id, 'trap', {
+      type: type,
+      isHidden: isHidden,
+      uses: 1
     });
 
     return id;

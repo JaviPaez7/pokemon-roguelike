@@ -97,14 +97,16 @@ export class CombatHandler {
               itemEntity: result.itemEntity
             });
           }
-          if (result.isTrap) {
-            triggerTrap(entityId, game.entityManager, game.tileMap, game.eventBus);
+          if (result.isTrap && result.trapEntity) {
+            const msgs = triggerTrap(entityId, result.trapEntity, game.entityManager, game.tileMap);
+            for (const msg of msgs) game.eventBus.emit('message', msg);
           }
           return result;
         }
 
-        if (result.type === 'trap') {
-          triggerTrap(entityId, game.entityManager, game.tileMap, game.eventBus);
+        if (result.type === 'trap' && result.trapEntity) {
+          const msgs = triggerTrap(entityId, result.trapEntity, game.entityManager, game.tileMap);
+          for (const msg of msgs) game.eventBus.emit('message', msg);
           return result;
         }
 

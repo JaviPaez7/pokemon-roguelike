@@ -13,6 +13,7 @@
  * - aiControlled: Datos de comportamiento para entidades controladas por IA
  * - partyMember: Información de pertenencia al equipo del jugador
  * - itemDrop:    Datos de objeto en el suelo
+ * - trap:        Datos de trampa en el suelo
  * - sprite:      Datos de renderizado visual
  */
 
@@ -76,6 +77,12 @@
  *   quantity: number    // Cantidad
  * }
  *
+ * trap: {
+ *   type: string,       // Tipo: 'poison', 'sleep', 'explosion', 'warp', 'sticky'
+ *   isHidden: boolean,  // Si está oculta (true) o revelada (false)
+ *   uses: number        // Usos restantes
+ * }
+ *
  * sprite: {
  *   url: string,        // URL/ruta de la imagen del sprite
  *   image: Image|null,  // Objeto Image cargado (null hasta que se cargue)
@@ -101,6 +108,9 @@ export function createComponentStore() {
 
     /** @type {Map<number, {itemId: string, quantity: number}>} */
     itemDrop: new Map(),
+
+    /** @type {Map<number, {type: string, isHidden: boolean, uses: number}>} */
+    trap: new Map(),
 
     /** @type {Map<number, {url: string, image: Image|null, loaded: boolean}>} */
     sprite: new Map()

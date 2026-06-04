@@ -188,6 +188,8 @@ export class EntityRenderer {
         this._dibujarPokemon(ctx, entityId, entityManager, camera, pos);
       } else if (entityManager.hasComponent(entityId, 'itemDrop')) {
         this._dibujarItem(ctx, entityId, entityManager, camera, pos, itemsData);
+      } else if (entityManager.hasComponent(entityId, 'trap')) {
+        this._dibujarTrap(ctx, entityId, entityManager, camera, pos);
       }
     }
 
@@ -561,6 +563,48 @@ export class EntityRenderer {
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(centroX, centroY, radio, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  /**
+   * Dibuja una trampa en el suelo si ha sido revelada.
+   * 
+   * @param {CanvasRenderingContext2D} ctx - Contexto del canvas
+   * @param {number} entityId - ID de la entidad
+   * @param {Object} entityManager - Gestor de entidades ECS
+   * @param {import('./Camera.js').Camera} camera - Cámara actual
+   * @param {Object} pos - Componente de posición {x, y}
+   * @private
+   */
+  _dibujarTrap(ctx, entityId, entityManager, camera, pos) {
+    const trap = entityManager.getComponent(entityId, 'trap');
+    if (!trap || trap.isHidden) return; // No dibujar si está oculta
+
+    const tileSize = camera.tileSize;
+    const screenPos = camera.worldToScreen(pos.x, pos.y);
+
+    const centroX = screenPos.x + tileSize / 2;
+    const centroY = screenPos.y + tileSize / 2;
+
+    // Dibujar una base grisácea/metálica
+    ctx.fillStyle = '#7f8c8d';
+    ctx.beginPath();
+    ctx.arc(centroX, centroY, tileSize * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#2c3e50';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Dibujar una 'X' roja o símbolo dentro
+    ctx.strokeStyle = '#c0392b';
+    ctx.lineWidth = 2;
+    const r = tileSize * 0.2;
+    ctx.beginPath();
+    ctx.moveTo(centroX - r, centroY - r);
+    ctx.lineTo(centroX + r, centroY + r);
+    ctx.moveTo(centroX + r, centroY - r);
+    ctx.lineTo(centroX - r, centroY + r);
     ctx.stroke();
   }
 }

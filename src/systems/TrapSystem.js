@@ -1,99 +1,133 @@
-import { TILES } from '../map/TileTypes.js';
+/**
+ * TrapSystem.js
+ * 
+ * Sistema que gestiona las trampas en las mazmorras.
+ * Define qué tipos de trampa existen y qué efectos tienen al pisarse.
+ */
+
+export const TRAP_TYPES = ['poison', 'sleep', 'explosion', 'warp', 'sticky'];
 
 /**
- * Activa una trampa sobre una entidad.
- * 
- * @param {number} entityId - ID de la entidad
- * @param {Object} entityManager - Gestor de entidades
- * @param {Object} tileMap - Mapa de tiles
- * @param {Object} eventBus - Bus de eventos
+ * Genera trampas aleatorias en el piso.
+ * @param {Array} points - Posiciones válidas [{x, y}]
+ * @param {number} count - Número de trampas a colocar
+ * @param {Object} entityManager - El EntityManager
  */
-export function triggerTrap(entityId, entityManager, tileMap, eventBus) {
-  const info = entityManager.getComponent(entityId, 'pokemonInfo');
-  const fighter = entityManager.getComponent(entityId, 'fighter');
-  const pos = entityManager.getComponent(entityId, 'position');
+export function spawnTraps(points, count, entityManager) {
+  const availablePoints = [...points];
   
-  if (!info || !fighter || !pos) return;
+  // Barajar
+  for (let i = availablePoints.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [availablePoints[i], availablePoints[j]] = [availablePoints[j], availablePoints[i]];
+  }
 
-  // Cambiar el tile de la trampa para que quede a la vista (pero inactiva)
-  tileMap.setTile(pos.x, pos.y, TILES.TRAP_REVEALED.id);
-  eventBus.emit('message', `¡${info.name} pisó una trampa oculta!`);
+  const actualCount = Math.min(count, availablePoints.length);
 
-  const trapTypes = ['poison', 'explosion', 'sleep', 'warp', 'grudge'];
-  const trapType = trapTypes[Math.floor(Math.random() * trapTypes.length)];
+  for (let i = 0; i < actualCount; i++) {
+    const point = availablePoints[i];
+    const type = TRAP_TYPES[Math.floor(Math.random() * TRAP_TYPES.length)];
+    entityManager.createTrapEntity(type, point.x, point.y, true);
+  }
+}
 
-  switch (trapType) {
+/**
+ * Activa una trampa sobre una entidad objetivo.
+ * @param {number} targetEntityId - Entidad que pisa la trampa
+ * @param {number} trapEntityId - Entidad de la trampa
+ * @param {Object} entityManager - El EntityManager
+ * @param {Object} tileMap - El mapa actual (útil para warp)
+ * @returns {Array<string>} Mensajes para el log de combate
+ */
+export function triggerTrap(targetEntityId, trapEntityId, entityManager, tileMap) {
+  const messages = [];
+  const trap = entityManager.getComponent(trapEntityId, 'trap');
+  const targetInfo = entityManager.getComponent(targetEntityId, 'pokemonInfo');
+  const targetFighter = entityManager.getComponent(targetEntityId, 'fighter');
+
+  if (!trap || !targetInfo || !targetFighter) return messages;
+
+  // Revelar la trampa
+  trap.isHidden = false;
+  entityManager.setComponent(trapEntityId, 'trap', trap);
+  
+  messages.push(`¡${targetInfo.name} ha pisado una trampa!`);
+
+  // Inicializar statusEffects si no existe
+  if (!targetFighter.statusEffects) {
+    targetFighter.statusEffects = [];
+  }
+
+  // Aplicar efecto de la trampa
+  switch (trap.type) {
     case 'poison':
-      if (!fighter.statusEffects.some(s => s.type === 'poison') && 
-          !info.types.includes('poison') && !info.types.includes('steel')) {
-        fighter.statusEffects.push({ type: 'poison', turnsLeft: -1 });
-        eventBus.emit('message', `¡La trampa soltó púas tóxicas! ${info.name} fue envenenado.`);
+      if (!targetFighter.statusEffects.some(s => s.type === 'poison') && 
+          !targetInfo.types.includes('poison') && !targetInfo.types.includes('steel')) {
+        targetFighter.statusEffects.push({ type: 'poison', turnsLeft: -1 });
+        messages.push(`¡La trampa envenenó a ${targetInfo.name}!`);
       } else {
-        eventBus.emit('message', `La trampa soltó gas venenoso, pero no tuvo efecto.`);
-      }
-      break;
-
-    case 'explosion':
-      const damage = Math.max(1, Math.floor(fighter.maxHp / 2));
-      fighter.hp = Math.max(0, fighter.hp - damage);
-      eventBus.emit('message', `¡BOOM! Una explosión causó ${damage} PS de daño a ${info.name}.`);
-      eventBus.emit('damage_dealt', { defenderId: entityId, damage, isCritical: false });
-      
-      if (fighter.hp <= 0) {
-        eventBus.emit('message', `¡${info.name} se debilitó por la explosión!`);
-        const sprite = entityManager.getComponent(entityId, 'sprite');
-        eventBus.emit('pokemon_fainted', {
-          entityId,
-          speciesId: info.speciesId,
-          pos: { x: pos.x, y: pos.y },
-          spriteUrl: sprite ? sprite.url : ''
-        });
+        messages.push(`¡Pero no tuvo ningún efecto en ${targetInfo.name}!`);
       }
       break;
 
     case 'sleep':
-      if (!fighter.statusEffects.some(s => s.type === 'sleep')) {
-        fighter.statusEffects.push({ type: 'sleep', turnsLeft: 3 });
-        eventBus.emit('message', `¡Una espora somnífera durmió a ${info.name}!`);
+      if (!targetFighter.statusEffects.some(s => s.type === 'sleep')) {
+        targetFighter.statusEffects.push({ type: 'sleep', turnsLeft: Math.floor(Math.random() * 3) + 2 });
+        messages.push(`¡El gas somnífero durmió a ${targetInfo.name}!`);
+      } else {
+        messages.push(`¡Pero no tuvo ningún efecto!`);
       }
+      break;
+
+    case 'explosion':
+      const damage = Math.max(1, Math.floor(targetFighter.maxHp * 0.25)); // 25% del HP máximo
+      targetFighter.hp = Math.max(0, targetFighter.hp - damage);
+      messages.push(`¡BOOM! ¡La trampa explotó causando ${damage} de daño!`);
+      
+      // Emitir evento para efectos visuales (se capturaría en Renderer/EventBus si queremos)
+      // Como aquí no tenemos eventBus directo, dejamos que el mensaje hable por sí solo.
       break;
 
     case 'warp':
-      // Buscar un tile de suelo al azar
-      let targetX, targetY;
-      let maxTries = 100;
-      const width = tileMap.getWidth ? tileMap.getWidth() : tileMap.width;
-      const height = tileMap.getHeight ? tileMap.getHeight() : tileMap.height;
-      
-      while (maxTries > 0) {
-        const rx = Math.floor(Math.random() * width);
-        const ry = Math.floor(Math.random() * height);
-        if (tileMap.isWalkable(rx, ry) && !entityManager.getEntityAt(rx, ry)) {
-          targetX = rx;
-          targetY = ry;
-          break;
+      if (tileMap && tileMap.rooms && tileMap.rooms.length > 0) {
+        // Elegir una habitación aleatoria
+        const randomRoom = tileMap.rooms[Math.floor(Math.random() * tileMap.rooms.length)];
+        // Posición aleatoria dentro de la habitación
+        const newX = randomRoom.x + Math.floor(Math.random() * randomRoom.w);
+        const newY = randomRoom.y + Math.floor(Math.random() * randomRoom.h);
+        
+        // Comprobar si está libre (podría chocar con otro Pokémon, por simplicidad asumimos que está libre)
+        const pos = entityManager.getComponent(targetEntityId, 'position');
+        if (pos) {
+          pos.x = newX;
+          pos.y = newY;
+          pos.prevX = newX;
+          pos.prevY = newY; // evitar lerp feo
+          entityManager.setComponent(targetEntityId, 'position', pos);
+          messages.push(`¡${targetInfo.name} ha sido teletransportado!`);
         }
-        maxTries--;
       }
+      break;
 
-      if (targetX !== undefined) {
-        pos.prevX = pos.x;
-        pos.prevY = pos.y;
-        pos.moveStartTime = performance.now();
-        pos.x = targetX;
-        pos.y = targetY;
-        eventBus.emit('message', `¡${info.name} fue teletransportado a otro lugar!`);
-      } else {
-        eventBus.emit('message', `¡La trampa de teletransporte falló!`);
-      }
+    case 'sticky':
+      if (!targetFighter.statModifiers) targetFighter.statModifiers = {};
+      targetFighter.statModifiers.speed = (targetFighter.statModifiers.speed || 0) - 1;
+      messages.push(`¡Un moco pegajoso bajó la velocidad de ${targetInfo.name}!`);
       break;
-      
-    case 'grudge':
-      // PP a 0 del primer ataque
-      if (info.currentMoves && info.currentMoves.length > 0) {
-        info.currentMoves[0].currentPP = 0;
-        eventBus.emit('message', `¡La trampa selló el movimiento ${info.currentMoves[0].moveId}!`);
-      }
-      break;
+
+    default:
+      messages.push(`¡Pero la trampa falló!`);
   }
+
+  // Guardar cambios del fighter
+  entityManager.setComponent(targetEntityId, 'fighter', targetFighter);
+
+  // Reducir usos
+  trap.uses--;
+  if (trap.uses <= 0) {
+    entityManager.destroyEntity(trapEntityId);
+    messages.push(`La trampa se rompió.`);
+  }
+
+  return messages;
 }
