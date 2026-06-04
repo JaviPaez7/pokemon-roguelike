@@ -17,8 +17,8 @@ export function saveGame(gameState) {
     const saveData = {
       version: SAVE_VERSION,
       timestamp: Date.now(),
-      seed: gameState.seed,
-      currentFloor: gameState.currentFloor,
+      seed: gameState._seed || Date.now(),
+      currentFloor: typeof gameState.getCurrentFloor === 'function' ? gameState.getCurrentFloor() : gameState._currentFloor,
       party: gameState.party.map(p => ({
         speciesId: p.speciesId,
         name: p.name,
