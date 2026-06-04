@@ -248,6 +248,7 @@ export class CombatHandler {
 
     if (combatResult.defenderFainted) {
       if (attackerId === game._playerId || game.entityManager.hasComponent(attackerId, 'partyMember')) {
+        game.stats.pokemonDefeated++;
         const baseExp = defenderInfo.baseExp || 50;
         const xpGained = Math.max(1, Math.floor((baseExp * defenderInfo.level) / 5));
 

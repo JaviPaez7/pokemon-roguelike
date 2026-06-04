@@ -1,4 +1,5 @@
 import { GAME_STATES } from '../../constants.js';
+import { openStatsMenu } from './StatsMenu.js';
 
 /** @param {import('../UIManager.js').UIManager} ui */
 export function openTitleScreen(ui) {
@@ -22,6 +23,9 @@ export function openTitleScreen(ui) {
           <span class="cursor">▶</span> Continuar Run
         </div>
         <div class="menu-option" data-index="2">
+          <span class="cursor">▶</span> Estadísticas
+        </div>
+        <div class="menu-option" data-index="3">
           <span class="cursor">▶</span> Controles
         </div>
       </div>
@@ -37,6 +41,7 @@ export function openTitleScreen(ui) {
         ui.game.loadSavedGame();
       }
     },
+    () => openStatsMenu(ui, 'title'),
     () => showControlsDialog(ui)
   ];
   ui.selectedIndex = 0;
