@@ -107,7 +107,7 @@ export class DungeonGenerator {
 
     // === PASO 10: Generación de agua ===
     this._generarLagos(rooms, tileMap, playerStart, stairsPos);
-
+    tileMap.rooms = rooms;
     return {
       tileMap,
       rooms,
@@ -588,7 +588,7 @@ export class DungeonGenerator {
           // Probabilidad de ser punto de aparición
           let density = ENEMY_DENSITY;
           if (room.type === 'rest') density = 0;
-          if (room.type === 'monster_house') density = ENEMY_DENSITY * 6;
+          if (room.type === 'monster_house') density = 0; // Se generan cuando entras
 
           if (density > 0 && RNG.getUniform() < density) {
             puntos.push({ x, y });
@@ -627,7 +627,7 @@ export class DungeonGenerator {
           // Probabilidad de ser punto de item
           let density = ITEM_DENSITY;
           if (room.type === 'treasure') density = ITEM_DENSITY * 8;
-          if (room.type === 'monster_house') density = ITEM_DENSITY * 4;
+          if (room.type === 'monster_house') density = ITEM_DENSITY * 6;
 
           if (density > 0 && RNG.getUniform() < density) {
             puntos.push({ x, y });

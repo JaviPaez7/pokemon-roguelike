@@ -47,6 +47,12 @@ export class TileMap {
      */
     this.visibility = [];
 
+    /**
+     * Habitaciones de la mazmorra.
+     * @type {Array<Object>}
+     */
+    this.rooms = [];
+
     // Inicializar ambos arrays
     for (let y = 0; y < height; y++) {
       this.tiles[y] = new Array(width).fill(TILES.WALL.id);

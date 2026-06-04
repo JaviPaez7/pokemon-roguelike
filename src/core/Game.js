@@ -449,6 +449,18 @@ export class Game {
         if (this.playerPathHistory.length > 10) {
           this.playerPathHistory.pop();
         }
+
+        // Comprobar si entramos en un nido de monstruos
+        if (this.tileMap && this.tileMap.rooms) {
+          const currentRoom = this.tileMap.rooms.find(r => 
+            pos.x >= r.x && pos.x < r.x + r.w &&
+            pos.y >= r.y && pos.y < r.y + r.h
+          );
+
+          if (currentRoom && currentRoom.type === 'monster_house' && !currentRoom.triggered) {
+            this._triggerMonsterHouse(currentRoom);
+          }
+        }
       }
 
       if (this.stats.turnsPlayed % 5 === 0) {
@@ -458,6 +470,59 @@ export class Game {
 
     this._updateCamera();
     this._updateFOV();
+    this.needsRender = true;
+  }
+
+  /**
+   * Invoca enemigos aleatorios en una sala de nido de monstruos
+   * @param {Object} room - Habitación del nido
+   */
+  _triggerMonsterHouse(room) {
+    room.triggered = true;
+    this.eventBus.emit('message', '¡ES UN NIDO DE MONSTRUOS!');
+    
+    // Reproducir sfx si lo hubiera (opcional)
+    
+    // Spawnear 6 a 10 enemigos
+    const numEnemies = 6 + Math.floor(Math.random() * 5);
+    let spawned = 0;
+    
+    // Crear lista de posiciones válidas en la habitación
+    const validPositions = [];
+    for (let y = room.y + 1; y < room.y + room.h - 1; y++) {
+      for (let x = room.x + 1; x < room.x + room.w - 1; x++) {
+        // Asegurarse de que es caminable y está vacío
+        if (this.tileMap.getTile(x, y).id === 1) { // 1 = FLOOR
+          if (!this.entityManager.getEntityAt(x, y)) {
+            validPositions.push({ x, y });
+          }
+        }
+      }
+    }
+    
+    // Barajar posiciones
+    for (let i = validPositions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [validPositions[i], validPositions[j]] = [validPositions[j], validPositions[i]];
+    }
+    
+    // Instanciar enemigos
+    for (let i = 0; i < Math.min(numEnemies, validPositions.length); i++) {
+      const pos = validPositions[i];
+      // Elegir un pokemon aleatorio que no sea legendario (id < 144)
+      const validPokemon = this.pokemonData.filter(p => p.id < 144);
+      const randMon = validPokemon[Math.floor(Math.random() * validPokemon.length)];
+      
+      const level = Math.max(1, Math.min(100, Math.floor(this._currentFloor * 1.5) + Math.floor(Math.random() * 3)));
+      const enemyId = this.entityManager.createPokemon(randMon.id, level, pos.x, pos.y, true);
+      
+      const fighter = this.entityManager.getComponent(enemyId, 'fighter');
+      this.turnManager.addEntity(enemyId, fighter ? fighter.speed : 50, false);
+
+      spawned++;
+    }
+    
+    console.log(`[Game] Nido de monstruos activado: ${spawned} enemigos generados.`);
     this.needsRender = true;
   }
 
