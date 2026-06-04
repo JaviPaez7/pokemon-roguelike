@@ -43,10 +43,20 @@ export class CombatHandler {
           return { success: false, type: 'blocked' };
         }
 
+        const posComp = game.entityManager.getComponent(entityId, 'position');
+        const oldX = posComp ? posComp.x : 0;
+        const oldY = posComp ? posComp.y : 0;
+
         const result = game.movementSystem.tryMove(
           entityId, action.dx, action.dy,
           game.tileMap, game.entityManager
         );
+
+        if (result.success && entityId === game._playerId) {
+          if (posComp && (posComp.x !== oldX || posComp.y !== oldY)) {
+            this._updatePartyFollowers({ x: oldX, y: oldY });
+          }
+        }
 
         if (result.type === 'bump_attack') {
           return this.handleCombat(entityId, result.targetEntity);
