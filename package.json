@@ -14,7 +14,6 @@
     "vite": "^8.0.12"
   },
   "dependencies": {
-    "puppeteer": "^25.1.0",
     "rot-js": "^2.2.1"
   }
 }

@@ -274,8 +274,8 @@ export class DungeonGenerator {
   _asignarTiposEspeciales(rooms) {
     if (rooms.length <= 2) return;
     
-    // 10% de probabilidad de tener una monster house
-    if (RNG.getUniform() < 0.10) {
+    // 15% de probabilidad de tener una monster house
+    if (RNG.getUniform() < 0.20) {
       const idx = 1 + Math.floor(RNG.getUniform() * (rooms.length - 1));
       rooms[idx].type = 'monster_house';
     }
@@ -288,8 +288,8 @@ export class DungeonGenerator {
       }
     }
 
-    // 15% de probabilidad de tener una habitación de descanso
-    if (RNG.getUniform() < 0.15) {
+    // 20% de probabilidad de tener una habitación de descanso
+    if (RNG.getUniform() < 0.20) {
       const idx = 1 + Math.floor(RNG.getUniform() * (rooms.length - 1));
       if (rooms[idx].type === 'normal') {
         rooms[idx].type = 'rest';

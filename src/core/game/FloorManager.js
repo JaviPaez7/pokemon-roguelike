@@ -31,7 +31,6 @@ export class FloorManager {
 
     game.tileMap.setTile(game._stairsPos.x, game._stairsPos.y, 3);
 
-    const zone = this.getZoneConfig();
     const minItems = zone ? zone.itemsPerFloor[0] : 3;
     const maxItems = zone ? zone.itemsPerFloor[1] : 5;
     const count = minItems + Math.floor(Math.random() * (maxItems - minItems + 1));
