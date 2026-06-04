@@ -73,6 +73,15 @@ export const TILES = {
     char: '~',
     colors: { floor: '#1a3a5c', wall: '#0f2a4a' }
   },
+
+  /** Trampa oculta - se vuelve visible al pisarla (transitable) */
+  TRAP: {
+    id: 5,
+    walkable: true,
+    transparent: true,
+    char: '^',
+    colors: { floor: '#e74c3c', wall: '#c0392b' }
+  },
 };
 
 /**

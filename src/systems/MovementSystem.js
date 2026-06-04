@@ -68,6 +68,14 @@ export class MovementSystem {
       return { success: false, type: 'blocked' };
     }
 
+    // ── 2.5 Verificar corte de esquinas para diagonales ──
+    if (Math.abs(dx) === 1 && Math.abs(dy) === 1) {
+      if (!tileMap.isWalkable(position.x + dx, position.y) || 
+          !tileMap.isWalkable(position.x, position.y + dy)) {
+        return { success: false, type: 'blocked' };
+      }
+    }
+
     // ── 3. Verificar si hay otra entidad (Pokémon) en la posición ──
     const occupant = entityManager.getEntityAt(targetX, targetY, false);
     if (occupant !== null && occupant !== entityId) {
@@ -96,7 +104,11 @@ export class MovementSystem {
     // ── 5. Verificar si hay un objeto en el suelo ──
     const itemEntity = entityManager.getItemAt(targetX, targetY);
 
-    // ── 6. Ejecutar el movimiento ──
+    // ── 6. Verificar si pisamos una trampa (id 5) ──
+    const tileId = tileMap.getTile(targetX, targetY).id;
+    const isTrap = (tileId === 5);
+
+    // ── 7. Ejecutar el movimiento ──
     this._moveEntity(position, targetX, targetY);
 
     // Si hay un objeto, señalarlo en el resultado (pero nos movemos de todas formas)
@@ -105,6 +117,16 @@ export class MovementSystem {
         success: true,
         type: 'pickup',
         itemEntity: itemEntity,
+        isTrap: isTrap,
+        x: targetX,
+        y: targetY
+      };
+    }
+
+    if (isTrap) {
+      return {
+        success: true,
+        type: 'trap',
         x: targetX,
         y: targetY
       };
@@ -140,6 +162,9 @@ export class MovementSystem {
    * @private
    */
   _moveEntity(position, newX, newY) {
+    position.prevX = position.x;
+    position.prevY = position.y;
+    position.moveStartTime = performance.now();
     position.x = newX;
     position.y = newY;
   }
@@ -184,7 +209,11 @@ export class MovementSystem {
       { dx: 0, dy: -1 },  // Arriba
       { dx: 0, dy: 1 },   // Abajo
       { dx: -1, dy: 0 },  // Izquierda
-      { dx: 1, dy: 0 }    // Derecha
+      { dx: 1, dy: 0 },   // Derecha
+      { dx: -1, dy: -1 }, // Arriba-Izquierda
+      { dx: 1, dy: -1 },  // Arriba-Derecha
+      { dx: -1, dy: 1 },  // Abajo-Izquierda
+      { dx: 1, dy: 1 }    // Abajo-Derecha
     ];
 
     const neighbors = [];
@@ -199,6 +228,12 @@ export class MovementSystem {
 
       // Verificar si es transitable
       if (tileMap.isWalkable(nx, ny)) {
+        // Verificar corte de esquinas
+        if (Math.abs(dir.dx) === 1 && Math.abs(dir.dy) === 1) {
+          if (!tileMap.isWalkable(x + dir.dx, y) || !tileMap.isWalkable(x, y + dir.dy)) {
+            continue;
+          }
+        }
         neighbors.push({ x: nx, y: ny, dx: dir.dx, dy: dir.dy });
       }
     }

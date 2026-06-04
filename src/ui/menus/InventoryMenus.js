@@ -17,11 +17,14 @@ export function openInventoryMenu(ui) {
     inv.forEach((slot, idx) => {
       const item = ui.game.itemsData.find(i => i.id === slot.itemId);
       const name = item ? item.name : slot.itemId;
-      const icon = item ? item.sprite || '📦' : '📦';
+      const iconText = item ? item.sprite || '📦' : '📦';
+      const iconHtml = (item && item.spriteUrl) 
+        ? `<img src="${item.spriteUrl}" style="width: 16px; height: 16px; vertical-align: middle; image-rendering: pixelated;" alt="${name}"/>` 
+        : iconText;
       html += `
         <div class="menu-option" data-index="${idx}">
           <span class="cursor">▶</span>
-          <span style="margin-right: 8px;">${icon}</span>
+          <span style="margin-right: 8px;">${iconHtml}</span>
           <span style="flex-grow: 1;">${name}</span>
           <span style="color: var(--text-accent);">x${slot.quantity}</span>
         </div>

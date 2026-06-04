@@ -1,6 +1,5 @@
 import { MAP_WIDTH, MAP_HEIGHT } from '../../constants.js';
 import { spawnItems } from '../../systems/ItemSystem.js';
-import { genStartPos } from './genStartPos.js';
 
 /**
  * Generación de pisos, spawn de enemigos y pre-carga de sprites.
@@ -25,6 +24,7 @@ export class FloorManager {
     game._stairsPos = genResult.stairsPos;
     game._spawnPoints = genResult.spawnPoints;
     game._itemPoints = genResult.itemPoints;
+    game._playerStart = genResult.playerStart;
 
     game.tileMap.setTile(game._stairsPos.x, game._stairsPos.y, 3);
 
@@ -89,8 +89,14 @@ export class FloorManager {
     }
   }
 
-  changeFloor(direction) {
+  async changeFloor(direction) {
     const game = this.game;
+
+    game.inputHandler.enabled = false;
+
+    if (game.renderer) {
+      await game.renderer.startFadeOut(300);
+    }
 
     if (direction === 'down') {
       game._currentFloor++;
@@ -116,7 +122,7 @@ export class FloorManager {
 
     this.generateFloor();
 
-    const startPos = genStartPos(game.tileMap);
+    const startPos = game._playerStart;
     partyEntities.forEach(pid => {
       game.entityManager.setComponent(pid, 'position', {
         x: startPos.x,
@@ -132,11 +138,18 @@ export class FloorManager {
     game._updateFOV();
     game.saveGameData();
 
+    const zone = this.getZoneConfig();
+    if (zone) {
+      game.zoneName = zone.name;
+      if (game.uiManager && game.uiManager.music) {
+        game.uiManager.music.playZone(zone.name);
+      }
+    }
+
     game.eventBus.emit('message', {
-      text: `Entrando a ${game.zoneName} (Piso ${game._currentFloor})`
+      text: `Entrando a ${game.zoneName || 'Zona Desconocida'} (Piso ${game._currentFloor})`
     });
 
-    const zone = this.getZoneConfig();
     if (zone && zone.boss && game._currentFloor === zone.floors[1] && zone.boss.name === 'Mewtwo') {
       game.eventBus.emit('show_dialog', {
         text: '¡Una presencia abrumadora te acecha en este laboratorio!\n\n¡Mewtwo bloquea el camino de salida!'
@@ -144,6 +157,11 @@ export class FloorManager {
     }
 
     game.needsRender = true;
+    
+    if (game.renderer) {
+      game.renderer.startFadeIn(300);
+    }
+    game.inputHandler.enabled = true;
   }
 
   preloadVisibleSprites() {

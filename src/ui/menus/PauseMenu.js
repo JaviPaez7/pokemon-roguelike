@@ -1,6 +1,7 @@
 import { GAME_STATES } from '../../constants.js';
 import { openInventoryMenu } from './InventoryMenus.js';
 import { openTeamMenu } from './TeamMenus.js';
+import { openOptionsMenu } from './OptionsMenu.js';
 
 /** @param {import('../UIManager.js').UIManager} ui */
 export function openPauseMenu(ui) {
@@ -11,7 +12,8 @@ export function openPauseMenu(ui) {
         <div class="menu-option selected" data-index="0"><span class="cursor">▶</span> Continuar</div>
         <div class="menu-option" data-index="1"><span class="cursor">▶</span> Mochila</div>
         <div class="menu-option" data-index="2"><span class="cursor">▶</span> Equipo Pokémon</div>
-        <div class="menu-option" data-index="3"><span class="cursor">▶</span> Guardar y Salir</div>
+        <div class="menu-option" data-index="3"><span class="cursor">▶</span> Opciones</div>
+        <div class="menu-option" data-index="4"><span class="cursor">▶</span> Guardar y Salir</div>
       </div>
     </div>
   `;
@@ -22,6 +24,7 @@ export function openPauseMenu(ui) {
     () => ui.closeMenu(),
     () => openInventoryMenu(ui),
     () => openTeamMenu(ui),
+    () => openOptionsMenu(ui),
     () => {
       ui.game.saveGameData();
       ui.showDialog('Partida guardada correctamente.', () => {

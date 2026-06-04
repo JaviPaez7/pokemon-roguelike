@@ -16,6 +16,7 @@
 
 import { createComponentStore } from './Components.js';
 import { ENEMY_DETECT_RANGE } from '../constants.js';
+import { calculateAllStats } from '../systems/StatCalculator.js';
 
 export class EntityManager {
   /**
@@ -235,31 +236,6 @@ export class EntityManager {
   // ─── Fábricas de entidades preconfiguradas ────────────────────────────────
 
   /**
-   * Calcular una estadística no-HP según la fórmula simplificada.
-   * stat = Math.floor(((2 * baseStat * level) / 100) + level + 5)
-   * @param {number} baseStat - Estadística base de la especie
-   * @param {number} level - Nivel del Pokémon
-   * @returns {number} Estadística calculada
-   * @private
-   */
-  _calcStat(baseStat, level) {
-    return Math.floor(((2 * baseStat * level) / 100) + level + 5);
-  }
-
-  /**
-   * Calcular HP según la fórmula simplificada.
-   * HP = Math.floor(((2 * baseHP * level) / 100) + level + 10)
-   * (El +10 extra respecto a otras stats es la diferencia principal)
-   * @param {number} baseHP - HP base de la especie
-   * @param {number} level - Nivel del Pokémon
-   * @returns {number} HP calculado
-   * @private
-   */
-  _calcHP(baseStat, level) {
-    return Math.floor(((2 * baseStat * level) / 100) + level + 10);
-  }
-
-  /**
    * Seleccionar los movimientos que un Pokémon conoce a un nivel dado.
    * Prioriza los movimientos de nivel más alto (máximo 4).
    * @param {Array} learnset - Lista de { moveId, level } de la especie
@@ -329,12 +305,7 @@ export class EntityManager {
     };
 
     // Calcular estadísticas según el nivel
-    const maxHp = this._calcHP(baseStats.hp, level);
-    const attack = this._calcStat(baseStats.attack, level);
-    const defense = this._calcStat(baseStats.defense, level);
-    const spAtk = this._calcStat(baseStats.spAtk, level);
-    const spDef = this._calcStat(baseStats.spDef, level);
-    const speed = this._calcStat(baseStats.speed, level);
+    const { maxHp, attack, defense, spAtk, spDef, speed } = calculateAllStats(baseStats, level);
 
     // Seleccionar movimientos apropiados para el nivel
     const moves = this._selectMoves(species?.learnset ?? [], level);
@@ -345,7 +316,10 @@ export class EntityManager {
     this.setComponent(id, 'position', {
       x: x,
       y: y,
-      facing: 'down'
+      facing: 'down',
+      prevX: x,
+      prevY: y,
+      moveStartTime: 0
     });
 
     // Información de especie
@@ -410,7 +384,10 @@ export class EntityManager {
     this.setComponent(id, 'position', {
       x: x,
       y: y,
-      facing: 'down'
+      facing: 'down',
+      prevX: x,
+      prevY: y,
+      moveStartTime: 0
     });
 
     // Datos del objeto

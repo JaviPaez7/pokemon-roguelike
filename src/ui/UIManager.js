@@ -5,6 +5,7 @@
 
 import { GAME_STATES } from '../constants.js';
 import { SfxManager } from './SfxManager.js';
+import { MusicManager } from './MusicManager.js';
 import { DialogController } from './DialogController.js';
 import { openTitleScreen } from './menus/TitleMenu.js';
 import { openStarterSelectScreen } from './menus/StarterMenu.js';
@@ -32,7 +33,11 @@ export class UIManager {
     this.selectedItem = null;
     this.selectedPokemon = null;
 
+    /** @type {SfxManager} */
     this.sfx = new SfxManager();
+    
+    /** @type {MusicManager} */
+    this.music = new MusicManager();
     this.dialog = new DialogController(this);
 
     if (this.loadingScreen) {

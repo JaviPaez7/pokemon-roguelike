@@ -27,7 +27,10 @@
  * position: {
  *   x: number,          // Posición X en la cuadrícula
  *   y: number,          // Posición Y en la cuadrícula
- *   facing: string      // Dirección: 'up' | 'down' | 'left' | 'right'
+ *   facing: string,     // Dirección: 'up' | 'down' | 'left' | 'right'
+ *   prevX: number,      // Posición X anterior (para animación)
+ *   prevY: number,      // Posición Y anterior (para animación)
+ *   moveStartTime: number // Tiempo inicio movimiento
  * }
  *
  * pokemonInfo: {

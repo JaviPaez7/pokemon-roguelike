@@ -22,8 +22,8 @@ export function getEnemyAction(entityId, entityManager, tileMap, playerPos, play
   
   if (!pos || !ai || !fighter) return null;
 
-  // Calcular distancia al jugador
-  const distance = Math.abs(pos.x - playerPos.x) + Math.abs(pos.y - playerPos.y);
+  // Calcular distancia al jugador (Chebyshev)
+  const distance = Math.max(Math.abs(pos.x - playerPos.x), Math.abs(pos.y - playerPos.y));
   const detectRange = ai.detectRange || ENEMY_DETECT_RANGE;
 
   // Determinar comportamiento basado en estado
@@ -63,7 +63,7 @@ export function getEnemyAction(entityId, entityManager, tileMap, playerPos, play
  * Perseguir al jugador usando pathfinding A*
  */
 function chaseAction(entityId, pos, playerPos, playerEntityId, tileMap, entityManager) {
-  const distance = Math.abs(pos.x - playerPos.x) + Math.abs(pos.y - playerPos.y);
+  const distance = Math.max(Math.abs(pos.x - playerPos.x), Math.abs(pos.y - playerPos.y));
   
   // Si está adyacente, atacar
   if (distance === 1) {
@@ -80,7 +80,7 @@ function chaseAction(entityId, pos, playerPos, playerEntityId, tileMap, entityMa
     return true;
   };
 
-  const astar = new Path.AStar(playerPos.x, playerPos.y, passableCallback, { topology: 4 });
+  const astar = new Path.AStar(playerPos.x, playerPos.y, passableCallback, { topology: 8 });
   const path = [];
   
   astar.compute(pos.x, pos.y, (x, y) => {
@@ -112,8 +112,11 @@ function fleeAction(entityId, pos, playerPos, tileMap, entityManager) {
   if (dx !== 0) directions.push({ dx: Math.sign(dx), dy: 0 });
   if (dy !== 0) directions.push({ dx: 0, dy: Math.sign(dy) });
   
-  // Añadir direcciones perpendiculares como alternativas
-  directions.push({ dx: 0, dy: 1 }, { dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: -1, dy: 0 });
+  // Añadir todas las direcciones posibles
+  directions.push(
+    { dx: 0, dy: 1 }, { dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
+    { dx: 1, dy: 1 }, { dx: -1, dy: 1 }, { dx: 1, dy: -1 }, { dx: -1, dy: -1 }
+  );
 
   for (const dir of directions) {
     const newX = pos.x + dir.dx;
@@ -134,12 +137,10 @@ function   wanderAction(entityId, pos, tileMap, entityManager) {
   // 15% de probabilidad de quedarse quieto
   if (Math.random() < 0.15) return { type: 'wait' };
 
-  // Direcciones cardinales aleatorias
+  // Direcciones aleatorias
   const directions = [
-    { dx: 0, dy: -1 }, // arriba
-    { dx: 0, dy: 1 },  // abajo
-    { dx: -1, dy: 0 }, // izquierda
-    { dx: 1, dy: 0 }   // derecha
+    { dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
+    { dx: -1, dy: -1 }, { dx: 1, dy: -1 }, { dx: -1, dy: 1 }, { dx: 1, dy: 1 }
   ];
 
   // Barajar direcciones
@@ -166,13 +167,11 @@ function moveTowards(pos, target, tileMap, entityManager, entityId) {
   const dx = Math.sign(target.x - pos.x);
   const dy = Math.sign(target.y - pos.y);
 
-  // Intentar moverse horizontal primero, luego vertical
+  // Intentar moverse directo (puede ser diagonal)
   const attempts = [];
+  if (dx !== 0 || dy !== 0) attempts.push({ dx, dy });
   if (dx !== 0) attempts.push({ dx, dy: 0 });
   if (dy !== 0) attempts.push({ dx: 0, dy });
-  // Direcciones alternativas
-  if (dy !== 0) attempts.push({ dx: 0, dy });
-  if (dx !== 0) attempts.push({ dx, dy: 0 });
 
   for (const attempt of attempts) {
     const newX = pos.x + attempt.dx;

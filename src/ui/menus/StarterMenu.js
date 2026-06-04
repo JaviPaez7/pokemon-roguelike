@@ -4,7 +4,7 @@ import { STARTERS } from './starterData.js';
 export function openStarterSelectScreen(ui) {
   let html = `
     <div class="game-panel" style="width: 500px; max-width: 95vw;">
-      <h2 class="game-panel-title">ELIJE TU COMPAÑERO INICIAL</h2>
+      <h2 class="game-panel-title">ELIGE TU COMPAÑERO INICIAL</h2>
       
       <div style="display: flex; gap: 16px; justify-content: space-between; margin-bottom: 20px;">
   `;

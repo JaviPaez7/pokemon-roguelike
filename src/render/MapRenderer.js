@@ -80,7 +80,7 @@ export class MapRenderer {
         const sy = screenPos.y;
 
         // Dibujar el tile según su tipo
-        this._dibujarTile(ctx, tile, sx, sy, tileSize, visibilidad, x, y);
+        this._dibujarTile(ctx, tile, sx, sy, tileSize, visibilidad, x, y, tileMap);
 
         // Dibujar líneas de cuadrícula sutiles
         this._dibujarGrid(ctx, sx, sy, tileSize);
@@ -102,9 +102,10 @@ export class MapRenderer {
    * @param {number} visibilidad - Estado de visibilidad (1 o 2)
    * @param {number} worldX - Coordenada X en el mundo (para animaciones)
    * @param {number} worldY - Coordenada Y en el mundo (para animaciones)
+   * @param {import('../map/TileMap.js').TileMap} tileMap - Mapa de tiles para chequear vecinos
    * @private
    */
-  _dibujarTile(ctx, tile, sx, sy, size, visibilidad, worldX, worldY) {
+  _dibujarTile(ctx, tile, sx, sy, size, visibilidad, worldX, worldY, tileMap) {
     // Guardar estado del contexto para aplicar opacidad
     ctx.save();
 
@@ -125,6 +126,50 @@ export class MapRenderer {
     // Rellenar el tile con el color base
     ctx.fillStyle = colorSuelo;
     ctx.fillRect(sx, sy, size, size);
+
+    // Textura procedural y decoraciones
+    if (tile.id === TILES.WALL.id || tile.id === TILES.FLOOR.id || tile.id === TILES.TRAP.id) {
+      // Hash rápido para determinar patrón (ruido)
+      const hash1 = Math.abs(Math.sin(worldX * 12.9898 + worldY * 78.233)) * 43758.5453;
+      const hash2 = Math.abs(Math.sin(worldX * 78.233 + worldY * 12.9898)) * 43758.5453;
+      
+      ctx.fillStyle = tile.id === TILES.WALL.id ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.03)';
+      
+      // Dibujar un par de rectángulos pequeños (ruido/textura)
+      const dotCount = Math.floor((hash1 - Math.floor(hash1)) * 3) + 1;
+      for (let i = 0; i < dotCount; i++) {
+          const rx = (hash1 * (i+1)) % 1;
+          const ry = (hash2 * (i+1)) % 1;
+          ctx.fillRect(sx + rx * (size - 2) + 1, sy + ry * (size - 2) + 1, 2, 2);
+      }
+    }
+
+    // Decoraciones en el suelo
+    if (tile.id === TILES.FLOOR.id) {
+        const hashDecoration = Math.abs(Math.sin(worldX * 33.33 + worldY * 44.44)) * 10000;
+        const dec = hashDecoration - Math.floor(hashDecoration);
+        if (dec < 0.05) {
+            // Dibujar una piedrita
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(sx + size*0.7, sy + size*0.2, 3, 2);
+            ctx.fillStyle = 'rgba(150,150,150,0.6)';
+            ctx.fillRect(sx + size*0.7, sy + size*0.2 - 1, 2, 1);
+        } else if (dec < 0.1) {
+            // Dibujar una brizna de hierba
+            ctx.fillStyle = 'rgba(50, 150, 50, 0.4)';
+            ctx.fillRect(sx + size*0.2, sy + size*0.8, 2, -4);
+            ctx.fillRect(sx + size*0.3, sy + size*0.8, 1, -2);
+        }
+    }
+
+    // Sombras de pared (si es FLOOR o TRAP y hay WALL arriba)
+    if ((tile.id === TILES.FLOOR.id || tile.id === TILES.TRAP.id) && tileMap && tileMap.isInBounds(worldX, worldY - 1)) {
+        const topTile = tileMap.getTile(worldX, worldY - 1);
+        if (topTile.id === TILES.WALL.id) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(sx, sy, size, 4); // Sombra en la parte superior del tile
+        }
+    }
 
     // Dibujar borde sutil (1px más oscuro) para definir los tiles
     ctx.strokeStyle = colorBorde;

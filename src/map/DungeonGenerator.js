@@ -43,6 +43,7 @@ const CELL_PADDING = 1;
  */
 const ENEMY_DENSITY = 0.04;
 const ITEM_DENSITY = 0.02;
+const TRAP_DENSITY = 0.01;
 
 export class DungeonGenerator {
   /**
@@ -79,6 +80,9 @@ export class DungeonGenerator {
     // === PASO 3: Generación de habitaciones ===
     const rooms = this._generarHabitaciones(celdas, tileMap);
 
+    // === PASO 3.5: Tipos de habitaciones ===
+    this._asignarTiposEspeciales(rooms);
+
     // === PASO 4: Conexión con corredores ===
     this._conectarHabitaciones(celdas, tileMap);
 
@@ -94,6 +98,12 @@ export class DungeonGenerator {
     // === PASO 8: Puntos de aparición ===
     const spawnPoints = this._generarPuntosAparicion(rooms, playerStart, stairsPos, tileMap);
     const itemPoints = this._generarPuntosItems(rooms, playerStart, stairsPos, tileMap);
+
+    // === PASO 9: Generación de trampas ===
+    this._colocarTrampas(rooms, playerStart, stairsPos, tileMap);
+
+    // === PASO 10: Generación de agua ===
+    this._generarLagos(rooms, tileMap, playerStart, stairsPos);
 
     return {
       tileMap,
@@ -224,6 +234,7 @@ export class DungeonGenerator {
           y: Math.max(1, Math.min(roomY, tileMap.height - roomH - 1)),
           w: roomW,
           h: roomH,
+          type: 'normal'
         };
 
         // Tallar la habitación en el mapa (convertir muros a suelo)
@@ -250,6 +261,36 @@ export class DungeonGenerator {
         if (tileMap.isInBounds(x, y)) {
           tileMap.setTile(x, y, TILES.FLOOR.id);
         }
+      }
+    }
+  }
+
+  /**
+   * Asigna tipos especiales a las habitaciones de forma aleatoria.
+   * @param {{x: number, y: number, w: number, h: number, type: string}[]} rooms
+   */
+  _asignarTiposEspeciales(rooms) {
+    if (rooms.length <= 2) return;
+    
+    // 10% de probabilidad de tener una monster house
+    if (RNG.getUniform() < 0.10) {
+      const idx = 1 + Math.floor(RNG.getUniform() * (rooms.length - 1));
+      rooms[idx].type = 'monster_house';
+    }
+
+    // 15% de probabilidad de tener una habitación del tesoro
+    if (RNG.getUniform() < 0.15) {
+      const idx = 1 + Math.floor(RNG.getUniform() * (rooms.length - 1));
+      if (rooms[idx].type === 'normal') {
+        rooms[idx].type = 'treasure';
+      }
+    }
+
+    // 15% de probabilidad de tener una habitación de descanso
+    if (RNG.getUniform() < 0.15) {
+      const idx = 1 + Math.floor(RNG.getUniform() * (rooms.length - 1));
+      if (rooms[idx].type === 'normal') {
+        rooms[idx].type = 'rest';
       }
     }
   }
@@ -542,7 +583,11 @@ export class DungeonGenerator {
           if (x === stairsPos.x && y === stairsPos.y) continue;
 
           // Probabilidad de ser punto de aparición
-          if (RNG.getUniform() < ENEMY_DENSITY) {
+          let density = ENEMY_DENSITY;
+          if (room.type === 'rest') density = 0;
+          if (room.type === 'monster_house') density = ENEMY_DENSITY * 6;
+
+          if (density > 0 && RNG.getUniform() < density) {
             puntos.push({ x, y });
           }
         }
@@ -577,13 +622,85 @@ export class DungeonGenerator {
           if (x === stairsPos.x && y === stairsPos.y) continue;
 
           // Probabilidad de ser punto de item
-          if (RNG.getUniform() < ITEM_DENSITY) {
+          let density = ITEM_DENSITY;
+          if (room.type === 'treasure') density = ITEM_DENSITY * 8;
+          if (room.type === 'monster_house') density = ITEM_DENSITY * 4;
+
+          if (density > 0 && RNG.getUniform() < density) {
             puntos.push({ x, y });
           }
         }
       }
     }
-
     return puntos;
+  }
+
+  /**
+   * PASO 9: Coloca trampas en el mapa.
+   * Se modifican directamente los tiles del mapa a TILES.TRAP.
+   * 
+   * @param {{x: number, y: number, w: number, h: number, type: string}[]} rooms
+   * @param {{x: number, y: number}} playerStart
+   * @param {{x: number, y: number}} stairsPos
+   * @param {TileMap} tileMap
+   * @private
+   */
+  _colocarTrampas(rooms, playerStart, stairsPos, tileMap) {
+    for (const room of rooms) {
+      if (room.type === 'rest' || room.type === 'treasure') continue; // No traps in rest/treasure rooms
+
+      let density = TRAP_DENSITY;
+      if (room.type === 'monster_house') density = TRAP_DENSITY * 5;
+
+      for (let y = room.y; y < room.y + room.h; y++) {
+        for (let x = room.x; x < room.x + room.w; x++) {
+          if (tileMap.getTile(x, y).id !== TILES.FLOOR.id) continue;
+          if (x === playerStart.x && y === playerStart.y) continue;
+          if (x === stairsPos.x && y === stairsPos.y) continue;
+
+          if (RNG.getUniform() < density) {
+            tileMap.setTile(x, y, TILES.TRAP.id);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * PASO 10: Genera lagos o charcos de agua en las habitaciones.
+   * 
+   * @param {Object[]} rooms - Lista de habitaciones
+   * @param {TileMap} tileMap - Mapa de tiles
+   * @param {Object} playerStart - Posición inicial del jugador
+   * @param {Object} stairsPos - Posición de las escaleras
+   * @private
+   */
+  _generarLagos(rooms, tileMap, playerStart, stairsPos) {
+    for (const room of rooms) {
+      // 30% de probabilidad de tener agua por habitación
+      if (RNG.getUniform() < 0.3) {
+        const cx = Math.floor(room.x + room.w / 2);
+        const cy = Math.floor(room.y + room.h / 2);
+        const radius = Math.floor(RNG.getUniform() * 2) + 1; // Radio de 1 a 2 tiles
+        
+        for (let y = cy - radius; y <= cy + radius; y++) {
+          for (let x = cx - radius; x <= cx + radius; x++) {
+            // Forma circular (aproximada)
+            if ((x - cx) * (x - cx) + (y - cy) * (y - cy) <= radius * radius + 0.5) {
+              if (tileMap.isInBounds(x, y)) {
+                // No pisar jugador ni escaleras
+                if (x === playerStart.x && y === playerStart.y) continue;
+                if (x === stairsPos.x && y === stairsPos.y) continue;
+
+                // Solo reemplazar suelo normal
+                if (tileMap.getTile(x, y).id === TILES.FLOOR.id) {
+                  tileMap.setTile(x, y, TILES.WATER.id);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

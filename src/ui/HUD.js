@@ -69,7 +69,7 @@ export class HUD {
 
     const padding = 8;
     const panelWidth = 180;
-    const pokemonHeight = 28;
+    const pokemonHeight = 36;
     const panelHeight = gameState.party.length * pokemonHeight + 12;
     const x = canvasWidth - panelWidth - padding;
 
@@ -101,9 +101,15 @@ export class HUD {
       ctx.fillStyle = '#aaa';
       ctx.fillText(`Nv.${poke.level}`, x + panelWidth - 50, py);
 
+      // Tipos
+      if (poke.types && poke.types.length > 0) {
+        ctx.fillStyle = '#66a';
+        ctx.fillText(poke.types.join('/'), x + 8, py + 8);
+      }
+
       // Barra de HP
       const barX = x + 8;
-      const barY = py + 12;
+      const barY = py + 16;
       const barWidth = panelWidth - 20;
       const barHeight = 4;
       const hpPercent = poke.maxHp > 0 ? poke.hp / poke.maxHp : 0;
@@ -131,6 +137,22 @@ export class HUD {
       ctx.font = '6px "Press Start 2P", monospace';
       ctx.fillStyle = '#888';
       ctx.fillText(`${poke.hp}/${poke.maxHp}`, barX + barWidth + 2 - 44, barY - 1);
+
+      // Barra de XP
+      const xpBarY = barY + 6;
+      const xpBarHeight = 2;
+      
+      let xpProgress = 0;
+      if (poke.level < 100 && poke.nextLevelXp > poke.currentLevelXp) {
+        xpProgress = (poke.xp - poke.currentLevelXp) / (poke.nextLevelXp - poke.currentLevelXp);
+        xpProgress = Math.max(0, Math.min(1, xpProgress));
+      }
+
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(barX, xpBarY, barWidth, xpBarHeight);
+      
+      ctx.fillStyle = '#4ade80'; // XP color (verde brillante)
+      ctx.fillRect(barX, xpBarY, barWidth * xpProgress, xpBarHeight);
     }
 
     ctx.restore();
@@ -222,8 +244,8 @@ export class HUD {
       );
     }
 
-    // Posición de escaleras
-    if (gameState.stairsPos) {
+    // Posición de escaleras (verde brillante)
+    if (gameState.stairsPos && tileMap.getVisibility(gameState.stairsPos.x, gameState.stairsPos.y) > 0) {
       ctx.fillStyle = '#4ade80';
       ctx.fillRect(
         x + gameState.stairsPos.x * scale,
@@ -231,6 +253,31 @@ export class HUD {
         scale,
         scale
       );
+    }
+
+    // Dibujar items y enemigos
+    if (gameState.entityManager) {
+      // Ítems (cyan)
+      const items = gameState.entityManager.getEntitiesWithComponents('item', 'position');
+      items.forEach(id => {
+        const pos = gameState.entityManager.getComponent(id, 'position');
+        if (tileMap.getVisibility(pos.x, pos.y) > 0) {
+          ctx.fillStyle = '#00ffff';
+          ctx.fillRect(x + pos.x * scale, y + pos.y * scale, scale, scale);
+        }
+      });
+
+      // Enemigos (rojo)
+      const enemies = gameState.entityManager.getEntitiesWithComponents('ai', 'position', 'fighter');
+      enemies.forEach(id => {
+        const fighter = gameState.entityManager.getComponent(id, 'fighter');
+        if (fighter.hp <= 0) return; // Enemigo derrotado
+        const pos = gameState.entityManager.getComponent(id, 'position');
+        if (tileMap.getVisibility(pos.x, pos.y) === 2) { // Solo si están en FOV directo
+          ctx.fillStyle = '#ff4444';
+          ctx.fillRect(x + pos.x * scale, y + pos.y * scale, scale, scale);
+        }
+      });
     }
 
     ctx.restore();

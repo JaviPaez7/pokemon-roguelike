@@ -3,6 +3,7 @@ import { getEnemyAction } from '../../entities/EnemyAI.js';
 import { executeMove, processStatusEffects, selectBestMove } from '../../combat/CombatSystem.js';
 import { grantExperience } from '../../systems/ExperienceSystem.js';
 import { checkEvolution, evolve } from '../../systems/EvolutionSystem.js';
+import { triggerTrap } from '../../systems/TrapSystem.js';
 
 /**
  * Combate, movimiento de entidades y acciones de IA enemiga.
@@ -77,6 +78,14 @@ export class CombatHandler {
               itemEntity: result.itemEntity
             });
           }
+          if (result.isTrap) {
+            triggerTrap(entityId, game.entityManager, game.tileMap, game.eventBus);
+          }
+          return result;
+        }
+
+        if (result.type === 'trap') {
+          triggerTrap(entityId, game.entityManager, game.tileMap, game.eventBus);
           return result;
         }
 
@@ -146,6 +155,21 @@ export class CombatHandler {
       }
     }
 
+    const attackerFighter = game.entityManager.getComponent(attackerId, 'fighter');
+    if (attackerFighter && attackerFighter.hp <= 0) {
+      game.eventBus.emit('message', `¡${attackerInfo.name} cayó víctima de su estado!`);
+      const pos = game.entityManager.getComponent(attackerId, 'position');
+      const sprite = game.entityManager.getComponent(attackerId, 'sprite');
+      game.eventBus.emit('pokemon_fainted', {
+        entityId: attackerId,
+        speciesId: attackerInfo.speciesId,
+        pos: pos ? { x: pos.x, y: pos.y } : null,
+        spriteUrl: sprite ? sprite.url : ''
+      });
+      game.needsRender = true;
+      return { success: true, type: 'fainted_from_status' };
+    }
+
     if (!status.canAct) {
       return { success: false, type: 'status_blocked' };
     }
@@ -164,7 +188,8 @@ export class CombatHandler {
         }
       }
     } else {
-      moveSelected = selectBestMove(attackerInfo, defenderInfo, game.movesData, game.typeChart);
+      const defenderFighter = game.entityManager.getComponent(defenderId, 'fighter');
+      moveSelected = selectBestMove(attackerInfo, defenderInfo, game.movesData, game.typeChart, attackerFighter, defenderFighter);
     }
 
     if (!moveSelected) {
@@ -221,10 +246,8 @@ export class CombatHandler {
           const evo = checkEvolution(attackerInfo, game.evolutionsData);
           if (evo) {
             const evoResult = evolve(attackerId, evo, game.entityManager, game.pokemonData, game.movesData);
-            if (evoResult.messages) {
-              for (const msg of evoResult.messages) {
-                game.eventBus.emit('show_dialog', { text: evoResult.messages.join('\n') });
-              }
+            if (evoResult.messages && evoResult.messages.length > 0) {
+              game.eventBus.emit('show_dialog', { text: evoResult.messages.join('\n') });
             }
           }
         }

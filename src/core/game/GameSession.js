@@ -1,6 +1,5 @@
 import { GAME_STATES } from '../../constants.js';
 import { loadGame } from '../SaveManager.js';
-import { genStartPos } from './genStartPos.js';
 
 /**
  * Inicia una nueva partida con el Pokémon inicial seleccionado.
@@ -31,7 +30,7 @@ export function startNewGame(game, starterPokemonId) {
 
   game.floorManager.generateFloor();
 
-  const startPos = genStartPos(game.tileMap);
+  const startPos = game._playerStart;
 
   game._playerId = game.entityManager.createPokemon(
     starterPokemonId,
@@ -92,7 +91,10 @@ export function loadSavedGame(game) {
     game.entityManager.setComponent(id, 'position', {
       x: 0,
       y: 0,
-      facing: 'down'
+      facing: 'down',
+      prevX: 0,
+      prevY: 0,
+      moveStartTime: 0
     });
 
     game.entityManager.setComponent(id, 'pokemonInfo', {
@@ -112,7 +114,7 @@ export function loadSavedGame(game) {
       spAtk: p.spAtk,
       spDef: p.spDef,
       speed: p.speed,
-      statusEffects: p.statusEffects || []
+      statusEffects: (p.statusEffects || []).map(s => typeof s === 'string' ? { type: s, turnsLeft: -1 } : s)
     });
 
     const pokeRef = game.pokemonData.find(poke => poke.id === p.speciesId || poke.name.toLowerCase() === p.speciesId);
@@ -131,7 +133,7 @@ export function loadSavedGame(game) {
       game._playerId = id;
     }
 
-    game.turnManager.addEntity(id, p.speed, true);
+    game.turnManager.addEntity(id, p.speed, p.isLeader);
   });
 
   game._currentFloor--;

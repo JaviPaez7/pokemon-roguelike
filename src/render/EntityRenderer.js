@@ -80,6 +80,25 @@ export class EntityRenderer {
 
     /** @type {Array<{entityId: number, startTime: number, duration: number}>} */
     this._damageFlashes = [];
+
+    /** @type {Array<{entityId: number, pos: Object, spriteUrl: string, startTime: number, duration: number}>} */
+    this._faintingEntities = [];
+  }
+
+  /**
+   * Añade una animación de debilitamiento (sink & fade out).
+   * @param {number} entityId
+   * @param {Object} pos
+   * @param {string} spriteUrl
+   */
+  spawnFaintAnimation(entityId, pos, spriteUrl) {
+    this._faintingEntities.push({
+      entityId,
+      pos: { x: pos.x, y: pos.y },
+      spriteUrl,
+      startTime: performance.now(),
+      duration: 500
+    });
   }
 
   /**
@@ -123,13 +142,16 @@ export class EntityRenderer {
     this._damageFlashes = this._damageFlashes.filter(
       (f) => now - f.startTime < f.duration
     );
+    this._faintingEntities = this._faintingEntities.filter(
+      (f) => now - f.startTime < f.duration
+    );
   }
 
   /**
    * @returns {boolean} true si hay animaciones VFX activas
    */
   hasActiveEffects() {
-    return this._danosFlotantes.length > 0 || this._damageFlashes.length > 0;
+    return this._danosFlotantes.length > 0 || this._damageFlashes.length > 0 || this._faintingEntities.length > 0;
   }
 
   /**
@@ -140,8 +162,9 @@ export class EntityRenderer {
    * @param {Object} entityManager - Gestor de entidades con método getEntities()
    * @param {import('./Camera.js').Camera} camera - Cámara/viewport actual
    * @param {import('../map/TileMap.js').TileMap} tileMap - Mapa de tiles para comprobar visibilidad
+   * @param {Array} itemsData - Datos de los items (para los sprites)
    */
-  render(ctx, entityManager, camera, tileMap) {
+  render(ctx, entityManager, camera, tileMap, itemsData = []) {
     this._tiempo = performance.now();
 
     // Verificar que el entityManager existe y tiene el método correcto
@@ -164,11 +187,48 @@ export class EntityRenderer {
       if (entityManager.hasComponent(entityId, 'pokemonInfo')) {
         this._dibujarPokemon(ctx, entityId, entityManager, camera, pos);
       } else if (entityManager.hasComponent(entityId, 'itemDrop')) {
-        this._dibujarItem(ctx, entityId, entityManager, camera, pos);
+        this._dibujarItem(ctx, entityId, entityManager, camera, pos, itemsData);
       }
     }
 
     this._dibujarDanosFlotantes(ctx, entityManager, camera, tileMap);
+    this._dibujarFaintingEntities(ctx, camera);
+  }
+
+  /**
+   * Dibuja entidades que están debilitándose (animación de fade/sink).
+   * @private
+   */
+  _dibujarFaintingEntities(ctx, camera) {
+    if (this._faintingEntities.length === 0) return;
+
+    const tileSize = camera.tileSize;
+    for (const f of this._faintingEntities) {
+      if (!camera.isVisible(f.pos.x, f.pos.y)) continue;
+
+      const screenPos = camera.worldToScreen(f.pos.x, f.pos.y);
+      const elapsed = this._tiempo - f.startTime;
+      const progress = Math.min(1, elapsed / f.duration);
+      
+      const sinkY = progress * (tileSize / 2); // se hunde
+      const alpha = 1 - progress; // se desvanece
+
+      const margen = Math.floor(tileSize * 0.1);
+      const spriteSize = tileSize - margen * 2;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      this.spriteManager.drawSprite(
+        ctx,
+        f.spriteUrl,
+        screenPos.x + margen,
+        screenPos.y + margen + sinkY,
+        spriteSize,
+        spriteSize,
+        ''
+      );
+      ctx.restore();
+    }
   }
 
   /**
@@ -183,7 +243,27 @@ export class EntityRenderer {
    */
   _dibujarPokemon(ctx, entityId, entityManager, camera, pos) {
     const tileSize = camera.tileSize;
-    const screenPos = camera.worldToScreen(pos.x, pos.y);
+    
+    // Lerp (animación de movimiento suave)
+    let drawX = pos.x;
+    let drawY = pos.y;
+    if (pos.moveStartTime) {
+      const elapsed = this._tiempo - pos.moveStartTime;
+      const MOVE_DURATION = 150; // ms
+      if (elapsed < MOVE_DURATION) {
+        const t = elapsed / MOVE_DURATION;
+        // Ease out quad
+        const ease = t * (2 - t);
+        drawX = pos.prevX + (pos.x - pos.prevX) * ease;
+        drawY = pos.prevY + (pos.y - pos.prevY) * ease;
+      } else {
+        // Movimiento terminado, sincronizar prev
+        pos.prevX = pos.x;
+        pos.prevY = pos.y;
+      }
+    }
+    
+    const screenPos = camera.worldToScreen(drawX, drawY);
     const sx = screenPos.x;
     const sy = screenPos.y;
 
@@ -221,6 +301,22 @@ export class EntityRenderer {
       const alpha = 0.6 * (1 - flashProgress);
       ctx.fillStyle = flashProgress < 0.5 ? `rgba(255, 255, 255, ${alpha})` : `rgba(255, 60, 60, ${alpha})`;
       ctx.fillRect(sx + margen, sy + margen, spriteSize, spriteSize);
+    } else if (fighter && fighter.statusEffects && fighter.statusEffects.length > 0) {
+      // Tinte de estado persistente
+      const tintColors = {
+          'poison': 'rgba(128, 0, 128, 0.3)',
+          'burn': 'rgba(255, 69, 0, 0.3)',
+          'paralyze': 'rgba(255, 255, 0, 0.3)',
+          'sleep': 'rgba(100, 149, 237, 0.3)',
+          'freeze': 'rgba(0, 255, 255, 0.3)',
+          'confusion': 'rgba(255, 105, 180, 0.3)'
+      };
+      const effectObj = fighter.statusEffects[0];
+      const effectType = typeof effectObj === 'string' ? effectObj : effectObj.type;
+      if (tintColors[effectType]) {
+          ctx.fillStyle = tintColors[effectType];
+          ctx.fillRect(sx + margen, sy + margen, spriteSize, spriteSize);
+      }
     }
 
     // Indicadores de alerta y estado
@@ -271,13 +367,17 @@ export class EntityRenderer {
       ctx.fillText('!', sx + tileSize / 2, sy - 4);
     }
 
-    // Estados alterados (primero encontrado)
+    // Estados alterados (todos apilados hacia arriba)
     if (fighter && fighter.statusEffects && fighter.statusEffects.length > 0) {
-      const effect = fighter.statusEffects[0];
-      const icon = STATUS_ICONS[effect];
-      if (icon) {
-        ctx.fillStyle = icon.color;
-        ctx.fillText(icon.text, sx + tileSize - 6, sy + 8);
+      let iconY = sy + tileSize - 4; // Empezar desde abajo
+      for (const effectObj of fighter.statusEffects) {
+        const effectType = typeof effectObj === 'string' ? effectObj : effectObj.type;
+        const icon = STATUS_ICONS[effectType];
+        if (icon) {
+          ctx.fillStyle = icon.color;
+          ctx.fillText(icon.text, sx + tileSize - 6, iconY);
+          iconY -= 8; // Apilar el siguiente más arriba
+        }
       }
     }
 
@@ -393,18 +493,39 @@ export class EntityRenderer {
    * @param {Object} entityManager - Gestor de entidades ECS
    * @param {import('./Camera.js').Camera} camera - Cámara actual
    * @param {Object} pos - Componente de posición {x, y}
+   * @param {Array} itemsData - Array con datos de los items
    * @private
    */
-  _dibujarItem(ctx, entityId, entityManager, camera, pos) {
+  _dibujarItem(ctx, entityId, entityManager, camera, pos, itemsData) {
     const tileSize = camera.tileSize;
     const screenPos = camera.worldToScreen(pos.x, pos.y);
 
     const itemDrop = entityManager.getComponent(entityId, 'itemDrop');
+    if (!itemDrop) return;
 
     // Animación de rebote: cada item tiene fase diferente basada en su posición
     const fase = (pos.x * 7 + pos.y * 13) + this._tiempo * REBOTE_VELOCIDAD;
     const offsetY = Math.sin(fase) * REBOTE_AMPLITUD;
 
+    const itemData = itemsData.find(i => i.id === itemDrop.itemId);
+    
+    // Si tenemos un sprite URL, usamos el SpriteManager
+    if (itemData && itemData.spriteUrl) {
+      const margen = Math.floor(tileSize * 0.2);
+      const spriteSize = tileSize - margen * 2;
+      this.spriteManager.drawSprite(
+        ctx,
+        itemData.spriteUrl,
+        screenPos.x + margen,
+        screenPos.y + margen + offsetY,
+        spriteSize,
+        spriteSize,
+        itemData.name
+      );
+      return;
+    }
+
+    // Fallback: dibujar orbe de color
     // Centro del tile con offset de rebote
     const centroX = screenPos.x + tileSize / 2;
     const centroY = screenPos.y + tileSize / 2 + offsetY;

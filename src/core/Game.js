@@ -414,6 +414,10 @@ export class Game {
       (entityId) => this.combat.getEnemyAIAction(entityId)
     );
 
+    if (this.stats.turnsPlayed % 5 === 0) {
+      this.saveGameData();
+    }
+
     this._updateCamera();
     this._updateFOV();
     this.needsRender = true;
@@ -438,7 +442,15 @@ export class Game {
       this.renderer.update(performance.now());
     }
 
-    const animating = this.renderer && this.renderer.hasActiveAnimations();
+    // Actualizar cámara (lerp) siempre que estemos corriendo
+    if (this.camera && this._state === GAME_STATES.EXPLORING) {
+      this.camera.update(performance.now());
+    }
+
+    const animating = (this.renderer && this.renderer.hasActiveAnimations()) || 
+                      (this.camera && Math.abs(this.camera.currentX - this.camera.x) > 0.01) || 
+                      (this.camera && Math.abs(this.camera.currentY - this.camera.y) > 0.01);
+                      
     if (!this.needsRender && !animating) return;
     this.needsRender = false;
 
@@ -490,6 +502,8 @@ export class Game {
         name: info.name,
         level: info.level,
         xp: info.xp,
+        currentLevelXp: Math.floor(Math.pow(info.level, 3)),
+        nextLevelXp: Math.floor(Math.pow(info.level + 1, 3)),
         currentMoves: info.currentMoves,
         types: info.types,
         hp: fighter.hp,

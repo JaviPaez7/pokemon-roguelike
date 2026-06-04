@@ -15,6 +15,7 @@
 import { MapRenderer } from './MapRenderer.js';
 import { EntityRenderer } from './EntityRenderer.js';
 import { SpriteManager } from './SpriteManager.js';
+import { ParticleSystem } from './ParticleSystem.js';
 import { HUD } from '../ui/HUD.js';
 import { GAME_STATES } from '../constants.js';
 
@@ -48,6 +49,9 @@ export class Renderer {
     /** @type {EntityRenderer} Sub-renderizador de entidades */
     this.entityRenderer = new EntityRenderer(this.spriteManager);
 
+    /** @type {ParticleSystem} Sistema de partículas */
+    this.particleSystem = new ParticleSystem();
+
     /** @type {HUD} HUD del juego (minimap, equipo, log) */
     this.hud = new HUD();
 
@@ -56,6 +60,11 @@ export class Renderer {
 
     /** @type {{ intensity: number, duration: number, startTime: number }|null} */
     this._screenShake = null;
+
+    /** @type {{ state: 'in'|'out', duration: number, startTime: number, resolve: Function|null }|null} */
+    this._fade = null;
+    /** @type {number} */
+    this._currentFadeAlpha = 0;
 
     /** @type {number} */
     this._lastUpdateTime = 0;
@@ -79,6 +88,16 @@ export class Renderer {
       );
       this.entityRenderer.spawnDamageFlash(data.defenderId);
 
+      // Partículas
+      const game = typeof window !== 'undefined' ? window.game : null;
+      if (game && game.entityManager) {
+        const pos = game.entityManager.getComponent(data.defenderId, 'position');
+        if (pos) {
+          const color = data.isCritical ? '#ffcc00' : '#ff4444';
+          this.particleSystem.spawn(pos.x, pos.y, 'hit', color, data.isCritical ? 15 : 8);
+        }
+      }
+
       if (data.isCritical || data.damage >= 20) {
         this.addScreenShake(
           data.isCritical ? 6 : 3,
@@ -87,6 +106,13 @@ export class Renderer {
       }
 
       this._onRenderRequested();
+    });
+
+    eventBus.on('pokemon_fainted', (data) => {
+      if (data.pos && data.spriteUrl) {
+        this.entityRenderer.spawnFaintAnimation(data.entityId, data.pos, data.spriteUrl);
+        this._onRenderRequested();
+      }
     });
   }
 
@@ -105,6 +131,38 @@ export class Renderer {
   }
 
   /**
+   * Inicia un fade out a negro.
+   * @param {number} durationMs - Duración del fade out en ms
+   * @returns {Promise<void>} Promesa que se resuelve al terminar
+   */
+  startFadeOut(durationMs = 300) {
+    return new Promise((resolve) => {
+      this._fade = {
+        state: 'out',
+        duration: durationMs,
+        startTime: performance.now(),
+        resolve
+      };
+      this._onRenderRequested();
+    });
+  }
+
+  /**
+   * Inicia un fade in desde negro.
+   * @param {number} durationMs - Duración del fade in en ms
+   */
+  startFadeIn(durationMs = 300) {
+    this._fade = {
+      state: 'in',
+      duration: durationMs,
+      startTime: performance.now(),
+      resolve: null
+    };
+    this._currentFadeAlpha = 1;
+    this._onRenderRequested();
+  }
+
+  /**
    * Actualiza animaciones (shake + VFX de entidades).
    * @param {number} now - Timestamp actual
    */
@@ -118,6 +176,29 @@ export class Renderer {
         this._screenShake = null;
       }
     }
+
+    if (this._fade) {
+      const elapsed = now - this._fade.startTime;
+      const progress = Math.min(1, elapsed / this._fade.duration);
+      
+      if (this._fade.state === 'out') {
+        this._currentFadeAlpha = progress;
+      } else {
+        this._currentFadeAlpha = 1 - progress;
+      }
+
+      if (progress === 1) {
+        if (this._fade.resolve) {
+          this._fade.resolve();
+        }
+        if (this._fade.state === 'in') {
+          this._currentFadeAlpha = 0;
+        }
+        this._fade = null;
+      }
+    }
+
+    this.particleSystem.update(now);
   }
 
   /**
@@ -126,7 +207,9 @@ export class Renderer {
   hasActiveAnimations() {
     return (
       this._screenShake !== null ||
-      this.entityRenderer.hasActiveEffects()
+      this._fade !== null ||
+      this.entityRenderer.hasActiveEffects() ||
+      this.particleSystem.particles.length > 0
     );
   }
 
@@ -188,12 +271,20 @@ export class Renderer {
     this.mapRenderer.render(ctx, game.tileMap, game.camera);
 
     if (game.entityManager) {
-      this.entityRenderer.render(ctx, game.entityManager, game.camera, game.tileMap);
+      this.entityRenderer.render(ctx, game.entityManager, game.camera, game.tileMap, game.itemsData);
     }
+
+    this.particleSystem.render(ctx, game.camera);
 
     ctx.restore();
 
-    // === CAPA 4: HUD (sin shake, legible) ===
+    // === CAPA 4: Fade overlay ===
+    if (this._currentFadeAlpha > 0) {
+      ctx.fillStyle = `rgba(0, 0, 0, ${this._currentFadeAlpha})`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // === CAPA 5: HUD (sin shake, legible, encima del fade) ===
     this.hud.render(ctx, game, canvas.width, canvas.height);
   }
 

@@ -33,6 +33,10 @@ export class Camera {
     this.x = 0;
     /** @type {number} */
     this.y = 0;
+
+    /** Posición real actual (interpolar a this.x/y) */
+    this.currentX = 0;
+    this.currentY = 0;
   }
 
   /**
@@ -62,8 +66,27 @@ export class Camera {
     camaraX = Math.min(camaraX, maxX);
     camaraY = Math.min(camaraY, maxY);
 
+    // Inicializar pos actual si es primer frame
+    if (this.currentX === undefined || this.currentY === undefined || Math.abs(this.currentX - camaraX) > 10 || Math.abs(this.currentY - camaraY) > 10) {
+      this.currentX = camaraX;
+      this.currentY = camaraY;
+    }
+
     this.x = camaraX;
     this.y = camaraY;
+  }
+
+  /**
+   * Actualiza la posición de la cámara hacia su target usando lerp.
+   * @param {number} deltaTime - Tiempo transcurrido en ms
+   */
+  update(deltaTime) {
+    if (this.currentX === undefined) return;
+    
+    // Lerp hacia la posición objetivo
+    const lerpFactor = 0.15; // Factor de interpolación (fijo por frame)
+    this.currentX += (this.x - this.currentX) * lerpFactor;
+    this.currentY += (this.y - this.currentY) * lerpFactor;
   }
 
   /**
@@ -75,8 +98,8 @@ export class Camera {
    */
   getOffset() {
     return {
-      x: this.x * this.tileSize,
-      y: this.y * this.tileSize,
+      x: this.currentX * this.tileSize,
+      y: this.currentY * this.tileSize,
     };
   }
 
@@ -89,8 +112,8 @@ export class Camera {
    */
   worldToScreen(wx, wy) {
     return {
-      x: (wx - this.x) * this.tileSize,
-      y: (wy - this.y) * this.tileSize,
+      x: (wx - this.currentX) * this.tileSize,
+      y: (wy - this.currentY) * this.tileSize,
     };
   }
 
@@ -104,8 +127,8 @@ export class Camera {
    */
   screenToWorld(sx, sy) {
     return {
-      x: Math.floor(sx / this.tileSize) + this.x,
-      y: Math.floor(sy / this.tileSize) + this.y,
+      x: Math.floor(sx / this.tileSize) + this.currentX,
+      y: Math.floor(sy / this.tileSize) + this.currentY,
     };
   }
 
@@ -117,11 +140,13 @@ export class Camera {
    * @returns {boolean} true si el tile es visible en el viewport
    */
   isVisible(wx, wy) {
+    // Usamos x,y en lugar de currentX,currentY para no hacer culling de tiles 
+    // que la cámara está a punto de mostrar
     return (
-      wx >= this.x &&
-      wx < this.x + this.viewportWidth &&
-      wy >= this.y &&
-      wy < this.y + this.viewportHeight
+      wx >= this.x - 2 &&
+      wx < this.x + this.viewportWidth + 2 &&
+      wy >= this.y - 2 &&
+      wy < this.y + this.viewportHeight + 2
     );
   }
 

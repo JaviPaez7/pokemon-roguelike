@@ -171,41 +171,109 @@ export function executeMove(params) {
     moveSlot.currentPP--;
   }
 
-  // Calcular daño
-  const result = calculateDamage(attackerFighter, defenderFighter, move, attackerInfo, defenderInfo, typeChart);
-  messages.push(...result.messages);
+  let hits = 1;
+  if (move.effect === 'multi_hit') {
+    const rand = Math.random();
+    if (rand < 0.35) hits = 2;
+    else if (rand < 0.70) hits = 3;
+    else if (rand < 0.85) hits = 4;
+    else hits = 5;
+  }
 
-  // Aplicar daño
-  if (result.damage > 0) {
-    defenderFighter.hp = Math.max(0, defenderFighter.hp - result.damage);
-    messages.push(`¡Hizo ${result.damage} de daño!`);
+  let totalDamage = 0;
+  let effectiveness = 1;
+  let isSTAB = false;
+  let defenderFainted = false;
+
+  for (let i = 0; i < hits; i++) {
+    if (defenderFainted) break;
+
+    // Calcular daño
+    const result = calculateDamage(attackerFighter, defenderFighter, move, attackerInfo, defenderInfo, typeChart);
     
-    // Emitir evento de daño
+    // Solo mostramos los mensajes de efectividad en el primer golpe
+    if (i === 0) {
+      messages.push(...result.messages.filter(m => m !== '¡Golpe crítico!' && m !== '¡El ataque falló!'));
+      effectiveness = result.effectiveness;
+      isSTAB = result.isSTAB;
+    }
+    
+    if (result.messages.includes('¡El ataque falló!')) {
+      if (hits > 1 && i > 0) break; // Si falla a mitad de multi-hit, se detiene
+      if (i === 0) messages.push('¡El ataque falló!');
+      break;
+    }
+
+    if (result.messages.includes('¡Golpe crítico!')) {
+      messages.push('¡Golpe crítico!');
+    }
+
+    // Aplicar daño
+    if (result.damage > 0) {
+      defenderFighter.hp = Math.max(0, defenderFighter.hp - result.damage);
+      totalDamage += result.damage;
+      
+      // Emitir evento de daño
+      if (eventBus) {
+        eventBus.emit('damage_dealt', {
+          attackerId,
+          defenderId,
+          damage: result.damage,
+          effectiveness: result.effectiveness,
+          isCritical: result.isCritical
+        });
+      }
+
+      // Aplicar efectos secundarios del movimiento (solo una vez)
+      if (move.effect && move.effect !== 'multi_hit' && i === 0) {
+        const effectApplied = tryApplyEffect(move, defenderFighter, defenderInfo, messages, attackerFighter, attackerInfo, result.damage);
+        if (effectApplied && eventBus && move.effect !== 'heal_self' && move.effect !== 'recoil') {
+          eventBus.emit('status_applied', { targetId: defenderId, effect: move.effect });
+        }
+      }
+    }
+
+    defenderFainted = defenderFighter.hp <= 0;
+  }
+
+  if (totalDamage > 0) {
+    if (hits > 1) {
+      messages.push(`¡Golpeó ${hits} veces!`);
+      messages.push(`¡Hizo un total de ${totalDamage} de daño!`);
+    } else {
+      messages.push(`¡Hizo ${totalDamage} de daño!`);
+    }
+  }
+
+  // Verificar si el atacante cayó por retroceso
+  const attackerFainted = attackerFighter.hp <= 0;
+  if (attackerFainted) {
+    messages.push(`¡${attackerInfo.name} se debilitó por el retroceso!`);
     if (eventBus) {
-      eventBus.emit('damage_dealt', {
-        attackerId,
-        defenderId,
-        damage: result.damage,
-        effectiveness: result.effectiveness,
-        isCritical: result.isCritical
+      const pos = entityManager.getComponent(attackerId, 'position');
+      const sprite = entityManager.getComponent(attackerId, 'sprite');
+      eventBus.emit('pokemon_fainted', { 
+        entityId: attackerId, 
+        speciesId: attackerInfo.speciesId,
+        pos: pos ? { x: pos.x, y: pos.y } : null,
+        spriteUrl: sprite ? sprite.url : ''
       });
     }
   }
 
-  // Aplicar efectos secundarios del movimiento
-  if (move.effect && result.damage > 0) {
-    const effectApplied = tryApplyEffect(move, defenderFighter, defenderInfo, messages);
-    if (effectApplied && eventBus) {
-      eventBus.emit('status_applied', { targetId: defenderId, effect: move.effect });
-    }
-  }
-
   // Verificar si el defensor cayó
-  const defenderFainted = defenderFighter.hp <= 0;
+  defenderFainted = defenderFighter.hp <= 0;
   if (defenderFainted) {
     messages.push(`¡${defenderInfo.name} se debilitó!`);
     if (eventBus) {
-      eventBus.emit('pokemon_fainted', { entityId: defenderId, speciesId: defenderInfo.speciesId });
+      const pos = entityManager.getComponent(defenderId, 'position');
+      const sprite = entityManager.getComponent(defenderId, 'sprite');
+      eventBus.emit('pokemon_fainted', { 
+        entityId: defenderId, 
+        speciesId: defenderInfo.speciesId,
+        pos: pos ? { x: pos.x, y: pos.y } : null,
+        spriteUrl: sprite ? sprite.url : ''
+      });
     }
   }
 
@@ -215,10 +283,10 @@ export function executeMove(params) {
 
   return {
     success: true,
-    damage: result.damage,
-    effectiveness: result.effectiveness,
-    isCritical: result.isCritical,
-    isSTAB: result.isSTAB,
+    damage: totalDamage,
+    effectiveness: effectiveness,
+    isCritical: false, // Simplificado para multi-hit
+    isSTAB: isSTAB,
     messages,
     defenderFainted
   };
@@ -230,9 +298,12 @@ export function executeMove(params) {
  * @param {Object} targetFighter - Fighter del objetivo
  * @param {Object} targetInfo - PokemonInfo del objetivo
  * @param {string[]} messages - Array de mensajes para añadir
+ * @param {Object} attackerFighter - Fighter del atacante (para recoil/heal)
+ * @param {Object} attackerInfo - Info del atacante (para recoil/heal)
+ * @param {number} damageDealt - Daño infligido en este turno
  * @returns {boolean} Si el efecto se aplicó
  */
-function tryApplyEffect(move, targetFighter, targetInfo, messages) {
+function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFighter, attackerInfo, damageDealt = 0) {
   const chance = move.effectChance || 100;
   if (Math.random() * 100 > chance) return false;
 
@@ -243,46 +314,44 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages) {
 
   switch (move.effect) {
     case 'burn':
-      if (!targetFighter.statusEffects.includes('burn') && !targetInfo.types.includes('fire')) {
-        targetFighter.statusEffects.push('burn');
+      if (!targetFighter.statusEffects.some(s => s.type === 'burn') && !targetInfo.types.includes('fire')) {
+        targetFighter.statusEffects.push({ type: 'burn', turnsLeft: -1 });
         messages.push(`¡${targetInfo.name} se quemó!`);
         return true;
       }
       break;
     case 'paralyze':
-      if (!targetFighter.statusEffects.includes('paralyze') && !targetInfo.types.includes('electric')) {
-        targetFighter.statusEffects.push('paralyze');
+      if (!targetFighter.statusEffects.some(s => s.type === 'paralyze') && !targetInfo.types.includes('electric')) {
+        targetFighter.statusEffects.push({ type: 'paralyze', turnsLeft: -1 });
         messages.push(`¡${targetInfo.name} está paralizado!`);
         return true;
       }
       break;
     case 'poison':
-      if (!targetFighter.statusEffects.includes('poison') && 
+      if (!targetFighter.statusEffects.some(s => s.type === 'poison') && 
           !targetInfo.types.includes('poison') && !targetInfo.types.includes('steel')) {
-        targetFighter.statusEffects.push('poison');
+        targetFighter.statusEffects.push({ type: 'poison', turnsLeft: -1 });
         messages.push(`¡${targetInfo.name} fue envenenado!`);
         return true;
       }
       break;
     case 'freeze':
-      if (!targetFighter.statusEffects.includes('freeze') && !targetInfo.types.includes('ice')) {
-        targetFighter.statusEffects.push('freeze');
+      if (!targetFighter.statusEffects.some(s => s.type === 'freeze') && !targetInfo.types.includes('ice')) {
+        targetFighter.statusEffects.push({ type: 'freeze', turnsLeft: -1 });
         messages.push(`¡${targetInfo.name} fue congelado!`);
         return true;
       }
       break;
     case 'sleep':
-      if (!targetFighter.statusEffects.includes('sleep')) {
-        targetFighter.statusEffects.push('sleep');
-        targetFighter.sleepTurns = Math.floor(Math.random() * 3) + 1;
+      if (!targetFighter.statusEffects.some(s => s.type === 'sleep')) {
+        targetFighter.statusEffects.push({ type: 'sleep', turnsLeft: Math.floor(Math.random() * 3) + 1 });
         messages.push(`¡${targetInfo.name} se durmió!`);
         return true;
       }
       break;
     case 'confuse':
-      if (!targetFighter.statusEffects.includes('confuse')) {
-        targetFighter.statusEffects.push('confuse');
-        targetFighter.confuseTurns = Math.floor(Math.random() * 4) + 1;
+      if (!targetFighter.statusEffects.some(s => s.type === 'confuse')) {
+        targetFighter.statusEffects.push({ type: 'confuse', turnsLeft: Math.floor(Math.random() * 4) + 1 });
         messages.push(`¡${targetInfo.name} está confuso!`);
         return true;
       }
@@ -312,9 +381,21 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages) {
       return true;
     case 'heal_self':
       // Este efecto se aplica al atacante, no al defensor
+      if (attackerFighter) {
+        const healAmount = Math.max(1, Math.floor(damageDealt / 2));
+        attackerFighter.hp = Math.min(attackerFighter.maxHp, attackerFighter.hp + healAmount);
+        messages.push(`¡${attackerInfo.name} recuperó ${healAmount} PS!`);
+        return true;
+      }
       break;
     case 'recoil':
       // El daño de retroceso se maneja aparte
+      if (attackerFighter) {
+        const recoilDamage = Math.max(1, Math.floor(damageDealt / 4));
+        attackerFighter.hp = Math.max(0, attackerFighter.hp - recoilDamage);
+        messages.push(`¡${attackerInfo.name} recibió daño de retroceso! (-${recoilDamage} PS)`);
+        return true;
+      }
       break;
   }
   return false;
@@ -339,21 +420,24 @@ export function processStatusEffects(entityId, entityManager) {
   if (!fighter.statusEffects) fighter.statusEffects = [];
 
   // Quemadura: daño continuo + reduce ataque físico
-  if (fighter.statusEffects.includes('burn')) {
+  const burn = fighter.statusEffects.find(s => s.type === 'burn');
+  if (burn) {
     statusDamage = Math.max(1, Math.floor(fighter.maxHp / 16));
     fighter.hp = Math.max(0, fighter.hp - statusDamage);
     messages.push(`${info.name} sufre por la quemadura (-${statusDamage} PS)`);
   }
 
   // Veneno: daño continuo
-  if (fighter.statusEffects.includes('poison')) {
+  const poison = fighter.statusEffects.find(s => s.type === 'poison');
+  if (poison) {
     statusDamage = Math.max(1, Math.floor(fighter.maxHp / 8));
     fighter.hp = Math.max(0, fighter.hp - statusDamage);
     messages.push(`${info.name} sufre por el veneno (-${statusDamage} PS)`);
   }
 
   // Parálisis: 25% de no poder actuar
-  if (fighter.statusEffects.includes('paralyze')) {
+  const paralyze = fighter.statusEffects.find(s => s.type === 'paralyze');
+  if (paralyze) {
     if (Math.random() < 0.25) {
       canAct = false;
       messages.push(`¡${info.name} está paralizado y no puede moverse!`);
@@ -361,9 +445,10 @@ export function processStatusEffects(entityId, entityManager) {
   }
 
   // Congelación: no puede actuar, 20% de descongelarse
-  if (fighter.statusEffects.includes('freeze')) {
+  const freeze = fighter.statusEffects.find(s => s.type === 'freeze');
+  if (freeze) {
     if (Math.random() < 0.2) {
-      fighter.statusEffects = fighter.statusEffects.filter(s => s !== 'freeze');
+      fighter.statusEffects = fighter.statusEffects.filter(s => s.type !== 'freeze');
       messages.push(`¡${info.name} se descongeló!`);
     } else {
       canAct = false;
@@ -372,21 +457,23 @@ export function processStatusEffects(entityId, entityManager) {
   }
 
   // Sueño: no puede actuar, cuenta atrás
-  if (fighter.statusEffects.includes('sleep')) {
-    if (fighter.sleepTurns && fighter.sleepTurns > 0) {
-      fighter.sleepTurns--;
+  const sleep = fighter.statusEffects.find(s => s.type === 'sleep');
+  if (sleep) {
+    if (sleep.turnsLeft > 0) {
+      sleep.turnsLeft--;
       canAct = false;
       messages.push(`${info.name} está dormido...`);
     } else {
-      fighter.statusEffects = fighter.statusEffects.filter(s => s !== 'sleep');
+      fighter.statusEffects = fighter.statusEffects.filter(s => s.type !== 'sleep');
       messages.push(`¡${info.name} se despertó!`);
     }
   }
 
   // Confusión: puede golpearse a sí mismo
-  if (fighter.statusEffects.includes('confuse')) {
-    if (fighter.confuseTurns && fighter.confuseTurns > 0) {
-      fighter.confuseTurns--;
+  const confuse = fighter.statusEffects.find(s => s.type === 'confuse');
+  if (confuse) {
+    if (confuse.turnsLeft > 0) {
+      confuse.turnsLeft--;
       messages.push(`${info.name} está confuso...`);
       if (Math.random() < 0.33) {
         const selfDamage = Math.max(1, Math.floor(fighter.attack / 4));
@@ -395,7 +482,7 @@ export function processStatusEffects(entityId, entityManager) {
         canAct = false;
       }
     } else {
-      fighter.statusEffects = fighter.statusEffects.filter(s => s !== 'confuse');
+      fighter.statusEffects = fighter.statusEffects.filter(s => s.type !== 'confuse');
       messages.push(`¡${info.name} ya no está confuso!`);
     }
   }
@@ -419,9 +506,11 @@ export function processStatusEffects(entityId, entityManager) {
  * @param {Object} defenderInfo - PokemonInfo del defensor
  * @param {Object} movesData - Datos de movimientos (moves.json)
  * @param {Object} typeChart - Datos de tipos
+ * @param {Object} attackerFighter - Fighter del atacante
+ * @param {Object} defenderFighter - Fighter del defensor
  * @returns {Object|null} Mejor movimiento disponible
  */
-export function selectBestMove(attackerInfo, defenderInfo, movesData, typeChart) {
+export function selectBestMove(attackerInfo, defenderInfo, movesData, typeChart, attackerFighter, defenderFighter) {
   if (!attackerInfo.currentMoves || attackerInfo.currentMoves.length === 0) return null;
 
   let bestMove = null;
@@ -435,7 +524,31 @@ export function selectBestMove(attackerInfo, defenderInfo, movesData, typeChart)
 
     let score = moveData.power || 0;
 
-    // Bonus por STAB
+    // Valorar movimientos de estado
+    if (moveData.damageClass === 'status' && moveData.effect) {
+      if (moveData.effect === 'heal_self') {
+        // Curarse es muy bueno si HP < 50%
+        if (attackerFighter && attackerFighter.hp / attackerFighter.maxHp < 0.5) {
+          score = 80;
+        } else {
+          score = 0; // No curarse si la vida está alta
+        }
+      } else {
+        // Otros movimientos de estado (dormir, quemar, bajar stats)
+        // Solo usar si el defensor no tiene ya ese estado
+        let alreadyHasStatus = false;
+        if (defenderFighter && defenderFighter.statusEffects) {
+          alreadyHasStatus = defenderFighter.statusEffects.some(s => s.type === moveData.effect);
+        }
+        if (alreadyHasStatus) {
+          score = 0;
+        } else {
+          score = 50; // Equivalente a un ataque moderado
+        }
+      }
+    }
+
+    // Bonus por STAB para ataques de daño
     if (attackerInfo.types.includes(moveData.type)) {
       score *= 1.5;
     }

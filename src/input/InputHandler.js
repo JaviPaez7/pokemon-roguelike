@@ -143,7 +143,10 @@ export class InputHandler {
       'KeyW', 'KeyA', 'KeyS', 'KeyD',
       'KeyZ', 'KeyX', 'KeyC', 'KeyM',
       'Space', 'Escape',
-      'Digit1', 'Digit2', 'Digit3', 'Digit4'
+      'Digit1', 'Digit2', 'Digit3', 'Digit4',
+      'Numpad1', 'Numpad2', 'Numpad3', 'Numpad4',
+      'Numpad6', 'Numpad7', 'Numpad8', 'Numpad9',
+      'Home', 'End', 'PageUp', 'PageDown'
     ];
     return gameKeys.includes(code);
   }
@@ -156,22 +159,44 @@ export class InputHandler {
    */
   _handleExplorationInput(code) {
     switch (code) {
-      // ── Movimiento ──
+      // ── Movimiento Ortogonal ──
       case 'ArrowUp':
       case 'KeyW':
+      case 'Numpad8':
         this._actionQueue = { type: ACTIONS.MOVE, dx: 0, dy: -1 };
         break;
       case 'ArrowDown':
       case 'KeyS':
+      case 'Numpad2':
         this._actionQueue = { type: ACTIONS.MOVE, dx: 0, dy: 1 };
         break;
       case 'ArrowLeft':
       case 'KeyA':
+      case 'Numpad4':
         this._actionQueue = { type: ACTIONS.MOVE, dx: -1, dy: 0 };
         break;
       case 'ArrowRight':
       case 'KeyD':
+      case 'Numpad6':
         this._actionQueue = { type: ACTIONS.MOVE, dx: 1, dy: 0 };
+        break;
+
+      // ── Movimiento Diagonal ──
+      case 'Home':
+      case 'Numpad7':
+        this._actionQueue = { type: ACTIONS.MOVE, dx: -1, dy: -1 };
+        break;
+      case 'PageUp':
+      case 'Numpad9':
+        this._actionQueue = { type: ACTIONS.MOVE, dx: 1, dy: -1 };
+        break;
+      case 'End':
+      case 'Numpad1':
+        this._actionQueue = { type: ACTIONS.MOVE, dx: -1, dy: 1 };
+        break;
+      case 'PageDown':
+      case 'Numpad3':
+        this._actionQueue = { type: ACTIONS.MOVE, dx: 1, dy: 1 };
         break;
 
       // ── Acciones ──

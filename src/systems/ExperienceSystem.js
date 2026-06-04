@@ -140,6 +140,8 @@ function findWeakestMoveIndex(currentMoves, movesDB) {
   return weakestIdx;
 }
 
+import { calculateAllStats } from './StatCalculator.js';
+
 /**
  * Calcula stats a partir de base stats y nivel
  * @param {Object} baseStats - Stats base de la especie
@@ -147,12 +149,5 @@ function findWeakestMoveIndex(currentMoves, movesDB) {
  * @returns {Object} Stats calculados
  */
 export function calculateStats(baseStats, level) {
-  return {
-    maxHp: Math.floor(((2 * baseStats.hp * level) / 100) + level + 10),
-    attack: Math.floor(((2 * baseStats.attack * level) / 100) + 5),
-    defense: Math.floor(((2 * baseStats.defense * level) / 100) + 5),
-    spAtk: Math.floor(((2 * baseStats.spAtk * level) / 100) + 5),
-    spDef: Math.floor(((2 * baseStats.spDef * level) / 100) + 5),
-    speed: Math.floor(((2 * baseStats.speed * level) / 100) + 5)
-  };
+  return calculateAllStats(baseStats, level);
 }
