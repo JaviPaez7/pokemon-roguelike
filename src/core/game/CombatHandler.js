@@ -267,4 +267,42 @@ export class CombatHandler {
     game.needsRender = true;
     return { success: true, type: 'attacked' };
   }
+
+  _updatePartyFollowers(leaderOldPos) {
+    const game = this.game;
+    const partyEntities = game.entityManager.getEntitiesWithComponents('partyMember');
+    
+    const followers = partyEntities
+      .filter(id => id !== game._playerId)
+      .map(id => ({ id, slot: game.entityManager.getComponent(id, 'partyMember').slot }))
+      .sort((a, b) => a.slot - b.slot);
+
+    let nextTarget = { x: leaderOldPos.x, y: leaderOldPos.y };
+
+    for (const follower of followers) {
+      const posComponent = game.entityManager.getComponent(follower.id, 'position');
+      if (!posComponent) continue;
+
+      const currentPos = { x: posComponent.x, y: posComponent.y };
+      
+      if (currentPos.x !== nextTarget.x || currentPos.y !== nextTarget.y) {
+         const dx = nextTarget.x - currentPos.x;
+         const dy = nextTarget.y - currentPos.y;
+         let facing = posComponent.facing;
+         if (dy < 0) facing = 'up';
+         else if (dy > 0) facing = 'down';
+         else if (dx < 0) facing = 'left';
+         else if (dx > 0) facing = 'right';
+
+         posComponent.prevX = posComponent.x;
+         posComponent.prevY = posComponent.y;
+         posComponent.moveStartTime = performance.now();
+         posComponent.x = nextTarget.x;
+         posComponent.y = nextTarget.y;
+         posComponent.facing = facing;
+      }
+      
+      nextTarget = currentPos;
+    }
+  }
 }
