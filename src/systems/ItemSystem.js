@@ -28,7 +28,7 @@ export function spawnItems(itemPoints, count, itemsDB, entityManager) {
     const point = availablePoints[i];
     const item = selectRandomItem(itemsDB);
     if (item) {
-      const entityId = entityManager.createItemEntity(item.id, 1, point.x, point.y);
+      const entityId = entityManager.createItemEntity(item.id, 1, point.x, point.y, item.spriteUrl);
       createdItems.push(entityId);
     }
   }

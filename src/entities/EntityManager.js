@@ -379,7 +379,7 @@ export class EntityManager {
    * @param {number} y - Posición Y
    * @returns {number} ID de la entidad creada
    */
-  createItemEntity(itemId, quantity, x, y) {
+  createItemEntity(itemId, quantity, x, y, spriteUrl = '') {
     const id = this.createEntity();
 
     // Posición
@@ -400,7 +400,7 @@ export class EntityManager {
 
     // Sprite del objeto
     this.setComponent(id, 'sprite', {
-      url: `assets/items/${itemId}.png`,
+      url: spriteUrl || '',
       image: null,
       loaded: false
     });

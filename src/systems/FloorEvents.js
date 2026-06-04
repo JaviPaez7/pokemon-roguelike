@@ -50,7 +50,7 @@ export function triggerFloorEvent(game) {
         const rareItems = game.itemsData.filter(item => (item.rarity || 0.1) <= 0.05);
         const item = rareItems.length > 0 ? rareItems[Math.floor(Math.random() * rareItems.length)] : game.itemsData[0];
         
-        game.entityManager.createItemEntity(item.id, 1, pos.x, pos.y);
+        game.entityManager.createItemEntity(item.id, 1, pos.x, pos.y, item.spriteUrl);
         game.eventBus.emit('show_dialog', {
           text: '¡Sientes una vibración misteriosa!\n\nUn valioso tesoro escondido ha aparecido en algún lugar de este piso.'
         });
