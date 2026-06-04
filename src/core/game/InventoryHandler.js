@@ -1,6 +1,7 @@
 import { ACTIONS, GAME_STATES } from '../../constants.js';
 import { attemptCapture } from '../../combat/CaptureSystem.js';
 import { useItem } from '../../systems/ItemSystem.js';
+import { checkEvolution, evolve } from '../../systems/EvolutionSystem.js';
 
 /**
  * Usa un objeto del inventario sobre un objetivo.
@@ -65,6 +66,38 @@ export function useInventoryItem(game, itemId, targetPokemonId) {
         }
       }
     });
+  } else if (itemData.type === 'evolution_stone') {
+    const targetInfo = game.entityManager.getComponent(targetPokemonId, 'pokemonInfo');
+    if (!targetInfo) {
+      game.eventBus.emit('message', 'No hay un objetivo válido para usar la piedra.');
+      return;
+    }
+
+    const evoData = checkEvolution(targetInfo, game.evolutionsData || [], itemId);
+    if (!evoData) {
+      game.eventBus.emit('show_dialog', { text: `No tuvo ningún efecto en ${targetInfo.name}...` });
+      return;
+    }
+
+    const result = evolve(targetPokemonId, evoData, game.entityManager, game.pokemonData, game.movesData);
+    if (result.success) {
+      // Consumir el objeto
+      const slot = game.inventory.find(s => s.itemId === itemId);
+      if (slot) {
+        slot.quantity--;
+        if (slot.quantity <= 0) {
+          const idx = game.inventory.indexOf(slot);
+          if (idx > -1) game.inventory.splice(idx, 1);
+        }
+      }
+      
+      // Animación / Texto de evolución
+      game.eventBus.emit('show_dialog', { text: `¡Anda! ¡${result.oldName} está evolucionando!\n\n... ... ...\n\n¡Enhorabuena! Tu ${result.oldName} ha evolucionado a ${result.newName}!` });
+      game.eventBus.emit('message', { text: `¡${result.oldName} ha evolucionado a ${result.newName}!`, color: '#ffff00' });
+      game.saveGameData();
+    } else {
+      game.eventBus.emit('message', result.messages.join(' '));
+    }
   } else {
     const result = useItem(itemId, targetPokemonId, game.entityManager, game.inventory, game.itemsData);
     for (const msg of result.messages) {
