@@ -53,6 +53,9 @@ export function handleCancelAction(ui) {
         openTitleScreen(ui);
       }
       break;
+    case 'log_history':
+      openPauseMenu(ui);
+      break;
     case 'item_actions':
     case 'use_item_target':
       openInventoryMenu(ui);

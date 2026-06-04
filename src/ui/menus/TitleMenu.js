@@ -51,7 +51,7 @@ export function openTitleScreen(ui) {
 /** @param {import('../UIManager.js').UIManager} ui */
 export function showControlsDialog(ui) {
   ui.showDialog(
-    'Controles:\nWASD / Flechas - Mover y Atacar\nZ - Confirmar / Interactuar / Escaleras\nX - Mochila / Volver\nC - Ver Equipo\n1,2,3,4 - Ataque rápido\nM - Mapa\nEsc - Pausa',
+    'Controles:\nWASD / Flechas / HJKL - Mover\nDiagonales: Tecl. Num. / YUBN / Inicio/Fin...\nZ - Confirmar / Interactuar / Escaleras\nX - Mochila / Volver\nC - Ver Equipo\n1,2,3,4 - Ataque rápido\nM - Mapa\nEsc - Pausa',
     () => openTitleScreen(ui)
   );
 }
