@@ -15,7 +15,7 @@ import { ENEMY_DETECT_RANGE } from '../constants.js';
  * @param {number} playerEntityId - ID de la entidad jugador
  * @returns {Object|null} Acción: { type: 'move', dx, dy } o { type: 'attack', targetId } o null
  */
-export function getEnemyAction(entityId, entityManager, tileMap, playerPos, playerEntityId) {
+export function getEnemyAction(entityId, entityManager, tileMap, playerPos, playerEntityId, game) {
   const pos = entityManager.getComponent(entityId, 'position');
   const ai = entityManager.getComponent(entityId, 'aiControlled');
   const fighter = entityManager.getComponent(entityId, 'fighter');
@@ -28,6 +28,11 @@ export function getEnemyAction(entityId, entityManager, tileMap, playerPos, play
 
   // Determinar comportamiento basado en estado
   let behavior = ai.behavior || 'wander';
+
+  // Si es un seguidor (aliado del jugador)
+  if (behavior === 'follower') {
+    return followerAction(entityId, pos, playerPos, tileMap, entityManager, game);
+  }
   
   // Si HP bajo, huir
   if (fighter.hp / fighter.maxHp < 0.25) {
@@ -185,4 +190,58 @@ function moveTowards(pos, target, tileMap, entityManager, entityId) {
   }
 
   return null;
+}
+
+/**
+ * Comportamiento de seguidor (miembros del equipo)
+ */
+function followerAction(entityId, pos, playerPos, tileMap, entityManager, game) {
+  const partyMember = entityManager.getComponent(entityId, 'partyMember');
+  if (!partyMember || !game) return { type: 'wait' };
+
+  // 1. Buscar enemigos adyacentes para atacar
+  const adjacentOffsets = [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]];
+  for (const offset of adjacentOffsets) {
+    const targetX = pos.x + offset[0];
+    const targetY = pos.y + offset[1];
+    const targetId = entityManager.getEntityAt(targetX, targetY);
+    
+    if (targetId !== null && targetId !== game._playerId) {
+      // Asegurarse de que el objetivo no es otro miembro del equipo
+      if (!entityManager.hasComponent(targetId, 'partyMember') && entityManager.hasComponent(targetId, 'fighter')) {
+        return { type: 'attack', targetId: targetId };
+      }
+    }
+  }
+
+  // 2. Moverse siguiendo el historial del jugador
+  const historyIndex = partyMember.slot - 1; // slot 1 -> index 0 (posición anterior)
+  let targetPos = playerPos;
+  
+  if (game.playerPathHistory && game.playerPathHistory.length > historyIndex) {
+    targetPos = game.playerPathHistory[historyIndex];
+  }
+
+  // Calcular distancia al objetivo de seguimiento
+  const distToTarget = Math.max(Math.abs(pos.x - targetPos.x), Math.abs(pos.y - targetPos.y));
+  const distToPlayer = Math.max(Math.abs(pos.x - playerPos.x), Math.abs(pos.y - playerPos.y));
+
+  // Si ya estamos en la posicion objetivo o muy cerca, esperar
+  if (pos.x === targetPos.x && pos.y === targetPos.y) {
+    return { type: 'wait' };
+  }
+
+  // Si estamos MUY lejos del jugador (> 5), teleportar cerca (evita atascos)
+  if (distToPlayer > 5) {
+    pos.prevX = pos.x;
+    pos.prevY = pos.y;
+    pos.x = targetPos.x;
+    pos.y = targetPos.y;
+    entityManager.setComponent(entityId, 'position', pos);
+    return { type: 'wait' }; // Devuelve wait para no chocar ni hacer doble turno
+  }
+
+  // Moverse hacia targetPos
+  const action = moveTowards(pos, targetPos, tileMap, entityManager, entityId);
+  return action || { type: 'wait' };
 }

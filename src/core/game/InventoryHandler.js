@@ -52,8 +52,10 @@ export function useInventoryItem(game, itemId, targetPokemonId) {
               slot: party.length,
               isLeader: false
             });
-            game.entityManager.removeComponent(targetPokemonId, 'aiControlled');
-            game.turnManager.removeEntity(targetPokemonId);
+            
+            const ai = game.entityManager.getComponent(targetPokemonId, 'aiControlled') || {};
+            ai.behavior = 'follower';
+            game.entityManager.setComponent(targetPokemonId, 'aiControlled', ai);
 
             game.eventBus.emit('message', `¡${targetInfo.name} se ha unido a tu equipo!`);
           } else {

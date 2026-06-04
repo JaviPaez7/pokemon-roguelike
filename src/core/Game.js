@@ -98,11 +98,15 @@ export class Game {
 
     // Inventario del jugador
     this.inventory = [
-      { itemId: 'potion', quantity: 2 },
+      { itemId: 'potion', quantity: 3 },
       { itemId: 'pokeball', quantity: 5 }
     ];
+    this.maxInventorySize = 20;
 
-    // ── Subsistemas ──
+    // Historial de posiciones del jugador para seguidores
+    this.playerPathHistory = [];
+
+    // Bases de datos y sistemas compartidos──
     /** @type {EventBus} Bus de eventos global */
     this.eventBus = new EventBus();
 
@@ -436,6 +440,15 @@ export class Game {
           }
         }
         this.entityManager.setComponent(this._playerId, 'fighter', fighter);
+      }
+
+      // Actualizar historial de posiciones para los seguidores
+      const pos = this.entityManager.getComponent(this._playerId, 'position');
+      if (pos && (pos.x !== pos.prevX || pos.y !== pos.prevY)) {
+        this.playerPathHistory.unshift({ x: pos.prevX, y: pos.prevY });
+        if (this.playerPathHistory.length > 10) {
+          this.playerPathHistory.pop();
+        }
       }
 
       if (this.stats.turnsPlayed % 5 === 0) {

@@ -21,7 +21,7 @@ export class CombatHandler {
     const playerPos = game.entityManager.getComponent(game._playerId, 'position');
     if (!playerPos) return null;
 
-    const action = getEnemyAction(entityId, game.entityManager, game.tileMap, playerPos, game._playerId);
+    const action = getEnemyAction(entityId, game.entityManager, game.tileMap, playerPos, game._playerId, game);
 
     if (action && action.type === 'attack') {
       return { type: ACTIONS.ATTACK, targetId: action.targetId };
@@ -29,6 +29,10 @@ export class CombatHandler {
 
     if (action && action.type === 'move') {
       return { type: ACTIONS.MOVE, dx: action.dx, dy: action.dy };
+    }
+
+    if (action && action.type === 'wait') {
+      return { type: ACTIONS.WAIT };
     }
 
     return action;
@@ -51,12 +55,6 @@ export class CombatHandler {
           entityId, action.dx, action.dy,
           game.tileMap, game.entityManager
         );
-
-        if (result.success && entityId === game._playerId) {
-          if (posComp && (posComp.x !== oldX || posComp.y !== oldY)) {
-            this._updatePartyFollowers({ x: oldX, y: oldY });
-          }
-        }
 
         if (result.type === 'bump_attack') {
           return this.handleCombat(entityId, result.targetEntity);
@@ -241,23 +239,31 @@ export class CombatHandler {
         const baseExp = defenderInfo.baseExp || 50;
         const xpGained = Math.max(1, Math.floor((baseExp * defenderInfo.level) / 5));
 
-        const fighter = game.entityManager.getComponent(attackerId, 'fighter');
-        const xpResult = grantExperience(attackerInfo, fighter, xpGained, game.pokemonData, game.movesData);
+        const partyEntities = game.entityManager.getEntitiesWithComponents('partyMember');
+        
+        for (const memberId of partyEntities) {
+          const mInfo = game.entityManager.getComponent(memberId, 'pokemonInfo');
+          const mFighter = game.entityManager.getComponent(memberId, 'fighter');
+          
+          if (!mInfo || !mFighter || mFighter.hp <= 0) continue;
 
-        if (xpResult.messages) {
-          for (const msg of xpResult.messages) {
-            game.eventBus.emit('message', msg);
+          const xpResult = grantExperience(mInfo, mFighter, xpGained, game.pokemonData, game.movesData);
+
+          if (xpResult.messages) {
+            for (const msg of xpResult.messages) {
+              game.eventBus.emit('message', msg);
+            }
           }
-        }
 
-        if (xpResult.levelsGained > 0) {
-          game.eventBus.emit('level_up', { entityId: attackerId, newLevel: attackerInfo.level });
+          if (xpResult.levelsGained > 0) {
+            game.eventBus.emit('level_up', { entityId: memberId, newLevel: mInfo.level });
 
-          const evo = checkEvolution(attackerInfo, game.evolutionsData);
-          if (evo) {
-            const evoResult = evolve(attackerId, evo, game.entityManager, game.pokemonData, game.movesData);
-            if (evoResult.messages && evoResult.messages.length > 0) {
-              game.eventBus.emit('show_dialog', { text: evoResult.messages.join('\n') });
+            const evo = checkEvolution(mInfo, game.evolutionsData);
+            if (evo) {
+              const evoResult = evolve(memberId, evo, game.entityManager, game.pokemonData, game.movesData);
+              if (evoResult.messages && evoResult.messages.length > 0) {
+                game.eventBus.emit('show_dialog', { text: evoResult.messages.join('\n') });
+              }
             }
           }
         }
@@ -266,43 +272,5 @@ export class CombatHandler {
 
     game.needsRender = true;
     return { success: true, type: 'attacked' };
-  }
-
-  _updatePartyFollowers(leaderOldPos) {
-    const game = this.game;
-    const partyEntities = game.entityManager.getEntitiesWithComponents('partyMember');
-    
-    const followers = partyEntities
-      .filter(id => id !== game._playerId)
-      .map(id => ({ id, slot: game.entityManager.getComponent(id, 'partyMember').slot }))
-      .sort((a, b) => a.slot - b.slot);
-
-    let nextTarget = { x: leaderOldPos.x, y: leaderOldPos.y };
-
-    for (const follower of followers) {
-      const posComponent = game.entityManager.getComponent(follower.id, 'position');
-      if (!posComponent) continue;
-
-      const currentPos = { x: posComponent.x, y: posComponent.y };
-      
-      if (currentPos.x !== nextTarget.x || currentPos.y !== nextTarget.y) {
-         const dx = nextTarget.x - currentPos.x;
-         const dy = nextTarget.y - currentPos.y;
-         let facing = posComponent.facing;
-         if (dy < 0) facing = 'up';
-         else if (dy > 0) facing = 'down';
-         else if (dx < 0) facing = 'left';
-         else if (dx > 0) facing = 'right';
-
-         posComponent.prevX = posComponent.x;
-         posComponent.prevY = posComponent.y;
-         posComponent.moveStartTime = performance.now();
-         posComponent.x = nextTarget.x;
-         posComponent.y = nextTarget.y;
-         posComponent.facing = facing;
-      }
-      
-      nextTarget = currentPos;
-    }
   }
 }
