@@ -64,14 +64,14 @@ export class MovementSystem {
     }
 
     // ── 2. Verificar si el tile es transitable ──
-    if (!tileMap.isWalkable(targetX, targetY)) {
+    if (!canWalkOnTile(entityId, targetX, targetY, tileMap, entityManager)) {
       return { success: false, type: 'blocked' };
     }
 
     // ── 2.5 Verificar corte de esquinas para diagonales ──
     if (Math.abs(dx) === 1 && Math.abs(dy) === 1) {
-      if (!tileMap.isWalkable(position.x + dx, position.y) || 
-          !tileMap.isWalkable(position.x, position.y + dy)) {
+      if (!canWalkOnTile(entityId, position.x + dx, position.y, tileMap, entityManager) || 
+          !canWalkOnTile(entityId, position.x, position.y + dy, tileMap, entityManager)) {
         return { success: false, type: 'blocked' };
       }
     }
@@ -240,4 +240,22 @@ export class MovementSystem {
 
     return neighbors;
   }
+}
+
+export function canWalkOnTile(entityId, x, y, tileMap, entityManager) {
+  const tile = tileMap.getTile(x, y);
+  if (!tile) return false;
+  if (tile.walkable) return true;
+  if (tile.id === 4 || tile.id === 6) {
+    const info = entityManager.getComponent(entityId, 'pokemonInfo');
+    if (!info) return false;
+    const type1 = info.type1 ? info.type1.toLowerCase() : '';
+    const type2 = info.type2 ? info.type2.toLowerCase() : '';
+    if (tile.id === 4) {
+      if (type1 === 'water' || type2 === 'water' || type1 === 'flying' || type2 === 'flying') return true;
+    } else if (tile.id === 6) {
+      if (type1 === 'fire' || type2 === 'fire' || type1 === 'flying' || type2 === 'flying') return true;
+    }
+  }
+  return false;
 }

@@ -2,9 +2,9 @@
  * EnemyAI.js — Comportamientos de IA para Pokémon enemigos
  * Comportamientos: wander, chase, flee, attack
  */
-
 import { Path } from 'rot-js';
 import { ENEMY_DETECT_RANGE } from '../constants.js';
+import { canWalkOnTile } from '../systems/MovementSystem.js';
 
 /**
  * Determina la acción de un enemigo
@@ -78,7 +78,7 @@ function chaseAction(entityId, pos, playerPos, playerEntityId, tileMap, entityMa
   // Usar A* para encontrar camino
   const passableCallback = (x, y) => {
     if (x === playerPos.x && y === playerPos.y) return true;
-    if (!tileMap.isWalkable(x, y)) return false;
+    if (!canWalkOnTile(entityId, x, y, tileMap, entityManager)) return false;
     // No pasar por otros enemigos (excepto el objetivo)
     const entityAtPos = entityManager.getEntityAt(x, y);
     if (entityAtPos !== null && entityAtPos !== entityId) return false;
@@ -126,7 +126,7 @@ function fleeAction(entityId, pos, playerPos, tileMap, entityManager) {
   for (const dir of directions) {
     const newX = pos.x + dir.dx;
     const newY = pos.y + dir.dy;
-    if (tileMap.isWalkable(newX, newY) && !entityManager.getEntityAt(newX, newY)) {
+    if (canWalkOnTile(entityId, newX, newY, tileMap, entityManager) && !entityManager.getEntityAt(newX, newY)) {
       return { type: 'move', dx: dir.dx, dy: dir.dy };
     }
   }
@@ -157,7 +157,7 @@ function   wanderAction(entityId, pos, tileMap, entityManager) {
   for (const dir of directions) {
     const newX = pos.x + dir.dx;
     const newY = pos.y + dir.dy;
-    if (tileMap.isWalkable(newX, newY) && !entityManager.getEntityAt(newX, newY)) {
+    if (canWalkOnTile(entityId, newX, newY, tileMap, entityManager) && !entityManager.getEntityAt(newX, newY)) {
       return { type: 'move', dx: dir.dx, dy: dir.dy };
     }
   }
@@ -181,7 +181,7 @@ function moveTowards(pos, target, tileMap, entityManager, entityId) {
   for (const attempt of attempts) {
     const newX = pos.x + attempt.dx;
     const newY = pos.y + attempt.dy;
-    if (tileMap.isWalkable(newX, newY)) {
+    if (canWalkOnTile(entityId, newX, newY, tileMap, entityManager)) {
       const blocker = entityManager.getEntityAt(newX, newY);
       if (!blocker || blocker === entityId) {
         return { type: 'move', dx: attempt.dx, dy: attempt.dy };

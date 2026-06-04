@@ -95,6 +95,9 @@ export class DungeonGenerator {
     // === PASO 7: Colocación de escaleras ===
     const stairsPos = this._colocarEscaleras(rooms, playerStart, tileMap);
 
+    // === PASO 7.5: Añadir terrenos especiales (Agua, Lava) ===
+    this._addSpecialTerrain(rooms, stairsPos, tileMap);
+
     // === PASO 8: Puntos de aparición ===
     const spawnPoints = this._generarPuntosAparicion(rooms, playerStart, stairsPos, tileMap);
     const itemPoints = this._generarPuntosItems(rooms, playerStart, stairsPos, tileMap);
@@ -712,6 +715,40 @@ export class DungeonGenerator {
             }
           }
         }
+      }
+    }
+  }
+
+  /**
+   * Genera charcos de agua o lava aleatorios dentro de algunas habitaciones.
+   */
+  _addSpecialTerrain(rooms, stairsPos, tileMap) {
+    const specialRooms = RNG.shuffle([...rooms]).slice(0, Math.max(1, Math.floor(rooms.length * 0.3))); // 30% of rooms
+
+    for (const room of specialRooms) {
+      if (room.isStart) continue; // No water in start room
+      
+      const terrainType = RNG.getUniform() > 0.5 ? TILES.WATER.id : TILES.LAVA.id;
+      
+      // Random walk para generar un "charco"
+      let cx = Math.floor(room.x + room.w / 2);
+      let cy = Math.floor(room.y + room.h / 2);
+      
+      const puddleSize = Math.floor((room.w * room.h) * 0.3); // 30% of room area
+
+      for (let i = 0; i < puddleSize; i++) {
+        // Mover centro de forma aleatoria
+        cx += RNG.getUniformInt(-1, 1);
+        cy += RNG.getUniformInt(-1, 1);
+        
+        // Mantener dentro de la sala, con 1 tile de margen para no bloquear puertas
+        cx = Math.max(room.x + 1, Math.min(room.x + room.w - 2, cx));
+        cy = Math.max(room.y + 1, Math.min(room.y + room.h - 2, cy));
+        
+        // No sobreescribir escaleras
+        if (cx === stairsPos.x && cy === stairsPos.y) continue;
+        
+        tileMap.setTile(cx, cy, terrainType);
       }
     }
   }

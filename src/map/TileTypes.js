@@ -82,6 +82,15 @@ export const TILES = {
     char: '^',
     colors: { floor: '#e74c3c', wall: '#c0392b' }
   },
+
+  /** Lava - bloquea movimiento a no ser que seas fuego/volador */
+  LAVA: {
+    id: 6,
+    walkable: false,
+    transparent: true,
+    char: '~',
+    colors: { floor: '#e67e22', wall: '#d35400' }
+  },
 };
 
 /**
