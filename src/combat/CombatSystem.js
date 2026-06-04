@@ -16,7 +16,7 @@ import { COLORS } from '../constants.js';
  * @param {Object} typeChart - Matriz de efectividad de tipos
  * @returns {Object} { damage, effectiveness, isCritical, isSTAB, messages }
  */
-export function calculateDamage(attacker, defender, move, attackerInfo, defenderInfo, typeChart) {
+export function calculateDamage(attacker, defender, move, attackerInfo, defenderInfo, typeChart, currentWeather = 'normal') {
   const result = {
     damage: 0,
     effectiveness: 1,
@@ -97,6 +97,25 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
     result.messages.push('¡Golpe crítico!');
   }
 
+  // Modificador de clima
+  if (currentWeather === 'lluvia') {
+    if (move.type === 'water') {
+      damage = Math.floor(damage * 1.3);
+      result.messages.push('¡La lluvia potencia los ataques de Agua! 🌧️');
+    } else if (move.type === 'fire') {
+      damage = Math.floor(damage * 0.7);
+      result.messages.push('¡La lluvia debilita los ataques de Fuego! 🌧️');
+    }
+  } else if (currentWeather === 'sol') {
+    if (move.type === 'fire') {
+      damage = Math.floor(damage * 1.3);
+      result.messages.push('¡El sol radiante potencia los ataques de Fuego! ☀️');
+    } else if (move.type === 'water') {
+      damage = Math.floor(damage * 0.7);
+      result.messages.push('¡El sol radiante debilita los ataques de Agua! ☀️');
+    }
+  }
+
   // Variación aleatoria (85% - 100%)
   const randomFactor = 0.85 + Math.random() * 0.15;
   damage = Math.max(1, Math.floor(damage * randomFactor));
@@ -148,7 +167,7 @@ function applyStatModifier(baseStat, stage) {
  * @returns {Object} { success, damage, effectiveness, messages, defenderFainted }
  */
 export function executeMove(params) {
-  const { attackerId, defenderId, move, entityManager, typeChart, eventBus } = params;
+  const { attackerId, defenderId, move, entityManager, typeChart, eventBus, currentWeather } = params;
   
   const attackerFighter = entityManager.getComponent(attackerId, 'fighter');
   const defenderFighter = entityManager.getComponent(defenderId, 'fighter');
@@ -189,7 +208,7 @@ export function executeMove(params) {
     if (defenderFainted) break;
 
     // Calcular daño
-    const result = calculateDamage(attackerFighter, defenderFighter, move, attackerInfo, defenderInfo, typeChart);
+    const result = calculateDamage(attackerFighter, defenderFighter, move, attackerInfo, defenderInfo, typeChart, currentWeather);
     
     // Solo mostramos los mensajes de efectividad en el primer golpe
     if (i === 0) {

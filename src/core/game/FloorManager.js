@@ -1,5 +1,6 @@
 import { MAP_WIDTH, MAP_HEIGHT } from '../../constants.js';
 import { spawnItems } from '../../systems/ItemSystem.js';
+import { triggerFloorEvent } from '../../systems/FloorEvents.js';
 
 /**
  * Generación de pisos, spawn de enemigos y pre-carga de sprites.
@@ -19,7 +20,9 @@ export class FloorManager {
   generateFloor() {
     const game = this.game;
     game.seed = Math.floor(Math.random() * 1000000);
-    const genResult = game.dungeonGenerator.generate(MAP_WIDTH, MAP_HEIGHT, game.seed);
+    const zone = this.getZoneConfig();
+    const theme = zone ? zone.theme : 'default';
+    const genResult = game.dungeonGenerator.generate(MAP_WIDTH, MAP_HEIGHT, game.seed, theme);
     game.tileMap = genResult.tileMap;
     game._stairsPos = genResult.stairsPos;
     game._spawnPoints = genResult.spawnPoints;
@@ -33,6 +36,10 @@ export class FloorManager {
     const maxItems = zone ? zone.itemsPerFloor[1] : 5;
     const count = minItems + Math.floor(Math.random() * (maxItems - minItems + 1));
     spawnItems(game._itemPoints, count, game.itemsData, game.entityManager);
+
+    if (game.weatherSystem) {
+      game.weatherSystem.generateFloorWeather(game);
+    }
   }
 
   spawnEnemies() {
@@ -132,6 +139,7 @@ export class FloorManager {
     });
 
     this.spawnEnemies();
+    triggerFloorEvent(game);
     this.preloadVisibleSprites();
 
     game._updateCamera();

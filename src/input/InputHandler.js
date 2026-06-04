@@ -141,7 +141,7 @@ export class InputHandler {
     const gameKeys = [
       'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
       'KeyW', 'KeyA', 'KeyS', 'KeyD',
-      'KeyZ', 'KeyX', 'KeyC', 'KeyM',
+      'KeyZ', 'KeyX', 'KeyC', 'KeyM', 'KeyQ', 'Tab',
       'Space', 'Escape',
       'Digit1', 'Digit2', 'Digit3', 'Digit4',
       'Numpad1', 'Numpad2', 'Numpad3', 'Numpad4',
@@ -202,6 +202,10 @@ export class InputHandler {
       // ── Acciones ──
       case 'Space':
         this._actionQueue = { type: ACTIONS.WAIT };
+        break;
+      case 'KeyQ':
+      case 'Tab':
+        this._actionQueue = { type: 'swap_leader' };
         break;
       case 'KeyZ':
         // Confirmar: intentar usar escaleras o recoger objeto

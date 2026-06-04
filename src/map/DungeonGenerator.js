@@ -52,6 +52,7 @@ export class DungeonGenerator {
    * @param {number} width - Ancho del mapa en tiles (ej: 50)
    * @param {number} height - Alto del mapa en tiles (ej: 40)
    * @param {number} [seed] - Semilla para generación determinística
+   * @param {string} [theme] - Tema visual de la zona (ej: 'forest', 'volcano')
    * @returns {{
    *   tileMap: TileMap,
    *   rooms: {x: number, y: number, w: number, h: number}[],
@@ -61,7 +62,7 @@ export class DungeonGenerator {
    *   stairsPos: {x: number, y: number}
    * }} Datos completos de la mazmorra generada
    */
-  generate(width, height, seed) {
+  generate(width, height, seed, theme = 'default') {
     // Inicializar el generador de números aleatorios con la semilla
     if (seed !== undefined) {
       RNG.setSeed(seed);
@@ -96,7 +97,7 @@ export class DungeonGenerator {
     const stairsPos = this._colocarEscaleras(rooms, playerStart, tileMap);
 
     // === PASO 7.5: Añadir terrenos especiales (Agua, Lava) ===
-    this._addSpecialTerrain(rooms, stairsPos, tileMap);
+    this._addSpecialTerrain(rooms, stairsPos, tileMap, theme);
 
     // === PASO 8: Puntos de aparición ===
     const spawnPoints = this._generarPuntosAparicion(rooms, playerStart, stairsPos, tileMap);
@@ -105,8 +106,6 @@ export class DungeonGenerator {
     // === PASO 9: Generación de trampas ===
     this._colocarTrampas(rooms, playerStart, stairsPos, tileMap);
 
-    // === PASO 10: Generación de agua ===
-    this._generarLagos(rooms, tileMap, playerStart, stairsPos);
     tileMap.rooms = rooms;
     return {
       tileMap,
@@ -670,65 +669,22 @@ export class DungeonGenerator {
   }
 
   /**
-   * PASO 10: Genera lagos o charcos de agua en las habitaciones.
-   * 
-   * @param {Object[]} rooms - Lista de habitaciones
-   * @param {TileMap} tileMap - Mapa de tiles
-   * @param {Object} playerStart - Posición inicial del jugador
-   * @param {Object} stairsPos - Posición de las escaleras
-   * @private
+   * Genera charcos de agua o lava aleatorios dentro de algunas habitaciones según el tema de la zona.
    */
-  _generarLagos(rooms, tileMap, playerStart, stairsPos) {
-    for (const room of rooms) {
-      // No generar agua en la habitación del jugador o de las escaleras
-      if (playerStart.x >= room.x && playerStart.x < room.x + room.w &&
-          playerStart.y >= room.y && playerStart.y < room.y + room.h) {
-        continue;
-      }
-      if (stairsPos.x >= room.x && stairsPos.x < room.x + room.w &&
-          stairsPos.y >= room.y && stairsPos.y < room.y + room.h) {
-        continue;
-      }
-
-      // No generar agua en habitaciones muy pequeñas
-      if (room.w < 6 || room.h < 6) continue;
-
-      // 30% de probabilidad de tener agua por habitación
-      if (RNG.getUniform() < 0.3) {
-        const cx = Math.floor(room.x + room.w / 2);
-        const cy = Math.floor(room.y + room.h / 2);
-        const maxSafeRadius = Math.floor(Math.min(room.w, room.h) / 2) - 2;
-        if (maxSafeRadius < 1) continue;
-        
-        const radius = Math.floor(RNG.getUniform() * Math.min(2, maxSafeRadius)) + 1; // Radio de 1 a 2 tiles
-        
-        for (let y = cy - radius; y <= cy + radius; y++) {
-          for (let x = cx - radius; x <= cx + radius; x++) {
-            // Forma circular (aproximada)
-            if ((x - cx) * (x - cx) + (y - cy) * (y - cy) <= radius * radius + 0.5) {
-              if (tileMap.isInBounds(x, y)) {
-                // Solo reemplazar suelo normal
-                if (tileMap.getTile(x, y).id === TILES.FLOOR.id) {
-                  tileMap.setTile(x, y, TILES.WATER.id);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * Genera charcos de agua o lava aleatorios dentro de algunas habitaciones.
-   */
-  _addSpecialTerrain(rooms, stairsPos, tileMap) {
+  _addSpecialTerrain(rooms, stairsPos, tileMap, theme) {
     const specialRooms = RNG.shuffle([...rooms]).slice(0, Math.max(1, Math.floor(rooms.length * 0.3))); // 30% of rooms
 
     for (const room of specialRooms) {
       if (room.isStart) continue; // No water in start room
       
-      const terrainType = RNG.getUniform() > 0.5 ? TILES.WATER.id : TILES.LAVA.id;
+      let terrainType = TILES.WATER.id;
+      if (theme === 'volcano') {
+        terrainType = RNG.getUniform() > 0.2 ? TILES.LAVA.id : TILES.WATER.id;
+      } else if (theme === 'dark' || theme === 'cave' || theme === 'lab') {
+        terrainType = RNG.getUniform() > 0.8 ? TILES.LAVA.id : TILES.WATER.id; // rare lava
+      } else {
+        terrainType = TILES.WATER.id; // only water
+      }
       
       // Random walk para generar un "charco"
       let cx = Math.floor(room.x + room.w / 2);

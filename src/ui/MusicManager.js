@@ -28,9 +28,13 @@ export class MusicManager {
     
     // Configuración por zona
     this.zones = {
-      'Llanura de Inicio': { scale: 'c_major', tempo: 110, waveform: 'square', octave: 0 },
-      'Bosque Sombrío': { scale: 'a_minor', tempo: 90, waveform: 'triangle', octave: -1 },
+      'Bosque Verde': { scale: 'c_major', tempo: 110, waveform: 'triangle', octave: 0 },
       'Cueva Oscura': { scale: 'e_phrygian', tempo: 80, waveform: 'sine', octave: -1 },
+      'Ruta Eléctrica': { scale: 'd_dorian', tempo: 130, waveform: 'square', octave: 0 },
+      'Monte Lunar': { scale: 'c_major', tempo: 95, waveform: 'sine', octave: 0 },
+      'Profundidades Oscuras': { scale: 'a_minor', tempo: 85, waveform: 'triangle', octave: -1 },
+      'Isla Volcánica': { scale: 'e_phrygian', tempo: 120, waveform: 'square', octave: -1 },
+      'Laboratorio Final': { scale: 'd_dorian', tempo: 140, waveform: 'square', octave: 0 },
       'default': { scale: 'c_major', tempo: 120, waveform: 'square', octave: 0 }
     };
   }

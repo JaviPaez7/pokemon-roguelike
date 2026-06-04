@@ -93,18 +93,15 @@ export function grantExperience(pokemonInfo, fighter, xpGained, pokemonDB, moves
                   result.newMoves.push({ moveId: moveEntry.moveId, moveName: moveData.name });
                   result.messages.push(`¡${pokemonInfo.name} aprendió ${moveData.name}!`);
                 } else {
-                  // Reemplazar el movimiento más débil automáticamente
-                  const weakestIdx = findWeakestMoveIndex(pokemonInfo.currentMoves, movesDB);
-                  const oldMove = movesDB.find(m => m.id === pokemonInfo.currentMoves[weakestIdx].moveId);
-                  pokemonInfo.currentMoves[weakestIdx] = {
-                    moveId: moveEntry.moveId,
-                    currentPP: moveData.pp,
-                    maxPP: moveData.pp
-                  };
-                  result.newMoves.push({ moveId: moveEntry.moveId, moveName: moveData.name });
-                  result.messages.push(`¡${pokemonInfo.name} aprendió ${moveData.name}!`);
-                  if (oldMove) {
-                    result.messages.push(`...y olvidó ${oldMove.name}.`);
+                  // Guardar movimiento pendiente para que el jugador elija cuál olvidar
+                  pokemonInfo.pendingMovesToLearn = pokemonInfo.pendingMovesToLearn || [];
+                  const alreadyPending = pokemonInfo.pendingMovesToLearn.some(pm => pm.moveId === moveEntry.moveId);
+                  if (!alreadyPending) {
+                    pokemonInfo.pendingMovesToLearn.push({
+                      moveId: moveEntry.moveId,
+                      moveName: moveData.name
+                    });
+                    result.messages.push(`¡${pokemonInfo.name} quiere aprender ${moveData.name}, pero ya conoce 4 movimientos!`);
                   }
                 }
               }

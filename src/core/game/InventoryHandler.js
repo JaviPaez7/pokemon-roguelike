@@ -66,7 +66,7 @@ export function useInventoryItem(game, itemId, targetPokemonId) {
       }
     });
   } else {
-    const result = useItem(itemId, targetPokemonId, game.entityManager, game.inventory, game.itemsData);
+    const result = useItem(itemId, targetPokemonId, game.entityManager, game.inventory, game.itemsData, game.pokemonData, game.movesData);
     for (const msg of result.messages) {
       game.eventBus.emit('message', msg);
     }

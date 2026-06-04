@@ -2,6 +2,8 @@
  * ItemSystem.js — Sistema de objetos: spawn, pickup, uso
  */
 
+import { grantExperience, expForLevel } from './ExperienceSystem.js';
+
 /**
  * Genera items en un piso
  * @param {Array} itemPoints - Posiciones válidas [{x,y}]
@@ -96,7 +98,7 @@ export function pickupItem(playerEntityId, itemEntityId, entityManager, inventor
  * @param {Array} itemsDB - Base de datos de items
  * @returns {Object} { success, messages, consumed }
  */
-export function useItem(itemId, targetEntityId, entityManager, inventory, itemsDB) {
+export function useItem(itemId, targetEntityId, entityManager, inventory, itemsDB, pokemonDB = null, movesDB = null) {
   const messages = [];
   
   // Buscar item en inventario
@@ -259,6 +261,66 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
       const restored = Math.floor(fighter.belly - oldBelly);
       
       messages.push(`¡${pokemonInfo.name} comió ${itemData.name} y recuperó ${restored} de tripa!`);
+      consumed = true;
+      break;
+    }
+
+    case 'status_cure': {
+      const cures = itemData.cures;
+      if (cures === 'all') {
+        if (!fighter.statusEffects || fighter.statusEffects.length === 0) {
+          messages.push(`¡${pokemonInfo.name} no tiene ningún problema de estado!`);
+          break;
+        }
+        fighter.statusEffects = [];
+        messages.push(`¡Se curaron todos los problemas de estado de ${pokemonInfo.name}!`);
+        consumed = true;
+      } else {
+        const hasStatus = fighter.statusEffects && fighter.statusEffects.some(s => s.type === cures);
+        if (!hasStatus) {
+          const statusNames = {
+            poison: 'envenenamiento',
+            paralyze: 'parálisis',
+            burn: 'quemadura',
+            sleep: 'sueño',
+            freeze: 'congelación',
+            confuse: 'confusión'
+          };
+          const statusName = statusNames[cures] || cures;
+          messages.push(`¡${pokemonInfo.name} no sufre de ${statusName}!`);
+          break;
+        }
+        fighter.statusEffects = fighter.statusEffects.filter(s => s.type !== cures);
+        const statusNames = {
+          poison: 'envenenamiento',
+          paralyze: 'parálisis',
+          burn: 'quemadura',
+          sleep: 'sueño',
+          freeze: 'congelación',
+          confuse: 'confusión'
+        };
+        const statusName = statusNames[cures] || cures;
+        messages.push(`¡${pokemonInfo.name} se curó de su ${statusName}!`);
+        consumed = true;
+      }
+      break;
+    }
+
+    case 'level_up': {
+      if (!pokemonDB || !movesDB) {
+        messages.push('Error: Base de datos no disponible.');
+        break;
+      }
+      if (pokemonInfo.level >= 100) {
+        messages.push(`¡${pokemonInfo.name} ya está al nivel máximo (100)!`);
+        break;
+      }
+      const levelsToAdd = itemData.value || 1;
+      const targetLevel = Math.min(100, pokemonInfo.level + levelsToAdd);
+      const xpNeeded = expForLevel(targetLevel) - (pokemonInfo.xp || 0);
+      
+      const expResult = grantExperience(pokemonInfo, fighter, xpNeeded, pokemonDB, movesDB);
+      messages.push(...expResult.messages);
       consumed = true;
       break;
     }

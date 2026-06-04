@@ -57,6 +57,17 @@ export class CombatHandler {
         );
 
         if (result.type === 'bump_attack') {
+          if (entityId === game._playerId) {
+            const isFriendly = game.entityManager.hasComponent(result.targetEntity, 'npcFriendly');
+            const isMerchant = game.entityManager.hasComponent(result.targetEntity, 'npcMerchant');
+            if (isFriendly) {
+              this.handleFriendlyInteract(result.targetEntity);
+              return { success: true, type: 'interacted' };
+            } else if (isMerchant) {
+              this.handleMerchantInteract(result.targetEntity);
+              return { success: true, type: 'interacted' };
+            }
+          }
           return this.handleCombat(entityId, result.targetEntity);
         }
 
@@ -219,7 +230,8 @@ export class CombatHandler {
       move: moveSelected,
       entityManager: game.entityManager,
       typeChart: game.typeChart,
-      eventBus: game.eventBus
+      eventBus: game.eventBus,
+      currentWeather: game.currentWeather
     });
 
     if (combatResult.messages) {
@@ -238,6 +250,11 @@ export class CombatHandler {
       if (attackerId === game._playerId || game.entityManager.hasComponent(attackerId, 'partyMember')) {
         const baseExp = defenderInfo.baseExp || 50;
         const xpGained = Math.max(1, Math.floor((baseExp * defenderInfo.level) / 5));
+
+        // Ganar dinero por derrotar Pokémon enemigo
+        const coinsGained = Math.floor(defenderInfo.level * (Math.random() * 3 + 3));
+        game.coins = (game.coins || 0) + coinsGained;
+        game.eventBus.emit('message', `¡Ganaste ${coinsGained} monedas Poké!`);
 
         const partyEntities = game.entityManager.getEntitiesWithComponents('partyMember');
         
@@ -272,5 +289,57 @@ export class CombatHandler {
 
     game.needsRender = true;
     return { success: true, type: 'attacked' };
+  }
+
+  /**
+   * Maneja la interacción con un Pokémon amigable.
+   * @param {number} npcId - ID de la entidad
+   */
+  handleFriendlyInteract(npcId) {
+    const game = this.game;
+    const info = game.entityManager.getComponent(npcId, 'pokemonInfo');
+    if (!info) return;
+
+    const party = game.entityManager.getEntitiesWithComponents('partyMember');
+    if (party.length < 4) {
+      // Unirse al equipo
+      game.entityManager.setComponent(npcId, 'partyMember', {
+        slot: party.length,
+        isLeader: false
+      });
+
+      // Asegurar que siga al líder
+      game.entityManager.setComponent(npcId, 'aiControlled', {
+        behavior: 'follower'
+      });
+
+      // Eliminar el flag npcFriendly
+      game.entityManager.removeComponent(npcId, 'npcFriendly');
+
+      // Registrar en el turnManager
+      const fighter = game.entityManager.getComponent(npcId, 'fighter');
+      game.turnManager.addEntity(npcId, fighter ? fighter.speed : 50, false);
+
+      game.eventBus.emit('show_dialog', {
+        text: `¡${info.name} está feliz de encontrarte!\n\n¡Se ha unido a tu equipo de exploración!`
+      });
+    } else {
+      game.eventBus.emit('show_dialog', {
+        text: `¡${info.name} te sonríe felizmente!\n\nSin embargo, tu equipo ya está lleno (máximo 4 Pokémon) y no puede acompañarte.`
+      });
+    }
+  }
+
+  /**
+   * Maneja la interacción con el Kecleon Mercader.
+   * @param {number} npcId - ID de la entidad
+   */
+  handleMerchantInteract(npcId) {
+    const game = this.game;
+    game.changeState(GAME_STATES.MENU);
+    
+    import('../../ui/menus/MerchantMenu.js').then(module => {
+      module.openMerchantMenu(game.ui, npcId);
+    });
   }
 }

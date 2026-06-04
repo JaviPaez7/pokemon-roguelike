@@ -23,6 +23,7 @@
 import { GAME_STATES, TILE_SIZE, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, MAP_WIDTH, MAP_HEIGHT, FOV_RADIUS } from '../constants.js';
 import { EventBus } from './EventBus.js';
 import { TurnManager } from './TurnManager.js';
+import { WeatherSystem } from '../systems/WeatherSystem.js';
 import { InputHandler } from '../input/InputHandler.js';
 import { EntityManager } from '../entities/EntityManager.js';
 import { MovementSystem } from '../systems/MovementSystem.js';
@@ -124,6 +125,10 @@ export class Game {
 
     /** @type {DungeonGenerator} Generador procedural de mazmorras */
     this.dungeonGenerator = new DungeonGenerator();
+
+    /** @type {WeatherSystem} Sistema de clima */
+    this.weatherSystem = new WeatherSystem();
+    this.currentWeather = 'normal';
 
     /** @type {FOVSystem} Sistema de niebla de guerra */
     this.fovSystem = new FOVSystem();
@@ -398,8 +403,30 @@ export class Game {
     if (this._state !== GAME_STATES.EXPLORING) return;
     if (this.uiManager.hasOpenDialog()) return;
 
+    // Verificar si hay algún Pokémon con movimientos pendientes por aprender
+    const pendingPoke = this.entityManager.getEntitiesWithComponents('partyMember', 'pokemonInfo').find(pid => {
+      const info = this.entityManager.getComponent(pid, 'pokemonInfo');
+      return info && info.pendingMovesToLearn && info.pendingMovesToLearn.length > 0;
+    });
+
+    if (pendingPoke) {
+      const info = this.entityManager.getComponent(pendingPoke, 'pokemonInfo');
+      const pendingMove = info.pendingMovesToLearn.shift();
+      this.changeState(GAME_STATES.MENU);
+      
+      import('../ui/menus/LearnMoveMenu.js').then(module => {
+        module.openLearnMoveMenu(this.ui, pendingPoke, pendingMove);
+      });
+      return;
+    }
+
     const action = this.inputHandler.getAction();
     if (!action) return;
+
+    if (action.type === 'swap_leader') {
+      this.swapLeader();
+      return;
+    }
 
     this._processPlayerAction(action);
   }
@@ -442,6 +469,11 @@ export class Game {
         this.entityManager.setComponent(this._playerId, 'fighter', fighter);
       }
 
+      // Aplicar efectos del clima al final del turno
+      if (this.weatherSystem) {
+        this.weatherSystem.applyEndTurnEffects(this);
+      }
+
       // Actualizar historial de posiciones para los seguidores
       const pos = this.entityManager.getComponent(this._playerId, 'position');
       if (pos && (pos.x !== pos.prevX || pos.y !== pos.prevY)) {
@@ -450,7 +482,7 @@ export class Game {
           this.playerPathHistory.pop();
         }
 
-        // Comprobar si entramos en un nido de monstruos
+        // Comprobar si entramos en una habitación especial
         if (this.tileMap && this.tileMap.rooms) {
           const currentRoom = this.tileMap.rooms.find(r => 
             pos.x >= r.x && pos.x < r.x + r.w &&
@@ -459,6 +491,9 @@ export class Game {
 
           if (currentRoom && currentRoom.type === 'monster_house' && !currentRoom.triggered) {
             this._triggerMonsterHouse(currentRoom);
+          } else if (currentRoom && currentRoom.type === 'rest' && !currentRoom.triggered) {
+            currentRoom.triggered = true;
+            this._triggerRestRoom(currentRoom);
           }
         }
       }
@@ -526,6 +561,32 @@ export class Game {
     this.needsRender = true;
   }
 
+  /**
+   * Cura al equipo y muestra diálogo al entrar en una habitación de descanso
+   * @param {Object} room - Habitación de descanso
+   */
+  _triggerRestRoom(room) {
+    const partyEntities = this.entityManager.getEntitiesWithComponents('partyMember', 'fighter');
+    
+    partyEntities.forEach(pid => {
+      const fighter = this.entityManager.getComponent(pid, 'fighter');
+      const pokemonInfo = this.entityManager.getComponent(pid, 'pokemonInfo');
+      if (fighter && pokemonInfo) {
+        const oldHp = fighter.hp;
+        fighter.hp = Math.min(fighter.maxHp, fighter.hp + Math.floor(fighter.maxHp * 0.5));
+        const healed = fighter.hp - oldHp;
+        this.entityManager.setComponent(pid, 'fighter', fighter);
+        console.log(`[Game] ${pokemonInfo.name} recuperó ${healed} PS en la habitación de descanso.`);
+      }
+    });
+
+    this.eventBus.emit('show_dialog', {
+      text: '¡Habitación de Descanso!\n\nTu equipo descansa unos momentos y recupera el 50% de sus PS.'
+    });
+
+    this.needsRender = true;
+  }
+
   _executeEntityAction(entityId, action) {
     return this.combat.executeEntityAction(entityId, action);
   }
@@ -577,7 +638,8 @@ export class Game {
     if (this.fovSystem && this._playerId && this.tileMap) {
       const pos = this.entityManager.getComponent(this._playerId, 'position');
       if (pos) {
-        this.fovSystem.update(pos.x, pos.y, this.tileMap, FOV_RADIUS);
+        const fovRad = FOV_RADIUS + (this.fovRadiusModifier || 0);
+        this.fovSystem.update(pos.x, pos.y, this.tileMap, fovRad);
       }
     }
   }
@@ -671,6 +733,83 @@ export class Game {
 
   getMessageLog() {
     return this._messageLog;
+  }
+
+  /**
+   * Intercambia el líder actual del equipo por el siguiente miembro del equipo.
+   */
+  swapLeader() {
+    const partyEntities = this.entityManager.getEntitiesWithComponents('partyMember', 'fighter');
+    if (partyEntities.length <= 1) {
+      this.eventBus.emit('message', '¡No tienes otros Pokémon en el equipo para cambiar de líder!');
+      return;
+    }
+
+    // Ordenar por slot
+    partyEntities.sort((a, b) => {
+      const memA = this.entityManager.getComponent(a, 'partyMember');
+      const memB = this.entityManager.getComponent(b, 'partyMember');
+      return memA.slot - memB.slot;
+    });
+
+    const oldLeaderId = this._playerId;
+    const oldLeaderIdx = partyEntities.indexOf(oldLeaderId);
+    
+    if (oldLeaderIdx === -1) return;
+
+    // El siguiente en slot
+    const newLeaderIdx = (oldLeaderIdx + 1) % partyEntities.length;
+    const newLeaderId = partyEntities[newLeaderIdx];
+
+    // Intercambiar isLeader en partyMember
+    const oldMem = this.entityManager.getComponent(oldLeaderId, 'partyMember');
+    const newMem = this.entityManager.getComponent(newLeaderId, 'partyMember');
+    
+    oldMem.isLeader = false;
+    newMem.isLeader = true;
+    this.entityManager.setComponent(oldLeaderId, 'partyMember', oldMem);
+    this.entityManager.setComponent(newLeaderId, 'partyMember', newMem);
+
+    // Intercambiar posiciones físicas en el mapa
+    const oldPos = this.entityManager.getComponent(oldLeaderId, 'position');
+    const newPos = this.entityManager.getComponent(newLeaderId, 'position');
+    if (oldPos && newPos) {
+      const tempX = oldPos.x;
+      const tempY = oldPos.y;
+      const tempFacing = oldPos.facing;
+
+      oldPos.x = newPos.x;
+      oldPos.y = newPos.y;
+      oldPos.facing = newPos.facing;
+
+      newPos.x = tempX;
+      newPos.y = tempY;
+      newPos.facing = tempFacing;
+
+      this.entityManager.setComponent(oldLeaderId, 'position', oldPos);
+      this.entityManager.setComponent(newLeaderId, 'position', newPos);
+    }
+
+    // Cambiar roles de control (IA vs Jugador)
+    // El viejo líder ahora es seguidor controlado por IA
+    const oldAi = this.entityManager.getComponent(oldLeaderId, 'aiControlled') || {};
+    oldAi.behavior = 'follower';
+    this.entityManager.setComponent(oldLeaderId, 'aiControlled', oldAi);
+
+    // El nuevo líder deja de estar controlado por IA
+    this.entityManager.removeComponent(newLeaderId, 'aiControlled');
+
+    // Actualizar IDs en Game y TurnManager
+    this._playerId = newLeaderId;
+    this.turnManager._playerId = newLeaderId;
+
+    // Limpiar historial de posiciones para evitar saltos en los seguidores
+    this.playerPathHistory = [];
+
+    const newLeaderInfo = this.entityManager.getComponent(newLeaderId, 'pokemonInfo');
+    this.eventBus.emit('message', `¡${newLeaderInfo.name} es ahora el líder del equipo!`);
+    
+    this.needsRender = true;
   }
 
   destroy() {
