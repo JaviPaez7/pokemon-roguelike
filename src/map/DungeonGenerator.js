@@ -677,21 +677,33 @@ export class DungeonGenerator {
    */
   _generarLagos(rooms, tileMap, playerStart, stairsPos) {
     for (const room of rooms) {
+      // No generar agua en la habitación del jugador o de las escaleras
+      if (playerStart.x >= room.x && playerStart.x < room.x + room.w &&
+          playerStart.y >= room.y && playerStart.y < room.y + room.h) {
+        continue;
+      }
+      if (stairsPos.x >= room.x && stairsPos.x < room.x + room.w &&
+          stairsPos.y >= room.y && stairsPos.y < room.y + room.h) {
+        continue;
+      }
+
+      // No generar agua en habitaciones muy pequeñas
+      if (room.w < 6 || room.h < 6) continue;
+
       // 30% de probabilidad de tener agua por habitación
       if (RNG.getUniform() < 0.3) {
         const cx = Math.floor(room.x + room.w / 2);
         const cy = Math.floor(room.y + room.h / 2);
-        const radius = Math.floor(RNG.getUniform() * 2) + 1; // Radio de 1 a 2 tiles
+        const maxSafeRadius = Math.floor(Math.min(room.w, room.h) / 2) - 2;
+        if (maxSafeRadius < 1) continue;
+        
+        const radius = Math.floor(RNG.getUniform() * Math.min(2, maxSafeRadius)) + 1; // Radio de 1 a 2 tiles
         
         for (let y = cy - radius; y <= cy + radius; y++) {
           for (let x = cx - radius; x <= cx + radius; x++) {
             // Forma circular (aproximada)
             if ((x - cx) * (x - cx) + (y - cy) * (y - cy) <= radius * radius + 0.5) {
               if (tileMap.isInBounds(x, y)) {
-                // No pisar jugador ni escaleras
-                if (x === playerStart.x && y === playerStart.y) continue;
-                if (x === stairsPos.x && y === stairsPos.y) continue;
-
                 // Solo reemplazar suelo normal
                 if (tileMap.getTile(x, y).id === TILES.FLOOR.id) {
                   tileMap.setTile(x, y, TILES.WATER.id);
