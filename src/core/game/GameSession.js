@@ -77,6 +77,7 @@ export function loadSavedGame(game) {
 
   game.seed = data.seed;
   game._currentFloor = data.currentFloor;
+  game.weather = data.weather;
   game.inventory = data.inventory;
   game.stats = data.stats;
   game.pokedexSeen = data.pokedexSeen;

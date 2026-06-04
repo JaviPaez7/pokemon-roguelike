@@ -14,9 +14,10 @@ import { COLORS } from '../constants.js';
  * @param {Object} attackerInfo - PokemonInfo del atacante
  * @param {Object} defenderInfo - PokemonInfo del defensor
  * @param {Object} typeChart - Matriz de efectividad de tipos
+ * @param {string} weather - Clima actual
  * @returns {Object} { damage, effectiveness, isCritical, isSTAB, messages }
  */
-export function calculateDamage(attacker, defender, move, attackerInfo, defenderInfo, typeChart) {
+export function calculateDamage(attacker, defender, move, attackerInfo, defenderInfo, typeChart, weather = 'none') {
   const result = {
     damage: 0,
     effectiveness: 1,
@@ -77,6 +78,15 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
   }
   damage = Math.floor(damage * effectiveness);
   result.effectiveness = effectiveness;
+
+  // Clima
+  if (weather === 'rain') {
+    if (move.type === 'water') damage = Math.floor(damage * 1.5);
+    if (move.type === 'fire') damage = Math.floor(damage * 0.5);
+  } else if (weather === 'sun') {
+    if (move.type === 'fire') damage = Math.floor(damage * 1.5);
+    if (move.type === 'water') damage = Math.floor(damage * 0.5);
+  }
 
   // Mensajes de efectividad
   if (effectiveness > 1) {
@@ -145,10 +155,11 @@ function applyStatModifier(baseStat, stage) {
  * @param {Object} params.entityManager - EntityManager
  * @param {Object} params.typeChart - Datos de tipos
  * @param {Object} params.eventBus - EventBus
+ * @param {Object} params.game - Objeto Game
  * @returns {Object} { success, damage, effectiveness, messages, defenderFainted }
  */
 export function executeMove(params) {
-  const { attackerId, defenderId, move, entityManager, typeChart, eventBus } = params;
+  const { attackerId, defenderId, move, entityManager, typeChart, eventBus, game } = params;
   
   const attackerFighter = entityManager.getComponent(attackerId, 'fighter');
   const defenderFighter = entityManager.getComponent(defenderId, 'fighter');
@@ -180,6 +191,8 @@ export function executeMove(params) {
     else hits = 5;
   }
 
+  const weather = game ? game.weather : 'none';
+
   let totalDamage = 0;
   let effectiveness = 1;
   let isSTAB = false;
@@ -189,7 +202,7 @@ export function executeMove(params) {
     if (defenderFainted) break;
 
     // Calcular daño
-    const result = calculateDamage(attackerFighter, defenderFighter, move, attackerInfo, defenderInfo, typeChart);
+    const result = calculateDamage(attackerFighter, defenderFighter, move, attackerInfo, defenderInfo, typeChart, weather);
     
     // Solo mostramos los mensajes de efectividad en el primer golpe
     if (i === 0) {

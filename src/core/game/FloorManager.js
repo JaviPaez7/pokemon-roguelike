@@ -26,6 +26,20 @@ export class FloorManager {
     game._itemPoints = genResult.itemPoints;
     game._playerStart = genResult.playerStart;
 
+    // Asignar clima aleatorio
+    const randWeather = Math.random();
+    if (randWeather < 0.70) {
+      game.weather = 'none';
+    } else if (randWeather < 0.80) {
+      game.weather = 'rain';
+    } else if (randWeather < 0.90) {
+      game.weather = 'sun';
+    } else if (randWeather < 0.95) {
+      game.weather = 'sandstorm';
+    } else {
+      game.weather = 'hail';
+    }
+
     game.tileMap.setTile(game._stairsPos.x, game._stairsPos.y, 3);
 
     const zone = this.getZoneConfig();
@@ -149,6 +163,16 @@ export class FloorManager {
     game.eventBus.emit('message', {
       text: `Entrando a ${game.zoneName || 'Zona Desconocida'} (Piso ${game._currentFloor})`
     });
+
+    if (game.weather === 'rain') {
+      game.eventBus.emit('message', { text: 'Una lluvia constante cae en este piso...', color: '#6ab0ff' });
+    } else if (game.weather === 'sun') {
+      game.eventBus.emit('message', { text: 'El sol brilla con mucha intensidad aquí.', color: '#ffcc00' });
+    } else if (game.weather === 'sandstorm') {
+      game.eventBus.emit('message', { text: '¡Una violenta tormenta de arena ruge en la zona!', color: '#ffaa44' });
+    } else if (game.weather === 'hail') {
+      game.eventBus.emit('message', { text: '¡Está cayendo granizo con fuerza!', color: '#ffffff' });
+    }
 
     if (zone && zone.boss && game._currentFloor === zone.floors[1] && zone.boss.name === 'Mewtwo') {
       game.eventBus.emit('show_dialog', {

@@ -219,7 +219,8 @@ export class CombatHandler {
       move: moveSelected,
       entityManager: game.entityManager,
       typeChart: game.typeChart,
-      eventBus: game.eventBus
+      eventBus: game.eventBus,
+      game: game
     });
 
     if (combatResult.messages) {

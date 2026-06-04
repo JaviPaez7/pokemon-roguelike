@@ -442,6 +442,46 @@ export class Game {
         this.entityManager.setComponent(this._playerId, 'fighter', fighter);
       }
 
+      // Aplicar daño de clima
+      if (this.weather === 'sandstorm' || this.weather === 'hail') {
+        if (this.stats.turnsPlayed % 5 === 0) {
+          let weatherMessageShown = false;
+          const entities = this.entityManager.getEntitiesWithComponents('fighter', 'pokemonInfo');
+          entities.forEach(entityId => {
+            const f = this.entityManager.getComponent(entityId, 'fighter');
+            const pInfo = this.entityManager.getComponent(entityId, 'pokemonInfo');
+            if (f && f.hp > 0 && pInfo) {
+              const isImmune = this.weather === 'sandstorm'
+                ? pInfo.types.some(t => ['rock', 'ground', 'steel'].includes(t))
+                : pInfo.types.some(t => ['ice'].includes(t));
+              
+              if (!isImmune) {
+                f.hp = Math.max(0, f.hp - 1);
+                this.entityManager.setComponent(entityId, 'fighter', f);
+                
+                if (entityId === this._playerId) {
+                  this.eventBus.emit('message', `¡La ${this.weather === 'sandstorm' ? 'tormenta de arena' : 'granizada'} te golpea!`);
+                  weatherMessageShown = true;
+                  if (f.hp <= 0) {
+                    this.changeState(GAME_STATES.GAME_OVER);
+                  }
+                } else if (f.hp <= 0) {
+                  // Murió por clima
+                  const pos = this.entityManager.getComponent(entityId, 'position');
+                  const sprite = this.entityManager.getComponent(entityId, 'sprite');
+                  this.eventBus.emit('pokemon_fainted', {
+                    entityId,
+                    speciesId: pInfo.speciesId,
+                    pos: pos ? { x: pos.x, y: pos.y } : null,
+                    spriteUrl: sprite ? sprite.url : ''
+                  });
+                }
+              }
+            }
+          });
+        }
+      }
+
       // Actualizar historial de posiciones para los seguidores
       const pos = this.entityManager.getComponent(this._playerId, 'position');
       if (pos && (pos.x !== pos.prevX || pos.y !== pos.prevY)) {

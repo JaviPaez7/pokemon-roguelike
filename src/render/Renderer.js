@@ -276,6 +276,8 @@ export class Renderer {
 
     this.particleSystem.render(ctx, game.camera);
 
+    this._renderWeather(ctx, game.weather, canvas.width, canvas.height);
+
     ctx.restore();
 
     // === CAPA 4: Fade overlay ===
@@ -286,6 +288,57 @@ export class Renderer {
 
     // === CAPA 5: HUD (sin shake, legible, encima del fade) ===
     this.hud.render(ctx, game, canvas.width, canvas.height);
+  }
+
+  /**
+   * Dibuja los efectos de clima globales
+   * @private
+   */
+  _renderWeather(ctx, weather, width, height) {
+    if (!weather || weather === 'none') return;
+    
+    ctx.save();
+    const time = performance.now();
+
+    if (weather === 'rain') {
+      ctx.strokeStyle = 'rgba(150, 200, 255, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      // Dibujar 50 gotas
+      for (let i = 0; i < 50; i++) {
+        // Pseudoaleatorio basado en el índice y el tiempo
+        const x = (i * 47 + time * 0.5) % width;
+        const y = (i * 31 + time * 1.5) % height;
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 5, y + 15);
+      }
+      ctx.stroke();
+    } else if (weather === 'sun') {
+      ctx.fillStyle = 'rgba(255, 200, 50, 0.15)';
+      ctx.fillRect(0, 0, width, height);
+    } else if (weather === 'sandstorm') {
+      ctx.fillStyle = 'rgba(210, 180, 140, 0.3)';
+      ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = 'rgba(210, 150, 80, 0.6)';
+      for (let i = 0; i < 40; i++) {
+        const x = (i * 83 - time * 0.8) % width;
+        const y = (i * 29 + Math.sin(time * 0.005 + i) * 20) % height;
+        const drawX = x < 0 ? x + width : x;
+        const drawY = y < 0 ? y + height : y;
+        ctx.fillRect(drawX, drawY, 3, 1);
+      }
+    } else if (weather === 'hail') {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      for (let i = 0; i < 30; i++) {
+        const x = (i * 61 + time * 0.2) % width;
+        const y = (i * 43 + time * 0.8) % height;
+        ctx.beginPath();
+        ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
   }
 
   /**
