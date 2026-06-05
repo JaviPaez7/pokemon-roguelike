@@ -23,7 +23,8 @@ export class FloorManager {
     game.seed = Math.floor(Math.random() * 1000000);
     const zone = this.getZoneConfig();
     const theme = zone ? zone.theme : 'default';
-    const genResult = game.dungeonGenerator.generate(MAP_WIDTH, MAP_HEIGHT, game.seed, theme);
+    const isBossRoom = zone && zone.boss && game._currentFloor === zone.floors[1];
+    const genResult = game.dungeonGenerator.generate(MAP_WIDTH, MAP_HEIGHT, game.seed, theme, isBossRoom);
     game.tileMap = genResult.tileMap;
     game._stairsPos = genResult.stairsPos;
     game._spawnPoints = genResult.spawnPoints;
@@ -52,6 +53,28 @@ export class FloorManager {
 
     const zone = this.getZoneConfig();
     if (!zone) return;
+
+    const isBossRoom = zone.boss && game._currentFloor === zone.floors[1];
+
+    if (isBossRoom) {
+      if (game._spawnPoints && game._spawnPoints.length > 0) {
+        const point = game._spawnPoints[0];
+        const bossInfo = zone.boss;
+        const bossId = game.entityManager.createPokemon(
+          bossInfo.id, point.x, point.y, bossInfo.level, game.pokemonData, game.movesData, true
+        );
+        game.entityManager.setComponent(bossId, 'isBoss', true);
+        
+        // Boost de PS para el jefe
+        const fighter = game.entityManager.getComponent(bossId, 'fighter');
+        if (fighter) {
+          fighter.maxHp *= 3;
+          fighter.hp = fighter.maxHp;
+          game.entityManager.setComponent(bossId, 'fighter', fighter);
+        }
+      }
+      return;
+    }
 
     const minEnemies = zone.enemiesPerFloor[0];
     const maxEnemies = zone.enemiesPerFloor[1];

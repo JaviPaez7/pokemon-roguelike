@@ -53,6 +53,7 @@ export class DungeonGenerator {
    * @param {number} height - Alto del mapa en tiles (ej: 40)
    * @param {number} [seed] - Semilla para generación determinística
    * @param {string} [theme] - Tema visual de la zona (ej: 'forest', 'volcano')
+   * @param {boolean} [isBossRoom=false] - Si es una sala de jefe
    * @returns {{
    *   tileMap: TileMap,
    *   rooms: {x: number, y: number, w: number, h: number}[],
@@ -62,7 +63,7 @@ export class DungeonGenerator {
    *   stairsPos: {x: number, y: number}
    * }} Datos completos de la mazmorra generada
    */
-  generate(width, height, seed, theme = 'default') {
+  generate(width, height, seed, theme = 'default', isBossRoom = false) {
     // Inicializar el generador de números aleatorios con la semilla
     if (seed !== undefined) {
       RNG.setSeed(seed);
@@ -70,7 +71,41 @@ export class DungeonGenerator {
 
     // Crear el mapa lleno de muros
     const tileMap = new TileMap(width, height);
-    // (TileMap ya se inicializa con WALL por defecto, no hace falta rellenar)
+
+    if (isBossRoom) {
+      const marginX = Math.floor(width / 4);
+      const marginY = Math.floor(height / 4);
+      const room = {
+        x: marginX,
+        y: marginY,
+        w: width - marginX * 2,
+        h: height - marginY * 2,
+        type: 'boss'
+      };
+
+      for (let x = room.x; x < room.x + room.w; x++) {
+        for (let y = room.y; y < room.y + room.h; y++) {
+          tileMap.setTile(x, y, TILES.FLOOR.id);
+        }
+      }
+
+      const playerStart = { x: Math.floor(width / 2), y: room.y + room.h - 2 };
+      const stairsPos = { x: Math.floor(width / 2), y: room.y + 2 };
+      // El punto del boss estará justo delante de las escaleras
+      const spawnPoints = [{ x: stairsPos.x, y: stairsPos.y + 3 }];
+      const itemPoints = [];
+
+      tileMap.rooms = [room];
+      tileMap.theme = theme;
+      return {
+        tileMap,
+        rooms: [room],
+        spawnPoints,
+        itemPoints,
+        playerStart,
+        stairsPos,
+      };
+    }
 
     // === PASO 1: División en cuadrícula ===
     const celdas = this._crearCuadricula(width, height);

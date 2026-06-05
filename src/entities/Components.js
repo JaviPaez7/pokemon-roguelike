@@ -121,6 +121,9 @@ export function createComponentStore() {
     trap: new Map(),
 
     /** @type {Map<number, {url: string, image: Image|null, loaded: boolean}>} */
-    sprite: new Map()
+    sprite: new Map(),
+
+    /** @type {Map<number, boolean>} */
+    isBoss: new Map()
   };
 }

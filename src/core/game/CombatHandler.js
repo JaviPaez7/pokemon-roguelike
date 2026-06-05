@@ -73,12 +73,11 @@ export class CombatHandler {
 
         if (result.type === 'stairs') {
           if (entityId === game._playerId) {
-            const mewtwoAlive = game.entityManager.getEntitiesWithComponents('aiControlled').find(id => {
-              const info = game.entityManager.getComponent(id, 'pokemonInfo');
-              return info && info.name.includes('Mewtwo');
-            });
-            if (mewtwoAlive) {
-              game.eventBus.emit('message', '¡Mewtwo te bloquea las escaleras!');
+            const bossAlive = game.entityManager.getEntitiesWithComponents('isBoss');
+            if (bossAlive && bossAlive.length > 0) {
+              const bossInfo = game.entityManager.getComponent(bossAlive[0], 'pokemonInfo');
+              const bossName = bossInfo ? bossInfo.name : 'Jefe';
+              game.eventBus.emit('message', `¡El aura de ${bossName} te impide usar las escaleras!`);
               return { success: false, type: 'blocked' };
             }
             if (game._currentFloor === 50) {
@@ -145,6 +144,13 @@ export class CombatHandler {
     const tile = game.tileMap.getTile(pos.x, pos.y);
     if (tile && tile.id === 3) {
       if (entityId === game._playerId) {
+        const bossAlive = game.entityManager.getEntitiesWithComponents('isBoss');
+        if (bossAlive && bossAlive.length > 0) {
+          const bossInfo = game.entityManager.getComponent(bossAlive[0], 'pokemonInfo');
+          const bossName = bossInfo ? bossInfo.name : 'Jefe';
+          game.eventBus.emit('message', `¡El aura de ${bossName} te impide usar las escaleras!`);
+          return { success: false, type: 'blocked' };
+        }
         if (game._currentFloor === 50) {
           game.changeState(GAME_STATES.VICTORY);
           return { success: true, type: 'victory' };
