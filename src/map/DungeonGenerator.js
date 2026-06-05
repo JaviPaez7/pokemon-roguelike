@@ -107,6 +107,7 @@ export class DungeonGenerator {
     this._colocarTrampas(rooms, playerStart, stairsPos, tileMap);
 
     tileMap.rooms = rooms;
+    tileMap.theme = theme;
     return {
       tileMap,
       rooms,

@@ -85,7 +85,11 @@ export class CombatHandler {
               game.changeState(GAME_STATES.VICTORY);
               return { success: true, type: 'victory' };
             }
-            game.eventBus.emit('floor_change', { direction: 'down' });
+            
+            game.changeState(GAME_STATES.MENU);
+            import('../../ui/menus/StairsMenu.js').then(module => {
+              module.openStairsMenu(game.ui);
+            });
           }
           return result;
         }
@@ -145,7 +149,11 @@ export class CombatHandler {
           game.changeState(GAME_STATES.VICTORY);
           return { success: true, type: 'victory' };
         }
-        game.eventBus.emit('floor_change', { direction: 'down' });
+        
+        game.changeState(GAME_STATES.MENU);
+        import('../../ui/menus/StairsMenu.js').then(module => {
+          module.openStairsMenu(game.ui);
+        });
       }
       return { success: true, type: 'stairs_used' };
     }

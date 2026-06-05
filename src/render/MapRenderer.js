@@ -118,6 +118,28 @@ export class MapRenderer {
     let colorSuelo = tile.colors.floor;
     let colorBorde = tile.colors.wall;
 
+    if (tileMap && tileMap.theme) {
+      if (tileMap.theme === 'forest') {
+        colorSuelo = tile.id === 2 ? '#1a2e1a' : '#2d4a2d';
+        colorBorde = '#122012';
+      } else if (tileMap.theme === 'volcano') {
+        colorSuelo = tile.id === 2 ? '#2a0f0f' : '#3e1e1e';
+        colorBorde = '#1f0909';
+      } else if (tileMap.theme === 'cave' || tileMap.theme === 'dark') {
+        colorSuelo = tile.id === 2 ? '#1f1828' : '#3a3040';
+        colorBorde = '#16101c';
+      } else if (tileMap.theme === 'electric') {
+        colorSuelo = tile.id === 2 ? '#28280f' : '#3a3a20';
+        colorBorde = '#1c1c0a';
+      } else if (tileMap.theme === 'mountain') {
+        colorSuelo = tile.id === 2 ? '#1a1a28' : '#2e2e3e';
+        colorBorde = '#12121c';
+      } else if (tileMap.theme === 'lab') {
+        colorSuelo = tile.id === 2 ? '#1a1c28' : '#2e3040';
+        colorBorde = '#12141c';
+      }
+    }
+
     let isRestRoom = false;
     if (tileMap && tileMap.rooms && tile.walkable) {
         const room = tileMap.rooms.find(r => worldX >= r.x && worldX < r.x + r.w && worldY >= r.y && worldY < r.y + r.h);
@@ -125,11 +147,13 @@ export class MapRenderer {
     }
 
     // Efecto especial para agua: animación de olas
-    if (tile.id === 4) { // 4 es WATER (si estuviera exportado TILES.WATER.id, pero usamos el que viene)
+    if (tile.id === 4) { // 4 es WATER
       colorSuelo = this._calcularColorOla(tile.colors.floor, worldX, worldY);
     } else if (isRestRoom && tile.id !== 2) { // Si no es WALL (2)
-      colorSuelo = '#2d4a3e'; // Tinte verdoso
-      colorBorde = '#1e382c';
+      // Tintar un poco la sala de descanso, combinándolo con el bioma si queremos, 
+      // pero por ahora lo dejamos verde claro.
+      colorSuelo = '#3d5c4d'; 
+      colorBorde = '#2c4538';
     }
 
     // Rellenar el tile con el color base
