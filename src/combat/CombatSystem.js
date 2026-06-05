@@ -320,34 +320,81 @@ export function executeMove(params) {
   // Verificar si el atacante cayó por retroceso
   const attackerFainted = attackerFighter.hp <= 0;
   if (attackerFainted) {
-    messages.push(`¡${attackerInfo.name} se debilitó por el retroceso!`);
-    if (eventBus) {
-      const pos = entityManager.getComponent(attackerId, 'position');
-      const sprite = entityManager.getComponent(attackerId, 'sprite');
-      eventBus.emit('pokemon_fainted', { 
-        entityId: attackerId, 
-        speciesId: attackerInfo.speciesId,
-        pos: pos ? { x: pos.x, y: pos.y } : null,
-        spriteUrl: sprite ? sprite.url : '',
-        attackerId: defenderId // El defensor causó el retroceso
-      });
+    let reviverUsed = false;
+    if (params.game && entityManager.hasComponent(attackerId, 'partyMember')) {
+      const invIndex = params.game.inventory.findIndex(item => item.itemId === 'reviver_seed');
+      if (invIndex !== -1) {
+        reviverUsed = true;
+        params.game.inventory[invIndex].quantity--;
+        if (params.game.inventory[invIndex].quantity <= 0) {
+          params.game.inventory.splice(invIndex, 1);
+        }
+        attackerFighter.hp = attackerFighter.maxHp;
+        attackerFighter.belly = attackerFighter.maxBelly || 100;
+        if (attackerInfo.currentMoves) attackerInfo.currentMoves.forEach(m => m.currentPP = m.maxPP);
+        attackerFighter.statusEffects = [];
+        messages.push(`¡${attackerInfo.name} se debilitó por el retroceso...`);
+        messages.push(`...pero revivió gracias a la Semilla Revivir!`);
+        if (params.game.renderer && params.game.renderer.screenFlash) {
+          params.game.renderer.screenFlash('rgba(0, 255, 0, 0.4)', 400);
+        }
+      }
+    }
+
+    if (!reviverUsed) {
+      messages.push(`¡${attackerInfo.name} se debilitó por el retroceso!`);
+      if (eventBus) {
+        const pos = entityManager.getComponent(attackerId, 'position');
+        const sprite = entityManager.getComponent(attackerId, 'sprite');
+        eventBus.emit('pokemon_fainted', { 
+          entityId: attackerId, 
+          speciesId: attackerInfo.speciesId,
+          pos: pos ? { x: pos.x, y: pos.y } : null,
+          spriteUrl: sprite ? sprite.url : '',
+          attackerId: defenderId // El defensor causó el retroceso
+        });
+      }
     }
   }
 
   // Verificar si el defensor cayó
   defenderFainted = defenderFighter.hp <= 0;
   if (defenderFainted) {
-    messages.push(`¡${defenderInfo.name} se debilitó!`);
-    if (eventBus) {
-      const pos = entityManager.getComponent(defenderId, 'position');
-      const sprite = entityManager.getComponent(defenderId, 'sprite');
-      eventBus.emit('pokemon_fainted', { 
-        entityId: defenderId, 
-        speciesId: defenderInfo.speciesId,
-        pos: pos ? { x: pos.x, y: pos.y } : null,
-        spriteUrl: sprite ? sprite.url : '',
-        attackerId: attackerId // Quien asestó el golpe
-      });
+    let reviverUsed = false;
+    if (params.game && entityManager.hasComponent(defenderId, 'partyMember')) {
+      const invIndex = params.game.inventory.findIndex(item => item.itemId === 'reviver_seed');
+      if (invIndex !== -1) {
+        reviverUsed = true;
+        params.game.inventory[invIndex].quantity--;
+        if (params.game.inventory[invIndex].quantity <= 0) {
+          params.game.inventory.splice(invIndex, 1);
+        }
+        defenderFighter.hp = defenderFighter.maxHp;
+        defenderFighter.belly = defenderFighter.maxBelly || 100;
+        if (defenderInfo.currentMoves) defenderInfo.currentMoves.forEach(m => m.currentPP = m.maxPP);
+        defenderFighter.statusEffects = [];
+        defenderFainted = false;
+        messages.push(`¡${defenderInfo.name} se debilitó...`);
+        messages.push(`...pero revivió gracias a la Semilla Revivir!`);
+        if (params.game.renderer && params.game.renderer.screenFlash) {
+          params.game.renderer.screenFlash('rgba(0, 255, 0, 0.4)', 400);
+        }
+      }
+    }
+
+    if (!reviverUsed) {
+      messages.push(`¡${defenderInfo.name} se debilitó!`);
+      if (eventBus) {
+        const pos = entityManager.getComponent(defenderId, 'position');
+        const sprite = entityManager.getComponent(defenderId, 'sprite');
+        eventBus.emit('pokemon_fainted', { 
+          entityId: defenderId, 
+          speciesId: defenderInfo.speciesId,
+          pos: pos ? { x: pos.x, y: pos.y } : null,
+          spriteUrl: sprite ? sprite.url : '',
+          attackerId: attackerId // Quien asestó el golpe
+        });
+      }
     }
   }
 

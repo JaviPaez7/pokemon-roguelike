@@ -30,6 +30,15 @@
     "spriteUrl": "/sprites/items/hyper_potion.png"
   },
   {
+    "id": "reviver_seed",
+    "name": "Semilla Revivir",
+    "type": "seed",
+    "rarity": 0.05,
+    "description": "Revive y restaura PS y PP al instante.",
+    "sprite": "🌱",
+    "spriteUrl": "/sprites/items/reviver_seed.png"
+  },
+  {
     "id": "pokeball",
     "name": "Poké Ball",
     "type": "capture",

@@ -178,18 +178,41 @@ export class CombatHandler {
 
     const attackerFighter = game.entityManager.getComponent(attackerId, 'fighter');
     if (attackerFighter && attackerFighter.hp <= 0) {
-      game.eventBus.emit('message', `¡${attackerInfo.name} cayó víctima de su estado!`);
-      const pos = game.entityManager.getComponent(attackerId, 'position');
-      const sprite = game.entityManager.getComponent(attackerId, 'sprite');
-      game.eventBus.emit('pokemon_fainted', {
-        entityId: attackerId,
-        speciesId: attackerInfo.speciesId,
-        pos: pos ? { x: pos.x, y: pos.y } : null,
-        spriteUrl: sprite ? sprite.url : '',
-        attackerId: null // Murió por estado, nadie específico
-      });
-      game.needsRender = true;
-      return { success: true, type: 'fainted_from_status' };
+      let reviverUsed = false;
+      if (game.entityManager.hasComponent(attackerId, 'partyMember')) {
+        const invIndex = game.inventory.findIndex(item => item.itemId === 'reviver_seed');
+        if (invIndex !== -1) {
+          reviverUsed = true;
+          game.inventory[invIndex].quantity--;
+          if (game.inventory[invIndex].quantity <= 0) {
+            game.inventory.splice(invIndex, 1);
+          }
+          attackerFighter.hp = attackerFighter.maxHp;
+          attackerFighter.belly = attackerFighter.maxBelly || 100;
+          if (attackerInfo.currentMoves) attackerInfo.currentMoves.forEach(m => m.currentPP = m.maxPP);
+          attackerFighter.statusEffects = [];
+          game.eventBus.emit('message', `¡${attackerInfo.name} cayó víctima de su estado...`);
+          game.eventBus.emit('message', `...pero revivió gracias a la Semilla Revivir!`);
+          if (game.renderer && game.renderer.screenFlash) {
+            game.renderer.screenFlash('rgba(0, 255, 0, 0.4)', 400);
+          }
+        }
+      }
+
+      if (!reviverUsed) {
+        game.eventBus.emit('message', `¡${attackerInfo.name} cayó víctima de su estado!`);
+        const pos = game.entityManager.getComponent(attackerId, 'position');
+        const sprite = game.entityManager.getComponent(attackerId, 'sprite');
+        game.eventBus.emit('pokemon_fainted', {
+          entityId: attackerId,
+          speciesId: attackerInfo.speciesId,
+          pos: pos ? { x: pos.x, y: pos.y } : null,
+          spriteUrl: sprite ? sprite.url : '',
+          attackerId: null // Murió por estado, nadie específico
+        });
+        game.needsRender = true;
+        return { success: true, type: 'fainted_from_status' };
+      }
     }
 
     if (!status.canAct) {
@@ -234,7 +257,8 @@ export class CombatHandler {
       entityManager: game.entityManager,
       typeChart: game.typeChart,
       eventBus: game.eventBus,
-      currentWeather: game.currentWeather
+      currentWeather: game.currentWeather,
+      game: game
     });
 
     if (combatResult.messages) {
