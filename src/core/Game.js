@@ -101,7 +101,10 @@ export class Game {
     this.inventory = [
       { itemId: 'potion', quantity: 3 },
       { itemId: 'pokeball', quantity: 5 },
-      { itemId: 'reviver_seed', quantity: 3 }
+      { itemId: 'reviver_seed', quantity: 3 },
+      { itemId: 'max_elixir', quantity: 1 },
+      { itemId: 'slumber_orb', quantity: 1 },
+      { itemId: 'petrify_orb', quantity: 1 }
     ];
     this.maxInventorySize = 20;
 

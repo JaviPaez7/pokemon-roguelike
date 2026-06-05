@@ -39,6 +39,33 @@
     "spriteUrl": "/sprites/items/reviver_seed.png"
   },
   {
+    "id": "max_elixir",
+    "name": "Elixir Máx.",
+    "type": "pp_restore_full",
+    "rarity": 0.08,
+    "description": "Restaura todos los PP de todos los movimientos.",
+    "sprite": "🧪",
+    "spriteUrl": "/sprites/items/potion.png"
+  },
+  {
+    "id": "slumber_orb",
+    "name": "Sueñosfera",
+    "type": "slumber_orb",
+    "rarity": 0.1,
+    "description": "Duerme a todos los enemigos de la sala.",
+    "sprite": "🔮",
+    "spriteUrl": "/sprites/items/pokeball.png"
+  },
+  {
+    "id": "petrify_orb",
+    "name": "Petriesfera",
+    "type": "petrify_orb",
+    "rarity": 0.08,
+    "description": "Petrifica a todos los enemigos de la sala.",
+    "sprite": "🔮",
+    "spriteUrl": "/sprites/items/pokeball.png"
+  },
+  {
     "id": "pokeball",
     "name": "Poké Ball",
     "type": "capture",
