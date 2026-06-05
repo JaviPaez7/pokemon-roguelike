@@ -5,7 +5,7 @@
  * Define qué tipos de trampa existen y qué efectos tienen al pisarse.
  */
 
-export const TRAP_TYPES = ['poison', 'sleep', 'explosion', 'warp', 'sticky'];
+export const TRAP_TYPES = ['poison', 'sleep', 'explosion', 'warp', 'sticky', 'wonder_tile'];
 
 /**
  * Genera trampas aleatorias en el piso.
@@ -27,7 +27,9 @@ export function spawnTraps(points, count, entityManager) {
   for (let i = 0; i < actualCount; i++) {
     const point = availablePoints[i];
     const type = TRAP_TYPES[Math.floor(Math.random() * TRAP_TYPES.length)];
-    entityManager.createTrapEntity(type, point.x, point.y, true);
+    // Las Baldosas Milagro siempre son visibles
+    const isHidden = type !== 'wonder_tile';
+    entityManager.createTrapEntity(type, point.x, point.y, isHidden);
   }
 }
 
@@ -51,7 +53,9 @@ export function triggerTrap(targetEntityId, trapEntityId, entityManager, tileMap
   trap.isHidden = false;
   entityManager.setComponent(trapEntityId, 'trap', trap);
   
-  messages.push(`¡${targetInfo.name} ha pisado una trampa!`);
+  if (trap.type !== 'wonder_tile') {
+    messages.push(`¡${targetInfo.name} ha pisado una trampa!`);
+  }
 
   // Inicializar statusEffects si no existe
   if (!targetFighter.statusEffects) {
@@ -83,9 +87,6 @@ export function triggerTrap(targetEntityId, trapEntityId, entityManager, tileMap
       const damage = Math.max(1, Math.floor(targetFighter.maxHp * 0.25)); // 25% del HP máximo
       targetFighter.hp = Math.max(0, targetFighter.hp - damage);
       messages.push(`¡BOOM! ¡La trampa explotó causando ${damage} de daño!`);
-      
-      // Emitir evento para efectos visuales (se capturaría en Renderer/EventBus si queremos)
-      // Como aquí no tenemos eventBus directo, dejamos que el mensaje hable por sí solo.
       break;
 
     case 'warp':
@@ -115,6 +116,11 @@ export function triggerTrap(targetEntityId, trapEntityId, entityManager, tileMap
       messages.push(`¡Un moco pegajoso bajó la velocidad de ${targetInfo.name}!`);
       break;
 
+    case 'wonder_tile':
+      targetFighter.statModifiers = {};
+      messages.push(`¡La Baldosa Milagro purificó y restauró las estadísticas de ${targetInfo.name}!`);
+      break;
+
     default:
       messages.push(`¡Pero la trampa falló!`);
   }
@@ -122,11 +128,13 @@ export function triggerTrap(targetEntityId, trapEntityId, entityManager, tileMap
   // Guardar cambios del fighter
   entityManager.setComponent(targetEntityId, 'fighter', targetFighter);
 
-  // Reducir usos
-  trap.uses--;
-  if (trap.uses <= 0) {
-    entityManager.destroyEntity(trapEntityId);
-    messages.push(`La trampa se rompió.`);
+  // Reducir usos (las baldosas milagro son infinitas)
+  if (trap.type !== 'wonder_tile') {
+    trap.uses--;
+    if (trap.uses <= 0) {
+      entityManager.destroyEntity(trapEntityId);
+      messages.push(`La trampa se rompió.`);
+    }
   }
 
   return messages;

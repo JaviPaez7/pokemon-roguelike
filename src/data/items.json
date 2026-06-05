@@ -335,7 +335,7 @@
     "rarity": 0.3,
     "description": "Restaura 50 de Tripa",
     "sprite": "🍎",
-    "spriteUrl": ""
+    "spriteUrl": "/sprites/items/potion.png"
   },
   {
     "id": "big_apple",
@@ -345,7 +345,7 @@
     "rarity": 0.1,
     "description": "Restaura 100 de Tripa",
     "sprite": "🍏",
-    "spriteUrl": ""
+    "spriteUrl": "/sprites/items/potion.png"
   },
   {
     "id": "golden_apple",
@@ -356,7 +356,7 @@
     "rarity": 0.02,
     "description": "Llena la Tripa y expande su límite",
     "sprite": "🌟",
-    "spriteUrl": ""
+    "spriteUrl": "/sprites/items/potion.png"
   },
   {
     "id": "gravelerock",

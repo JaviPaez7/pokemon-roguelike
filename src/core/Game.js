@@ -104,7 +104,8 @@ export class Game {
       { itemId: 'reviver_seed', quantity: 3 },
       { itemId: 'max_elixir', quantity: 1 },
       { itemId: 'slumber_orb', quantity: 1 },
-      { itemId: 'petrify_orb', quantity: 1 }
+      { itemId: 'petrify_orb', quantity: 1 },
+      { itemId: 'apple', quantity: 3 }
     ];
     this.maxInventorySize = 20;
 
