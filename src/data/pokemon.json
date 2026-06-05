@@ -2030,7 +2030,7 @@
     ],
     "baseExp": 64,
     "captureRate": 255,
-    "ability": "overgrow"
+    "ability": "chlorophyll"
   },
   {
     "id": 44,
@@ -2168,7 +2168,7 @@
     ],
     "baseExp": 57,
     "captureRate": 190,
-    "ability": "swarm"
+    "ability": "effect_spore"
   },
   {
     "id": 47,
@@ -2214,7 +2214,7 @@
     ],
     "baseExp": 142,
     "captureRate": 75,
-    "ability": "swarm"
+    "ability": "effect_spore"
   },
   {
     "id": 48,
@@ -2739,7 +2739,7 @@
     ],
     "baseExp": 70,
     "captureRate": 190,
-    "ability": "blaze"
+    "ability": "flash_fire"
   },
   {
     "id": 59,
@@ -2784,7 +2784,7 @@
     ],
     "baseExp": 194,
     "captureRate": 75,
-    "ability": "blaze"
+    "ability": "flash_fire"
   },
   {
     "id": 60,
@@ -6070,7 +6070,7 @@
     ],
     "baseExp": 173,
     "captureRate": 45,
-    "ability": "blaze"
+    "ability": "flame_body"
   },
   {
     "id": 127,
@@ -6428,7 +6428,7 @@
     ],
     "baseExp": 184,
     "captureRate": 45,
-    "ability": "torrent"
+    "ability": "water_absorb"
   },
   {
     "id": 135,
@@ -6489,7 +6489,7 @@
     ],
     "baseExp": 184,
     "captureRate": 45,
-    "ability": "static"
+    "ability": "volt_absorb"
   },
   {
     "id": 136,
@@ -6550,7 +6550,7 @@
     ],
     "baseExp": 184,
     "captureRate": 45,
-    "ability": "blaze"
+    "ability": "flash_fire"
   },
   {
     "id": 137,

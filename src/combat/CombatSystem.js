@@ -39,9 +39,25 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
     }
   }
 
-  // Habilidades Pasivas: Inmunidades
+  // Habilidades Pasivas: Inmunidades y Absorciones
   if (defenderInfo.ability === 'levitate' && move.type === 'ground') {
-    result.messages.push('¡No afecta al Pokémon enemigo gracias a Levitación!');
+    result.messages.push(`¡No afecta a ${defenderInfo.name} gracias a Levitación!`);
+    result.damage = 0;
+    return result;
+  } else if (defenderInfo.ability === 'water_absorb' && move.type === 'water') {
+    result.messages.push(`¡${defenderInfo.name} absorbió el ataque de Agua y se curó!`);
+    defender.hp = Math.min(defender.maxHp, defender.hp + Math.max(1, Math.floor(defender.maxHp * 0.25)));
+    result.damage = 0;
+    return result;
+  } else if (defenderInfo.ability === 'volt_absorb' && move.type === 'electric') {
+    result.messages.push(`¡${defenderInfo.name} absorbió la electricidad y se curó!`);
+    defender.hp = Math.min(defender.maxHp, defender.hp + Math.max(1, Math.floor(defender.maxHp * 0.25)));
+    result.damage = 0;
+    return result;
+  } else if (defenderInfo.ability === 'flash_fire' && move.type === 'fire') {
+    result.messages.push(`¡El fuego potenció a ${defenderInfo.name} (Absorbe Fuego)!`);
+    if (!defender.statModifiers) defender.statModifiers = {};
+    defender.statModifiers.spAtk = (defender.statModifiers.spAtk || 0) + 1;
     result.damage = 0;
     return result;
   }
@@ -59,6 +75,11 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
   // Aplicar modificadores de stats
   if (attacker.statModifiers) {
     atk = applyStatModifier(atk, attacker.statModifiers.attack || 0);
+  }
+
+  // Agallas (Guts)
+  if (move.damageClass === 'physical' && attackerInfo.ability === 'guts' && attacker.statusEffects && attacker.statusEffects.length > 0) {
+    atk = Math.floor(atk * 1.5);
   }
   if (defender.statModifiers) {
     def = applyStatModifier(def, defender.statModifiers.defense || 0);
@@ -279,22 +300,39 @@ export function executeMove(params) {
         });
       }
 
-      // Habilidades pasivas defensivas (Static, Poison Point) al recibir daño físico
+      // Habilidades pasivas defensivas (Contacto) al recibir daño físico
       if (move.damageClass === 'physical' && Math.random() < 0.3) {
-        if (defenderInfo.ability === 'static' && (!attackerFighter.statusEffects || !attackerFighter.statusEffects.some(s => s.type === 'paralyze'))) {
-          if (!attackerFighter.statusEffects) attackerFighter.statusEffects = [];
+        if (!attackerFighter.statusEffects) attackerFighter.statusEffects = [];
+        
+        if (defenderInfo.ability === 'static' && !attackerFighter.statusEffects.some(s => s.type === 'paralyze')) {
           attackerFighter.statusEffects.push({ type: 'paralyze', duration: 3 });
-          messages.push(`¡${attackerInfo.name} se paralizó por la habilidad Elec. Estática de ${defenderInfo.name}!`);
+          messages.push(`¡${attackerInfo.name} se paralizó por Elec. Estática de ${defenderInfo.name}!`);
           if (eventBus) eventBus.emit('status_applied', { targetId: attackerId, effect: 'paralyze' });
-        } else if (defenderInfo.ability === 'poison_point' && (!attackerFighter.statusEffects || !attackerFighter.statusEffects.some(s => s.type === 'poison'))) {
-          if (!attackerFighter.statusEffects) attackerFighter.statusEffects = [];
+        } else if (defenderInfo.ability === 'poison_point' && !attackerFighter.statusEffects.some(s => s.type === 'poison')) {
           attackerFighter.statusEffects.push({ type: 'poison', duration: 5 });
-          messages.push(`¡${attackerInfo.name} fue envenenado por la habilidad Punto Tóxico de ${defenderInfo.name}!`);
+          messages.push(`¡${attackerInfo.name} fue envenenado por Punto Tóxico de ${defenderInfo.name}!`);
           if (eventBus) eventBus.emit('status_applied', { targetId: attackerId, effect: 'poison' });
+        } else if (defenderInfo.ability === 'flame_body' && !attackerFighter.statusEffects.some(s => s.type === 'burn')) {
+          attackerFighter.statusEffects.push({ type: 'burn', duration: 5 });
+          messages.push(`¡${attackerInfo.name} se quemó por Cuerpo Llama de ${defenderInfo.name}!`);
+          if (eventBus) eventBus.emit('status_applied', { targetId: attackerId, effect: 'burn' });
+        } else if (defenderInfo.ability === 'effect_spore') {
+          const rand = Math.random();
+          if (rand < 0.33 && !attackerFighter.statusEffects.some(s => s.type === 'poison')) {
+            attackerFighter.statusEffects.push({ type: 'poison', duration: 5 });
+            messages.push(`¡${attackerInfo.name} fue envenenado por Efecto Espora de ${defenderInfo.name}!`);
+            if (eventBus) eventBus.emit('status_applied', { targetId: attackerId, effect: 'poison' });
+          } else if (rand >= 0.33 && rand < 0.66 && !attackerFighter.statusEffects.some(s => s.type === 'paralyze')) {
+            attackerFighter.statusEffects.push({ type: 'paralyze', duration: 3 });
+            messages.push(`¡${attackerInfo.name} se paralizó por Efecto Espora de ${defenderInfo.name}!`);
+            if (eventBus) eventBus.emit('status_applied', { targetId: attackerId, effect: 'paralyze' });
+          } else if (rand >= 0.66 && !attackerFighter.statusEffects.some(s => s.type === 'sleep')) {
+            attackerFighter.statusEffects.push({ type: 'sleep', duration: 3 });
+            messages.push(`¡${attackerInfo.name} se durmió por Efecto Espora de ${defenderInfo.name}!`);
+            if (eventBus) eventBus.emit('status_applied', { targetId: attackerId, effect: 'sleep' });
+          }
         }
       }
-
-      // Habilidad Synchronize (Sincronía): No implementada completamente aquí para estados, pero podemos añadir un log.
 
       // Aplicar efectos secundarios del movimiento (solo una vez)
       if (move.effect && move.effect !== 'multi_hit' && i === 0) {
@@ -524,6 +562,16 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFight
       }
       break;
   }
+
+  // Sincronía (Synchronize)
+  if (targetInfo.ability === 'synchronize' && attackerFighter && (move.effect === 'burn' || move.effect === 'poison' || move.effect === 'paralyze')) {
+     if (!attackerFighter.statusEffects) attackerFighter.statusEffects = [];
+     if (!attackerFighter.statusEffects.some(s => s.type === move.effect)) {
+       attackerFighter.statusEffects.push({ type: move.effect, turnsLeft: -1 });
+       messages.push(`¡La Sincronía de ${targetInfo.name} transmitió el estado a ${attackerInfo.name}!`);
+     }
+  }
+
   return false;
 }
 
