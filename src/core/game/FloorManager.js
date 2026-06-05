@@ -3,6 +3,8 @@ import { spawnItems } from '../../systems/ItemSystem.js';
 import { triggerFloorEvent } from '../../systems/FloorEvents.js';
 import { spawnTraps } from '../../systems/TrapSystem.js';
 
+import { getBiomeForFloor } from '../../map/Biomes.js';
+
 /**
  * Generación de pisos, spawn de enemigos y pre-carga de sprites.
  */
@@ -26,6 +28,10 @@ export class FloorManager {
     const isBossRoom = zone && zone.boss && game._currentFloor === zone.floors[1];
     const genResult = game.dungeonGenerator.generate(MAP_WIDTH, MAP_HEIGHT, game.seed, theme, isBossRoom);
     game.tileMap = genResult.tileMap;
+    
+    // Setear el bioma estético para este piso
+    game.tileMap.biome = getBiomeForFloor(game._currentFloor);
+    
     game._stairsPos = genResult.stairsPos;
     game._spawnPoints = genResult.spawnPoints;
     game._itemPoints = genResult.itemPoints;

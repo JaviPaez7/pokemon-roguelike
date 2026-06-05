@@ -272,7 +272,11 @@ export class Renderer {
     const { ctx, canvas } = this;
 
     // === CAPA 1: Limpiar canvas ===
-    ctx.fillStyle = COLOR_FONDO;
+    let bgColor = COLOR_FONDO;
+    if (game && game.tileMap && game.tileMap.biome && game.tileMap.biome.void) {
+      bgColor = game.tileMap.biome.void;
+    }
+    ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Asegurar que imageSmoothingEnabled siga desactivado

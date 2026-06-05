@@ -83,7 +83,7 @@ export class MapRenderer {
         this._dibujarTile(ctx, tile, sx, sy, tileSize, visibilidad, x, y, tileMap);
 
         // Dibujar líneas de cuadrícula sutiles
-        this._dibujarGrid(ctx, sx, sy, tileSize);
+        this._dibujarGrid(ctx, sx, sy, tileSize, tileMap);
       }
     }
 
@@ -114,29 +114,20 @@ export class MapRenderer {
       ctx.globalAlpha = OPACIDAD_SEEN;
     }
 
-    // Color base del tile
+    // Color base del tile (fallback a colores originales si no hay bioma)
     let colorSuelo = tile.colors.floor;
     let colorBorde = tile.colors.wall;
 
-    if (tileMap && tileMap.theme) {
-      if (tileMap.theme === 'forest') {
-        colorSuelo = tile.id === 2 ? '#1a2e1a' : '#2d4a2d';
-        colorBorde = '#122012';
-      } else if (tileMap.theme === 'volcano') {
-        colorSuelo = tile.id === 2 ? '#2a0f0f' : '#3e1e1e';
-        colorBorde = '#1f0909';
-      } else if (tileMap.theme === 'cave' || tileMap.theme === 'dark') {
-        colorSuelo = tile.id === 2 ? '#1f1828' : '#3a3040';
-        colorBorde = '#16101c';
-      } else if (tileMap.theme === 'electric') {
-        colorSuelo = tile.id === 2 ? '#28280f' : '#3a3a20';
-        colorBorde = '#1c1c0a';
-      } else if (tileMap.theme === 'mountain') {
-        colorSuelo = tile.id === 2 ? '#1a1a28' : '#2e2e3e';
-        colorBorde = '#12121c';
-      } else if (tileMap.theme === 'lab') {
-        colorSuelo = tile.id === 2 ? '#1a1c28' : '#2e3040';
-        colorBorde = '#12141c';
+    if (tileMap && tileMap.biome) {
+      if (tile.id === 2) { // WALL
+        colorSuelo = tileMap.biome.wall;
+        colorBorde = tileMap.biome.void;
+      } else if (tile.id === 4) { // WATER
+        colorSuelo = tileMap.biome.water;
+        colorBorde = tileMap.biome.wall;
+      } else { // FLOOR, STAIRS, TRAPS
+        colorSuelo = tileMap.biome.floor;
+        colorBorde = tileMap.biome.wall;
       }
     }
 
@@ -286,8 +277,8 @@ export class MapRenderer {
    * @param {number} size - Tamaño del tile
    * @private
    */
-  _dibujarGrid(ctx, sx, sy, size) {
-    ctx.strokeStyle = COLOR_GRID;
+  _dibujarGrid(ctx, sx, sy, size, tileMap) {
+    ctx.strokeStyle = tileMap && tileMap.biome && tileMap.biome.gridLines ? tileMap.biome.gridLines : COLOR_GRID;
     ctx.lineWidth = ANCHO_GRID;
 
     // Línea derecha del tile
