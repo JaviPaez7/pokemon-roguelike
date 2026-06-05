@@ -61,6 +61,31 @@ export function setupGameEventListeners(game) {
     }
   });
 
+  game.eventBus.on('recruit_pokemon', (data) => {
+    if (data.accepted) {
+      const npcId = data.entityId;
+      const info = game.entityManager.getComponent(npcId, 'pokemonInfo');
+      const party = game.entityManager.getEntitiesWithComponents('partyMember');
+      if (party.length < 4 && info) {
+        game.entityManager.setComponent(npcId, 'partyMember', {
+          slot: party.length,
+          isLeader: false
+        });
+        game.entityManager.setComponent(npcId, 'aiControlled', { behavior: 'follower' });
+        game.entityManager.removeComponent(npcId, 'npcFriendly');
+        
+        const fighter = game.entityManager.getComponent(npcId, 'fighter');
+        game.turnManager.addEntity(npcId, fighter ? fighter.speed : 50, false);
+
+        game.eventBus.emit('show_dialog', {
+          text: `¡${info.name} se ha unido a tu equipo de exploración!`
+        });
+      }
+    } else {
+      game.entityManager.destroyEntity(data.entityId);
+    }
+  });
+
   game.eventBus.on('floor_change', (data) => {
     game.floorManager.changeFloor(data.direction || 'down');
   });

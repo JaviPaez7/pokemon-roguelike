@@ -351,26 +351,9 @@ export class CombatHandler {
 
     const party = game.entityManager.getEntitiesWithComponents('partyMember');
     if (party.length < 4) {
-      // Unirse al equipo
-      game.entityManager.setComponent(npcId, 'partyMember', {
-        slot: party.length,
-        isLeader: false
-      });
-
-      // Asegurar que siga al líder
-      game.entityManager.setComponent(npcId, 'aiControlled', {
-        behavior: 'follower'
-      });
-
-      // Eliminar el flag npcFriendly
-      game.entityManager.removeComponent(npcId, 'npcFriendly');
-
-      // Registrar en el turnManager
-      const fighter = game.entityManager.getComponent(npcId, 'fighter');
-      game.turnManager.addEntity(npcId, fighter ? fighter.speed : 50, false);
-
-      game.eventBus.emit('show_dialog', {
-        text: `¡${info.name} está feliz de encontrarte!\n\n¡Se ha unido a tu equipo de exploración!`
+      game.changeState(1); // GAME_STATES.MENU
+      import('../../ui/menus/RecruitMenu.js').then(module => {
+        module.openRecruitMenu(game.ui, npcId, info);
       });
     } else {
       game.eventBus.emit('show_dialog', {
