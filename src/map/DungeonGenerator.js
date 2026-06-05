@@ -283,6 +283,14 @@ export class DungeonGenerator {
       }
     }
 
+    // Elegir una Monster House (10% de probabilidad si hay más de 3 habitaciones)
+    if (rooms.length >= 3 && RNG.getUniform() < 0.10) {
+      // Elegir aleatoriamente, excluyendo la primera habitación (usualmente la del jugador o cerca)
+      const index = 1 + Math.floor(RNG.getUniform() * (rooms.length - 1));
+      rooms[index].type = 'monster_house';
+      rooms[index].monsterHouseTriggered = false;
+    }
+
     return rooms;
   }
 

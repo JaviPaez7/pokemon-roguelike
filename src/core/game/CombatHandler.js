@@ -63,6 +63,20 @@ export class CombatHandler {
           game.tileMap, game.entityManager
         );
 
+        if (result.success && entityId === game._playerId) {
+          const pos = game.entityManager.getComponent(entityId, 'position');
+          if (pos && game.tileMap.rooms) {
+            for (const room of game.tileMap.rooms) {
+              if (room.type === 'monster_house' && !room.monsterHouseTriggered) {
+                if (pos.x >= room.x && pos.x < room.x + room.w && pos.y >= room.y && pos.y < room.y + room.h) {
+                  room.monsterHouseTriggered = true;
+                  game.floorManager.spawnMonsterHouse(room);
+                }
+              }
+            }
+          }
+        }
+
         if (result.type === 'bump_attack') {
           if (entityId === game._playerId) {
             const isFriendly = game.entityManager.hasComponent(result.targetEntity, 'npcFriendly');

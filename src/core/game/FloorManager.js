@@ -123,6 +123,58 @@ export class FloorManager {
     }
   }
 
+  spawnMonsterHouse(room) {
+    const game = this.game;
+    if (!game.tileMap) return;
+
+    const zone = this.getZoneConfig();
+    if (!zone) return;
+
+    // Flash y sonido
+    if (game.renderer && game.renderer.screenFlash) {
+      game.renderer.screenFlash('rgba(255, 0, 0, 0.6)', 1000);
+    }
+    game.eventBus.emit('message', '¡ES UNA CASA DE MONSTRUOS!');
+    game.eventBus.emit('message', '¡Múltiples Pokémon cayeron del techo!');
+
+    // Recolectar tiles transitables y desocupados dentro de la habitación
+    const validPoints = [];
+    for (let y = room.y; y < room.y + room.h; y++) {
+      for (let x = room.x; x < room.x + room.w; x++) {
+        if (game.tileMap.isWalkable(x, y)) {
+          if (!game.entityManager.getEntityAt(x, y, false)) {
+            validPoints.push({ x, y });
+          }
+        }
+      }
+    }
+
+    // Barajar
+    for (let i = validPoints.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [validPoints[i], validPoints[j]] = [validPoints[j], validPoints[i]];
+    }
+
+    // Generar de 4 a 8 enemigos
+    const enemyCount = 4 + Math.floor(Math.random() * 5);
+    const actualCount = Math.min(enemyCount, validPoints.length);
+
+    for (let i = 0; i < actualCount; i++) {
+      const point = validPoints[i];
+      const speciesId = this._selectRandomEnemySpecies(zone.pokemon);
+      const minLvl = zone.levelRange[0];
+      const maxLvl = zone.levelRange[1];
+      const level = minLvl + Math.floor(Math.random() * (maxLvl - minLvl + 1));
+
+      const enemyId = game.entityManager.createPokemon(speciesId, level, point.x, point.y, true);
+      const fighter = game.entityManager.getComponent(enemyId, 'fighter');
+      game.turnManager.addEntity(enemyId, fighter ? fighter.speed : 50, false);
+      game.pokedexSeen.add(speciesId);
+    }
+    
+    game.needsRender = true;
+  }
+
   async changeFloor(direction) {
     const game = this.game;
 
