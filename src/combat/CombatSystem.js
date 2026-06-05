@@ -39,6 +39,13 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
     }
   }
 
+  // Habilidades Pasivas: Inmunidades
+  if (defenderInfo.ability === 'levitate' && move.type === 'ground') {
+    result.messages.push('¡No afecta al Pokémon enemigo gracias a Levitación!');
+    result.damage = 0;
+    return result;
+  }
+
   // Determinar stats ofensivo/defensivo según clase de daño
   let atk, def;
   if (move.damageClass === 'physical') {
@@ -62,6 +69,30 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
   let damage = Math.floor(
     ((2 * level / 5 + 2) * move.power * (atk / def)) / 50 + 2
   );
+
+  // Habilidades Pasivas de Aumento de Daño
+  const hpPercent = attacker.hp / attacker.maxHp;
+  if (hpPercent <= 0.33) {
+    if (attackerInfo.ability === 'overgrow' && move.type === 'grass') {
+      damage = Math.floor(damage * 1.5);
+      result.messages.push('¡La habilidad Espesura potencia el ataque!');
+    } else if (attackerInfo.ability === 'blaze' && move.type === 'fire') {
+      damage = Math.floor(damage * 1.5);
+      result.messages.push('¡La habilidad Mar Llamas potencia el ataque!');
+    } else if (attackerInfo.ability === 'torrent' && move.type === 'water') {
+      damage = Math.floor(damage * 1.5);
+      result.messages.push('¡La habilidad Torrente potencia el ataque!');
+    } else if (attackerInfo.ability === 'swarm' && move.type === 'bug') {
+      damage = Math.floor(damage * 1.5);
+      result.messages.push('¡La habilidad Enjambre potencia el ataque!');
+    }
+  }
+
+  // Habilidad Agallas (Guts)
+  if (attackerInfo.ability === 'guts' && attacker.statusEffects && attacker.statusEffects.length > 0 && move.damageClass === 'physical') {
+    damage = Math.floor(damage * 1.5);
+    result.messages.push('¡La habilidad Agallas potencia el ataque!');
+  }
 
   // STAB (Same Type Attack Bonus)
   if (attackerInfo.types.includes(move.type)) {
@@ -227,8 +258,13 @@ export function executeMove(params) {
       messages.push('¡Golpe crítico!');
     }
 
-    // Aplicar daño
     if (result.damage > 0) {
+      // Habilidad Sturdy (Robustez)
+      if (defenderInfo.ability === 'sturdy' && defenderFighter.hp === defenderFighter.maxHp && result.damage >= defenderFighter.maxHp) {
+        result.damage = defenderFighter.maxHp - 1;
+        messages.push(`¡La habilidad Robustez de ${defenderInfo.name} evitó el K.O. directo!`);
+      }
+
       defenderFighter.hp = Math.max(0, defenderFighter.hp - result.damage);
       totalDamage += result.damage;
       
@@ -242,6 +278,23 @@ export function executeMove(params) {
           isCritical: result.isCritical
         });
       }
+
+      // Habilidades pasivas defensivas (Static, Poison Point) al recibir daño físico
+      if (move.damageClass === 'physical' && Math.random() < 0.3) {
+        if (defenderInfo.ability === 'static' && (!attackerFighter.statusEffects || !attackerFighter.statusEffects.some(s => s.type === 'paralyze'))) {
+          if (!attackerFighter.statusEffects) attackerFighter.statusEffects = [];
+          attackerFighter.statusEffects.push({ type: 'paralyze', duration: 3 });
+          messages.push(`¡${attackerInfo.name} se paralizó por la habilidad Elec. Estática de ${defenderInfo.name}!`);
+          if (eventBus) eventBus.emit('status_applied', { targetId: attackerId, effect: 'paralyze' });
+        } else if (defenderInfo.ability === 'poison_point' && (!attackerFighter.statusEffects || !attackerFighter.statusEffects.some(s => s.type === 'poison'))) {
+          if (!attackerFighter.statusEffects) attackerFighter.statusEffects = [];
+          attackerFighter.statusEffects.push({ type: 'poison', duration: 5 });
+          messages.push(`¡${attackerInfo.name} fue envenenado por la habilidad Punto Tóxico de ${defenderInfo.name}!`);
+          if (eventBus) eventBus.emit('status_applied', { targetId: attackerId, effect: 'poison' });
+        }
+      }
+
+      // Habilidad Synchronize (Sincronía): No implementada completamente aquí para estados, pero podemos añadir un log.
 
       // Aplicar efectos secundarios del movimiento (solo una vez)
       if (move.effect && move.effect !== 'multi_hit' && i === 0) {

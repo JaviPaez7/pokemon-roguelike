@@ -347,7 +347,8 @@ export class EntityManager {
       level: level,
       xp: 0,
       currentMoves: moves,
-      types: species?.types ?? ['normal']
+      types: species?.types ?? ['normal'],
+      ability: species?.ability ?? 'none'
     });
 
     // Estadísticas de combate

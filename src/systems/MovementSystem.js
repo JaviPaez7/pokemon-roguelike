@@ -105,7 +105,11 @@ export class MovementSystem {
     const itemEntity = entityManager.getItemAt(targetX, targetY);
 
     // ── 6. Verificar si hay una trampa en el suelo ──
-    const trapEntity = entityManager.getTrapAt ? entityManager.getTrapAt(targetX, targetY) : null;
+    let trapEntity = entityManager.getTrapAt ? entityManager.getTrapAt(targetX, targetY) : null;
+    const pokemonInfo = entityManager.getComponent(entityId, 'pokemonInfo');
+    if (pokemonInfo && pokemonInfo.ability === 'levitate') {
+      trapEntity = null; // Inmune a las trampas del suelo
+    }
 
     // ── 7. Ejecutar el movimiento ──
     this._moveEntity(position, targetX, targetY);

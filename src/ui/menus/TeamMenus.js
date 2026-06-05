@@ -51,6 +51,11 @@ export function openPokemonActionsMenu(ui) {
   const html = `
     <div class="game-panel" style="width: 300px;">
       <h2 class="game-panel-title" style="text-transform: uppercase;">${info.name}</h2>
+      <div style="font-size: 6px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.5;">
+        Nivel: ${info.level} | Tipos: <span style="text-transform: capitalize;">${info.types.join('/')}</span><br/>
+        Habilidad: <span style="color: #ffcc00; text-transform: capitalize;">${info.ability || 'Ninguna'}</span><br/>
+        ATQ: ${fighter.attack} DEF: ${fighter.defense} ESP: ${fighter.spAtk} VEL: ${fighter.speed}
+      </div>
       <div id="options-list">
         <div class="menu-option selected" data-index="0"><span class="cursor">▶</span> Establecer como Líder</div>
         <div class="menu-option" data-index="1"><span class="cursor">▶</span> Ver movimientos</div>

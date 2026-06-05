@@ -190,6 +190,7 @@ export class Game {
       speciesDict[p.id] = {
         name: p.name,
         types: p.types,
+        ability: p.ability || 'none',
         baseStats: p.stats,
         learnset: p.moves,
         sprite: p.sprite,
