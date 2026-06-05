@@ -105,7 +105,9 @@ export class Game {
       { itemId: 'max_elixir', quantity: 1 },
       { itemId: 'slumber_orb', quantity: 1 },
       { itemId: 'petrify_orb', quantity: 1 },
-      { itemId: 'apple', quantity: 3 }
+      { itemId: 'apple', quantity: 3 },
+      { itemId: 'thunder_stone', quantity: 1 },
+      { itemId: 'red_gummi', quantity: 1 }
     ];
     this.maxInventorySize = 20;
 

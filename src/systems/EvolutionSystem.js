@@ -65,7 +65,7 @@ export function evolve(entityId, evolution, entityManager, pokemonDB, movesDB) {
   pokemonInfo.types = newSpecies.types;
 
   // Recalcular stats con la nueva especie
-  const newStats = calculateStats(newSpecies.stats, pokemonInfo.level);
+  const newStats = calculateStats(newSpecies.stats, pokemonInfo.level, fighter.bonusStats);
   const hpPercentage = fighter.hp / fighter.maxHp; // Mantener % de HP
 
   fighter.maxHp = newStats.maxHp;

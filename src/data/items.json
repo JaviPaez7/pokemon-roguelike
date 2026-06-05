@@ -359,6 +359,56 @@
     "spriteUrl": "/sprites/items/potion.png"
   },
   {
+    "id": "red_gummi",
+    "name": "Gominola Roja",
+    "type": "gummi",
+    "stat": "attack",
+    "rarity": 0.05,
+    "description": "Aumenta el Ataque permanentemente",
+    "sprite": "🍬",
+    "spriteUrl": "/sprites/items/potion.png"
+  },
+  {
+    "id": "blue_gummi",
+    "name": "Gominola Azul",
+    "type": "gummi",
+    "stat": "spAtk",
+    "rarity": 0.05,
+    "description": "Aumenta el Ataque Especial permanentemente",
+    "sprite": "🍬",
+    "spriteUrl": "/sprites/items/potion.png"
+  },
+  {
+    "id": "yellow_gummi",
+    "name": "Gominola Amarilla",
+    "type": "gummi",
+    "stat": "speed",
+    "rarity": 0.05,
+    "description": "Aumenta la Velocidad permanentemente",
+    "sprite": "🍬",
+    "spriteUrl": "/sprites/items/potion.png"
+  },
+  {
+    "id": "green_gummi",
+    "name": "Gominola Verde",
+    "type": "gummi",
+    "stat": "defense",
+    "rarity": 0.05,
+    "description": "Aumenta la Defensa permanentemente",
+    "sprite": "🍬",
+    "spriteUrl": "/sprites/items/potion.png"
+  },
+  {
+    "id": "clear_gummi",
+    "name": "Gominola Transparente",
+    "type": "gummi",
+    "stat": "maxHp",
+    "rarity": 0.02,
+    "description": "Aumenta los PS Máximos permanentemente",
+    "sprite": "🍬",
+    "spriteUrl": "/sprites/items/potion.png"
+  },
+  {
     "id": "gravelerock",
     "name": "Roca Viajero",
     "type": "throwable",

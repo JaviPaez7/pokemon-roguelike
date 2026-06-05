@@ -2,7 +2,8 @@
  * ItemSystem.js — Sistema de objetos: spawn, pickup, uso
  */
 
-import { grantExperience, expForLevel } from './ExperienceSystem.js';
+import { grantExperience, expForLevel, calculateStats } from './ExperienceSystem.js';
+import { checkEvolution, evolve } from './EvolutionSystem.js';
 
 /**
  * Genera items en un piso
@@ -227,8 +228,58 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
     }
 
     case 'evolution_stone': {
-      // La evolución por piedra se maneja en EvolutionSystem
-      messages.push('Selecciona un Pokémon para evolucionar.');
+      const evo = checkEvolution(pokemonInfo, game.evolutionData, itemData.id);
+      if (evo) {
+        const evoResult = evolve(targetEntityId, evo, entityManager, game.pokemonData, game.movesData);
+        if (evoResult.success) {
+          messages.push(...evoResult.messages);
+          if (game.renderer && game.renderer.screenFlash) {
+            game.renderer.screenFlash('rgba(255, 255, 255, 0.8)', 800);
+          }
+          consumed = true;
+          game.needsRender = true;
+        } else {
+          messages.push(...evoResult.messages);
+        }
+      } else {
+        messages.push(`No tiene ningún efecto en ${pokemonInfo.name}.`);
+      }
+      break;
+    }
+
+    case 'gummi': {
+      if (!fighter.bonusStats) {
+        fighter.bonusStats = { maxHp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 };
+      }
+      const stat = itemData.stat;
+      fighter.bonusStats[stat] = (fighter.bonusStats[stat] || 0) + 1;
+      
+      // Recalcular
+      const speciesData = game.pokemonData.find(p => p.id === pokemonInfo.speciesId);
+      if (speciesData) {
+        const newStats = calculateStats(speciesData.stats, pokemonInfo.level, fighter.bonusStats);
+        const hpIncrease = newStats.maxHp - fighter.maxHp;
+        fighter.maxHp = newStats.maxHp;
+        fighter.hp = Math.min(fighter.maxHp, fighter.hp + hpIncrease);
+        fighter.attack = newStats.attack;
+        fighter.defense = newStats.defense;
+        fighter.spAtk = newStats.spAtk;
+        fighter.spDef = newStats.spDef;
+        fighter.speed = newStats.speed;
+      }
+      
+      // Mensaje según el stat
+      const statNames = {
+        maxHp: 'PS Máximos',
+        attack: 'Ataque',
+        defense: 'Defensa',
+        spAtk: 'Ataque Especial',
+        spDef: 'Defensa Especial',
+        speed: 'Velocidad'
+      };
+      messages.push(`¡${pokemonInfo.name} se comió la ${itemData.name}!`);
+      messages.push(`¡Su ${statNames[stat]} aumentó permanentemente!`);
+      consumed = true;
       break;
     }
 

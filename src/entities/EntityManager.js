@@ -362,7 +362,8 @@ export class EntityManager {
       speed: speed,
       statusEffects: [],
       belly: 100,
-      maxBelly: 100
+      maxBelly: 100,
+      bonusStats: { maxHp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }
     });
 
     // Sprite (se carga asíncronamente después)

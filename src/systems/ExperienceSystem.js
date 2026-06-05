@@ -64,7 +64,7 @@ export function grantExperience(pokemonInfo, fighter, xpGained, pokemonDB, moves
     // Recalcular stats
     const speciesData = pokemonDB.find(p => p.id === pokemonInfo.speciesId);
     if (speciesData) {
-      const newStats = calculateStats(speciesData.stats, pokemonInfo.level);
+      const newStats = calculateStats(speciesData.stats, pokemonInfo.level, fighter.bonusStats);
       const hpIncrease = newStats.maxHp - fighter.maxHp;
       
       fighter.maxHp = newStats.maxHp;
@@ -143,8 +143,9 @@ import { calculateAllStats } from './StatCalculator.js';
  * Calcula stats a partir de base stats y nivel
  * @param {Object} baseStats - Stats base de la especie
  * @param {number} level - Nivel actual
+ * @param {Object} [bonusStats] - Bonus permanentes
  * @returns {Object} Stats calculados
  */
-export function calculateStats(baseStats, level) {
-  return calculateAllStats(baseStats, level);
+export function calculateStats(baseStats, level, bonusStats = null) {
+  return calculateAllStats(baseStats, level, bonusStats);
 }
