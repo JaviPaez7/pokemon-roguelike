@@ -79,8 +79,9 @@ export function openItemActionsMenu(ui) {
       <h2 class="game-panel-title">${name}</h2>
       <div id="options-list">
         <div class="menu-option selected" data-index="0"><span class="cursor">▶</span> Usar objeto</div>
-        <div class="menu-option" data-index="1"><span class="cursor">▶</span> Tirar objeto</div>
-        <div class="menu-option" data-index="2"><span class="cursor">▶</span> Atrás</div>
+        <div class="menu-option" data-index="1"><span class="cursor">▶</span> Lanzar objeto</div>
+        <div class="menu-option" data-index="2"><span class="cursor">▶</span> Tirar objeto</div>
+        <div class="menu-option" data-index="3"><span class="cursor">▶</span> Atrás</div>
       </div>
     </div>
   `;
@@ -118,6 +119,10 @@ export function openItemActionsMenu(ui) {
       } else {
         openItemTargetMenu(ui);
       }
+    },
+    () => {
+      ui.closeMenu();
+      ui.game.throwInventoryItem(item.id);
     },
     () => {
       const slotIdx = ui.game.inventory.findIndex(s => s.itemId === ui.selectedItem);

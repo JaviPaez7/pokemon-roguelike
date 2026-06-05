@@ -321,5 +321,25 @@
     "description": "Llena la Tripa y expande su límite",
     "sprite": "🌟",
     "spriteUrl": ""
+  },
+  {
+    "id": "gravelerock",
+    "name": "Roca Viajero",
+    "type": "throwable",
+    "value": 20,
+    "rarity": 0.25,
+    "description": "Lánzala para infligir 20 PS de daño a distancia.",
+    "sprite": "🪨",
+    "spriteUrl": ""
+  },
+  {
+    "id": "iron_thorn",
+    "name": "Púa Férrea",
+    "type": "throwable",
+    "value": 15,
+    "rarity": 0.2,
+    "description": "Lánzala para infligir daño fijo a distancia.",
+    "sprite": "📌",
+    "spriteUrl": ""
   }
 ]

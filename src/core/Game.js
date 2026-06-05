@@ -37,7 +37,7 @@ import { FloorManager } from './game/FloorManager.js';
 import { CombatHandler } from './game/CombatHandler.js';
 import { setupGameEventListeners } from './game/setupGameEventListeners.js';
 import { startNewGame as startNewGameSession, loadSavedGame as loadSavedGameSession } from './game/GameSession.js';
-import { useInventoryItem as useInventoryItemHandler } from './game/InventoryHandler.js';
+import { useInventoryItem as useInventoryItemHandler, throwInventoryItem } from './game/InventoryHandler.js';
 
 // Importar JSONs estáticos directamente para empaquetarlos con Vite
 import pokemonData from '../data/pokemon.json';
@@ -597,6 +597,10 @@ export class Game {
 
   useInventoryItem(itemId, targetPokemonId) {
     useInventoryItemHandler(this, itemId, targetPokemonId);
+  }
+
+  throwInventoryItem(itemId) {
+    throwInventoryItem(this, itemId);
   }
 
   // ─── Renderizado ──────────────────────────────────────────────────────────

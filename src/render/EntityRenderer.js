@@ -83,6 +83,9 @@ export class EntityRenderer {
 
     /** @type {Array<{entityId: number, pos: Object, spriteUrl: string, startTime: number, duration: number}>} */
     this._faintingEntities = [];
+
+    /** @type {Array<{startX: number, startY: number, endX: number, endY: number, spriteUrl: string, sprite: string, startTime: number, duration: number}>} */
+    this._projectiles = [];
   }
 
   /**
@@ -98,6 +101,18 @@ export class EntityRenderer {
       spriteUrl,
       startTime: performance.now(),
       duration: 500
+    });
+  }
+
+  /**
+   * Añade una animación de proyectil.
+   * @param {Object} data - Datos del proyectil
+   */
+  spawnProjectileAnimation(data) {
+    this._projectiles.push({
+      ...data,
+      startTime: performance.now(),
+      duration: 300 // ms
     });
   }
 
@@ -145,13 +160,16 @@ export class EntityRenderer {
     this._faintingEntities = this._faintingEntities.filter(
       (f) => now - f.startTime < f.duration
     );
+    this._projectiles = this._projectiles.filter(
+      (p) => now - p.startTime < p.duration
+    );
   }
 
   /**
    * @returns {boolean} true si hay animaciones VFX activas
    */
   hasActiveEffects() {
-    return this._danosFlotantes.length > 0 || this._damageFlashes.length > 0 || this._faintingEntities.length > 0;
+    return this._danosFlotantes.length > 0 || this._damageFlashes.length > 0 || this._faintingEntities.length > 0 || this._projectiles.length > 0;
   }
 
   /**
@@ -195,6 +213,54 @@ export class EntityRenderer {
 
     this._dibujarDanosFlotantes(ctx, entityManager, camera, tileMap);
     this._dibujarFaintingEntities(ctx, camera);
+    this._dibujarProjectiles(ctx, camera);
+  }
+
+  /**
+   * Dibuja los proyectiles en vuelo.
+   * @private
+   */
+  _dibujarProjectiles(ctx, camera) {
+    if (this._projectiles.length === 0) return;
+
+    const tileSize = camera.tileSize;
+    for (const p of this._projectiles) {
+      const elapsed = this._tiempo - p.startTime;
+      const progress = Math.min(1, elapsed / p.duration);
+      
+      const currentWorldX = p.startX + (p.endX - p.startX) * progress;
+      const currentWorldY = p.startY + (p.endY - p.startY) * progress;
+      
+      if (!camera.isVisible(Math.floor(currentWorldX), Math.floor(currentWorldY))) continue;
+
+      const screenPos = camera.worldToScreen(currentWorldX, currentWorldY);
+      const margen = Math.floor(tileSize * 0.2);
+      const spriteSize = tileSize - margen * 2;
+
+      ctx.save();
+      // Pequeño giro para que parezca que vuela
+      const angle = progress * Math.PI * 4;
+      ctx.translate(screenPos.x + tileSize/2, screenPos.y + tileSize/2);
+      ctx.rotate(angle);
+
+      if (p.spriteUrl) {
+        this.spriteManager.drawSprite(
+          ctx,
+          p.spriteUrl,
+          -spriteSize/2,
+          -spriteSize/2,
+          spriteSize,
+          spriteSize,
+          ''
+        );
+      } else {
+        ctx.font = `${spriteSize}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.sprite || '📦', 0, 0);
+      }
+      ctx.restore();
+    }
   }
 
   /**

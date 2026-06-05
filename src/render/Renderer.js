@@ -114,6 +114,11 @@ export class Renderer {
         this._onRenderRequested();
       }
     });
+
+    eventBus.on('throw_projectile', (data) => {
+      this.entityRenderer.spawnProjectileAnimation(data);
+      this._onRenderRequested();
+    });
   }
 
   /**
