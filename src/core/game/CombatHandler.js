@@ -185,7 +185,8 @@ export class CombatHandler {
         entityId: attackerId,
         speciesId: attackerInfo.speciesId,
         pos: pos ? { x: pos.x, y: pos.y } : null,
-        spriteUrl: sprite ? sprite.url : ''
+        spriteUrl: sprite ? sprite.url : '',
+        attackerId: null // Murió por estado, nadie específico
       });
       game.needsRender = true;
       return { success: true, type: 'fainted_from_status' };

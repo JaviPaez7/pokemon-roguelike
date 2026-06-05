@@ -67,6 +67,11 @@
  *   alertedTo: number|null // ID de la entidad a la que está alerta (null si no)
  * }
  *
+ * npcFriendly: {
+ *   // Componente sin datos (tag). 
+ *   // Si una entidad lo tiene, no ataca y puede unirse al equipo si hablas con él.
+ * }
+ *
  * partyMember: {
  *   slot: number,       // Posición en el equipo (0-3)
  *   isLeader: boolean   // Si es el Pokémon líder (aparece en el mapa)
@@ -102,6 +107,9 @@ export function createComponentStore() {
 
     /** @type {Map<number, {behavior: string, detectRange: number, alertedTo: number|null}>} */
     aiControlled: new Map(),
+
+    /** @type {Map<number, {}>} */
+    npcFriendly: new Map(),
 
     /** @type {Map<number, {slot: number, isLeader: boolean}>} */
     partyMember: new Map(),

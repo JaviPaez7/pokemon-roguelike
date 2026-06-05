@@ -275,7 +275,8 @@ export function executeMove(params) {
         entityId: attackerId, 
         speciesId: attackerInfo.speciesId,
         pos: pos ? { x: pos.x, y: pos.y } : null,
-        spriteUrl: sprite ? sprite.url : ''
+        spriteUrl: sprite ? sprite.url : '',
+        attackerId: defenderId // El defensor causó el retroceso
       });
     }
   }
@@ -291,7 +292,8 @@ export function executeMove(params) {
         entityId: defenderId, 
         speciesId: defenderInfo.speciesId,
         pos: pos ? { x: pos.x, y: pos.y } : null,
-        spriteUrl: sprite ? sprite.url : ''
+        spriteUrl: sprite ? sprite.url : '',
+        attackerId: attackerId // Quien asestó el golpe
       });
     }
   }
