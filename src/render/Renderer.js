@@ -136,6 +136,20 @@ export class Renderer {
   }
 
   /**
+   * Destello de color temporal en la pantalla
+   * @param {string} color - Color (ej. 'rgba(255, 0, 0, 0.5)')
+   * @param {number} durationMs - Duración en ms
+   */
+  screenFlash(color, durationMs) {
+    this._flash = {
+      color,
+      duration: durationMs,
+      startTime: performance.now(),
+    };
+    this._onRenderRequested();
+  }
+
+  /**
    * Inicia un fade out a negro.
    * @param {number} durationMs - Duración del fade out en ms
    * @returns {Promise<void>} Promesa que se resuelve al terminar
@@ -179,6 +193,18 @@ export class Renderer {
       const elapsed = now - this._screenShake.startTime;
       if (elapsed >= this._screenShake.duration) {
         this._screenShake = null;
+      } else {
+        // Necesitamos seguir renderizando mientras tiembla
+        this._onRenderRequested();
+      }
+    }
+
+    if (this._flash) {
+      const elapsed = now - this._flash.startTime;
+      if (elapsed >= this._flash.duration) {
+        this._flash = null;
+      } else {
+        this._onRenderRequested();
       }
     }
 
@@ -287,6 +313,20 @@ export class Renderer {
     if (this._currentFadeAlpha > 0) {
       ctx.fillStyle = `rgba(0, 0, 0, ${this._currentFadeAlpha})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // === CAPA 4.5: Flash temporal ===
+    if (this._flash) {
+      const elapsed = this._lastUpdateTime - this._flash.startTime;
+      const progress = Math.max(0, Math.min(1, elapsed / this._flash.duration));
+      // El alpha va de 1 a 0
+      const alpha = 1 - progress;
+      
+      // Parsear el color para aplicarle la opacidad
+      ctx.fillStyle = this._flash.color;
+      ctx.globalAlpha = alpha;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.globalAlpha = 1.0;
     }
 
     // === CAPA 5: HUD (sin shake, legible, encima del fade) ===

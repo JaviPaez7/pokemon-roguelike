@@ -515,9 +515,15 @@ export class Game {
    */
   _triggerMonsterHouse(room) {
     room.triggered = true;
+    
+    // Diálogo y evento para UI
+    this.eventBus.emit('show_dialog', { text: '¡ES UN NIDO DE MONSTRUOS!' });
     this.eventBus.emit('message', '¡ES UN NIDO DE MONSTRUOS!');
     
-    // Reproducir sfx si lo hubiera (opcional)
+    // Si tenemos renderizador, podemos añadir un efecto de destello rojo
+    if (this.renderer && this.renderer.screenFlash) {
+      this.renderer.screenFlash('rgba(255, 0, 0, 0.5)', 300);
+    }
     
     // Spawnear 6 a 10 enemigos
     const numEnemies = 6 + Math.floor(Math.random() * 5);
@@ -551,6 +557,14 @@ export class Game {
       
       const level = Math.max(1, Math.min(100, Math.floor(this._currentFloor * 1.5) + Math.floor(Math.random() * 3)));
       const enemyId = this.entityManager.createPokemon(randMon.id, level, pos.x, pos.y, true);
+      
+      // Despertarlos y alertarlos instantáneamente hacia el jugador
+      const aiComponent = this.entityManager.getComponent(enemyId, 'aiControlled');
+      if (aiComponent) {
+        aiComponent.behavior = 'chase';
+        aiComponent.alertedTo = this._playerId;
+        this.entityManager.setComponent(enemyId, 'aiControlled', aiComponent);
+      }
       
       const fighter = this.entityManager.getComponent(enemyId, 'fighter');
       this.turnManager.addEntity(enemyId, fighter ? fighter.speed : 50, false);
