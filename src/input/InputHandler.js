@@ -98,8 +98,16 @@ export class InputHandler {
     // No procesar si la entrada está desactivada
     if (!this.enabled) return;
 
-    // Prevenir repetición de tecla mantenida
-    if (this._keysDown.has(event.code)) return;
+    const isMovementKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Numpad8', 'Numpad2', 'Numpad4', 'Numpad6', 'Numpad7', 'Numpad9', 'Numpad1', 'Numpad3'].includes(event.code);
+    const isRepeat = this._keysDown.has(event.code);
+    
+    // Prevenir repetición de tecla mantenida, EXCEPTO para movimiento en modo exploración
+    if (isRepeat) {
+      if (this._context !== 'exploration' || !isMovementKey) {
+        return;
+      }
+    }
+    
     this._keysDown.add(event.code);
 
     // Prevenir comportamiento por defecto del navegador para teclas del juego

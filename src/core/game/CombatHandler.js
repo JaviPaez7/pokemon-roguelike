@@ -105,11 +105,8 @@ export class CombatHandler {
               game.changeState(GAME_STATES.VICTORY);
               return { success: true, type: 'victory' };
             }
-            
+            game.uiManager.openStairsMenu();
             game.changeState(GAME_STATES.MENU);
-            import('../../ui/menus/StairsMenu.js').then(module => {
-              module.openStairsMenu(game.ui);
-            });
           }
           return result;
         }
@@ -176,11 +173,8 @@ export class CombatHandler {
           game.changeState(GAME_STATES.VICTORY);
           return { success: true, type: 'victory' };
         }
-        
+        game.uiManager.openStairsMenu();
         game.changeState(GAME_STATES.MENU);
-        import('../../ui/menus/StairsMenu.js').then(module => {
-          module.openStairsMenu(game.ui);
-        });
       }
       return { success: true, type: 'stairs_used' };
     }
@@ -365,10 +359,8 @@ export class CombatHandler {
 
     const party = game.entityManager.getEntitiesWithComponents('partyMember');
     if (party.length < 4) {
-      game.changeState(1); // GAME_STATES.MENU
-      import('../../ui/menus/RecruitMenu.js').then(module => {
-        module.openRecruitMenu(game.ui, npcId, info);
-      });
+      game.uiManager.openRecruitMenu(npcId, info);
+      game.changeState(GAME_STATES.MENU);
     } else {
       game.eventBus.emit('show_dialog', {
         text: `¡${info.name} te sonríe felizmente!\n\nSin embargo, tu equipo ya está lleno (máximo 4 Pokémon) y no puede acompañarte.`
@@ -382,11 +374,8 @@ export class CombatHandler {
    */
   handleMerchantInteract(npcId) {
     const game = this.game;
+    game.uiManager.openMerchantMenu(npcId);
     game.changeState(GAME_STATES.MENU);
-    
-    import('../../ui/menus/MerchantMenu.js').then(module => {
-      module.openMerchantMenu(game.ui, npcId);
-    });
   }
   /**
    * Maneja el daño residual (estados alterados y clima) al final del turno.

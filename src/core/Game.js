@@ -420,11 +420,8 @@ export class Game {
     if (pendingPoke) {
       const info = this.entityManager.getComponent(pendingPoke, 'pokemonInfo');
       const pendingMove = info.pendingMovesToLearn.shift();
+      this.ui.openLearnMoveMenu(pendingPoke, pendingMove);
       this.changeState(GAME_STATES.MENU);
-      
-      import('../ui/menus/LearnMoveMenu.js').then(module => {
-        module.openLearnMoveMenu(this.ui, pendingPoke, pendingMove);
-      });
       return;
     }
 

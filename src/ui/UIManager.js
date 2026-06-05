@@ -14,6 +14,9 @@ import { openInventoryMenu } from './menus/InventoryMenus.js';
 import { openTeamMenu } from './menus/TeamMenus.js';
 import { openGameOverScreen, openVictoryScreen } from './menus/EndScreens.js';
 import { handleMenuInput, updateSelectionVisuals } from './menus/MenuInput.js';
+import { openStairsMenu } from './menus/StairsMenu.js';
+import { openRecruitMenu } from './menus/RecruitMenu.js';
+import { openLearnMoveMenu } from './menus/LearnMoveMenu.js';
 
 export class UIManager {
   /**
@@ -204,6 +207,10 @@ export class UIManager {
   openTeamMenu() { openTeamMenu(this); }
   openGameOverScreen() { openGameOverScreen(this); }
   openVictoryScreen() { openVictoryScreen(this); }
+  
+  openStairsMenu() { openStairsMenu(this); }
+  openRecruitMenu(targetId, defenderInfo) { openRecruitMenu(this, targetId, defenderInfo); }
+  openLearnMoveMenu(entityId, moveId) { openLearnMoveMenu(this, entityId, moveId); }
 
   handleMenuInput(data) { handleMenuInput(this, data); }
   updateSelectionVisuals() { updateSelectionVisuals(this); }

@@ -400,7 +400,12 @@ export function executeMove(params) {
 
   // Actualizar componentes
   entityManager.setComponent(attackerId, 'pokemonInfo', attackerInfo);
-  entityManager.setComponent(defenderId, 'fighter', defenderFighter);
+  if (attackerFighter && attackerFighter.hp > 0) {
+    entityManager.setComponent(attackerId, 'fighter', attackerFighter);
+  }
+  if (!defenderFainted) {
+    entityManager.setComponent(defenderId, 'fighter', defenderFighter);
+  }
 
   return {
     success: true,
