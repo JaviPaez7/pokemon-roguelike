@@ -11,7 +11,14 @@ import { triggerTrap } from '../../systems/TrapSystem.js';
 export class CombatHandler {
   /** @param {import('../Game.js').Game} game */
   constructor(game) {
+    this.setupGameEventListeners(game);
     this.game = game;
+  }
+
+  setupGameEventListeners(game) {
+    // Si ya hay un listener similar, evitar duplicados idealmente
+    // Aquí registramos la escucha del fin de turno
+    game.eventBus.on('turn_end', (data) => this.handleTurnEnd(data));
   }
 
   getEnemyAIAction(entityId) {
@@ -383,5 +390,102 @@ export class CombatHandler {
     import('../../ui/menus/MerchantMenu.js').then(module => {
       module.openMerchantMenu(game.ui, npcId);
     });
+  }
+  /**
+   * Maneja el daño residual (estados alterados y clima) al final del turno.
+   * Aplica sus efectos cada 10 turnos (ticks).
+   */
+  handleTurnEnd(data) {
+    const { turnCount } = data;
+    
+    // Aplicar daño pasivo cada 10 turnos (pasos)
+    if (turnCount % 10 !== 0) return;
+
+    const game = this.game;
+    if (!game || !game.entityManager) return;
+
+    const fighters = game.entityManager.getEntitiesWithComponents('fighter', 'pokemonInfo');
+    const weather = game.weatherSystem ? game.weatherSystem.currentWeather : 'normal';
+
+    for (const entityId of fighters) {
+      const fighter = game.entityManager.getComponent(entityId, 'fighter');
+      const info = game.entityManager.getComponent(entityId, 'pokemonInfo');
+      
+      if (!fighter || fighter.hp <= 0) continue;
+
+      let damageTaken = 0;
+      let damageReason = '';
+
+      // --- Daño por Estado ---
+      if (fighter.statusEffects && fighter.statusEffects.length > 0) {
+        if (fighter.statusEffects.some(s => s.type === 'poison')) {
+          damageTaken += Math.max(1, Math.floor(fighter.maxHp / 16));
+          damageReason = 'poison';
+        } else if (fighter.statusEffects.some(s => s.type === 'burn')) {
+          damageTaken += Math.max(1, Math.floor(fighter.maxHp / 16));
+          damageReason = 'burn';
+        }
+      }
+
+      // --- Daño por Clima ---
+      if (weather === 'sandstorm' && !info.types.includes('rock') && !info.types.includes('ground') && !info.types.includes('steel')) {
+        damageTaken += Math.max(1, Math.floor(fighter.maxHp / 16));
+        if (!damageReason) damageReason = 'sandstorm';
+      } else if (weather === 'hail' && !info.types.includes('ice')) {
+        damageTaken += Math.max(1, Math.floor(fighter.maxHp / 16));
+        if (!damageReason) damageReason = 'hail';
+      }
+
+      if (damageTaken > 0) {
+        fighter.hp -= damageTaken;
+        
+        // Mensajes (sólo para el jugador para no spamear el log con enemigos)
+        if (entityId === game._playerId) {
+           if (damageReason === 'poison') game.eventBus.emit('message', '¡El veneno te lastima!');
+           else if (damageReason === 'burn') game.eventBus.emit('message', '¡La quemadura te lastima!');
+           else if (damageReason === 'sandstorm') game.eventBus.emit('message', '¡La tormenta de arena te lastima!');
+           else if (damageReason === 'hail') game.eventBus.emit('message', '¡El granizo te lastima!');
+        }
+
+        // Muerte por daño residual
+        if (fighter.hp <= 0) {
+           fighter.hp = 0;
+           
+           // Lógica de Reviver Seed
+           let reviverUsed = false;
+           // Solo el jugador o su equipo usan semillas del inventario (o enemigos si implementamos que las lleven)
+           if (entityId === game._playerId || game.entityManager.hasComponent(entityId, 'partyMember')) {
+             const inventory = game.inventory || [];
+             const reviverIndex = inventory.findIndex(i => i.itemId === 'reviver_seed');
+             if (reviverIndex !== -1) {
+               inventory[reviverIndex].quantity--;
+               if (inventory[reviverIndex].quantity <= 0) inventory.splice(reviverIndex, 1);
+               fighter.hp = fighter.maxHp;
+               fighter.statusEffects = [];
+               game.eventBus.emit('message', `¡${info.name} cayó por daño pasivo pero revivió gracias a la Semilla Revivir!`);
+               if (game.renderer && game.renderer.screenFlash && entityId === game._playerId) {
+                 game.renderer.screenFlash('rgba(0, 255, 0, 0.4)', 400);
+               }
+               reviverUsed = true;
+             }
+           }
+
+           if (!reviverUsed) {
+             game.eventBus.emit('message', `¡${info.name} se debilitó por el daño pasivo!`);
+             const pos = game.entityManager.getComponent(entityId, 'position');
+             const sprite = game.entityManager.getComponent(entityId, 'sprite');
+             game.eventBus.emit('pokemon_fainted', {
+               entityId: entityId,
+               speciesId: info.speciesId,
+               pos: pos ? { x: pos.x, y: pos.y } : null,
+               spriteUrl: sprite ? sprite.url : '',
+               attackerId: null // Murió por estado/clima
+             });
+           }
+        }
+        
+        game.entityManager.setComponent(entityId, 'fighter', fighter);
+      }
+    }
   }
 }

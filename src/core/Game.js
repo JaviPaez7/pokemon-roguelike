@@ -477,10 +477,7 @@ export class Game {
         this.entityManager.setComponent(this._playerId, 'fighter', fighter);
       }
 
-      // Aplicar efectos del clima al final del turno
-      if (this.weatherSystem) {
-        this.weatherSystem.applyEndTurnEffects(this);
-      }
+      // Clima ahora se maneja en CombatHandler por eventos
 
       // Actualizar historial de posiciones para los seguidores
       const pos = this.entityManager.getComponent(this._playerId, 'position');
