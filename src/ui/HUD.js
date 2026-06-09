@@ -73,6 +73,7 @@ export class HUD {
     // Título de la zona
     ctx.font = '8px "Press Start 2P", monospace';
     ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText(gameState.zoneName || 'Mazmorra', padding + 8, padding + 8);
     
@@ -119,6 +120,7 @@ export class HUD {
       // Nombre y nivel
       ctx.font = '6px "Press Start 2P", monospace';
       ctx.fillStyle = poke.hp > 0 ? COLORS.UI_TEXT : '#666';
+      ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       ctx.fillText(`${poke.name}`, x + 8, py);
       ctx.fillStyle = '#aaa';
@@ -213,6 +215,7 @@ export class HUD {
 
     ctx.font = '6px "Press Start 2P", monospace';
     ctx.fillStyle = 'rgba(160, 160, 200, 0.6)';
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
     for (let i = 0; i < controls.length; i++) {
@@ -251,6 +254,7 @@ export class HUD {
     ctx.strokeRect(x, y, bgWidth, bgHeight);
 
     ctx.font = '6px "Press Start 2P", monospace';
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
     for (let i = 0; i < moves.length; i++) {

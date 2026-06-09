@@ -132,6 +132,7 @@ export class MessageLog {
 
     // Dibujar mensajes
     ctx.font = '8px "Press Start 2P", monospace';
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
     for (let i = 0; i < recent.length; i++) {
