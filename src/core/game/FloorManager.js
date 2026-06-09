@@ -19,7 +19,11 @@ export class FloorManager {
   generateFloor() {
     const game = this.game;
     game.seed = Math.floor(Math.random() * 1000000);
-    const genResult = game.dungeonGenerator.generate(MAP_WIDTH, MAP_HEIGHT, game.seed);
+    
+    const zone = this.getZoneConfig();
+    const isBossFloor = (zone && zone.boss && game._currentFloor === zone.floors[1]) || (game._currentFloor > 0 && game._currentFloor % 10 === 0);
+
+    const genResult = game.dungeonGenerator.generate(MAP_WIDTH, MAP_HEIGHT, game.seed, game._currentFloor, isBossFloor);
     game.tileMap = genResult.tileMap;
     game._stairsPos = genResult.stairsPos;
     game._spawnPoints = genResult.spawnPoints;
@@ -40,13 +44,14 @@ export class FloorManager {
       game.weather = 'hail';
     }
 
-    game.tileMap.setTile(game._stairsPos.x, game._stairsPos.y, 3);
+    if (!isBossFloor) {
+      game.tileMap.setTile(game._stairsPos.x, game._stairsPos.y, 3);
 
-    const zone = this.getZoneConfig();
-    const minItems = zone ? zone.itemsPerFloor[0] : 3;
-    const maxItems = zone ? zone.itemsPerFloor[1] : 5;
-    const count = minItems + Math.floor(Math.random() * (maxItems - minItems + 1));
-    spawnItems(game._itemPoints, count, game.itemsData, game.entityManager);
+      const minItems = zone ? zone.itemsPerFloor[0] : 3;
+      const maxItems = zone ? zone.itemsPerFloor[1] : 5;
+      const count = minItems + Math.floor(Math.random() * (maxItems - minItems + 1));
+      spawnItems(game._itemPoints, count, game.itemsData, game.entityManager);
+    }
   }
 
   spawnEnemies() {
@@ -55,6 +60,48 @@ export class FloorManager {
 
     const zone = this.getZoneConfig();
     if (!zone) return;
+
+    const isBossFloor = (zone.boss && game._currentFloor === zone.floors[1]) || (game._currentFloor > 0 && game._currentFloor % 10 === 0);
+
+    if (isBossFloor) {
+      let bossId = null;
+      let bossName = "Mega-Pokemon";
+      let bossSpeciesId = 19; // Default Rattata
+      let bossLevel = 15;
+
+      if (zone.boss) {
+        bossSpeciesId = zone.boss.id;
+        bossLevel = zone.boss.level;
+        bossName = zone.boss.name;
+      } else if (zone.pokemon && zone.pokemon.length > 0) {
+        bossSpeciesId = zone.pokemon[zone.pokemon.length - 1].id;
+        bossLevel = zone.levelRange[1] + 2;
+        bossName = "Guardián";
+      }
+
+      const bossPoint = game._spawnPoints[0] || game._stairsPos;
+      bossId = game.entityManager.createPokemon(bossSpeciesId, bossLevel, bossPoint.x, bossPoint.y, true);
+
+      game.entityManager.setComponent(bossId, 'boss', { active: true });
+
+      const info = game.entityManager.getComponent(bossId, 'pokemonInfo');
+      if (info) {
+        info.name = `JEFE: ${bossName}`;
+        game.entityManager.setComponent(bossId, 'pokemonInfo', info);
+      }
+
+      const fighter = game.entityManager.getComponent(bossId, 'fighter');
+      if (fighter) {
+        fighter.maxHp = fighter.maxHp * 5; // Multiplicador x5
+        fighter.hp = fighter.maxHp;
+        game.entityManager.setComponent(bossId, 'fighter', fighter);
+      }
+
+      game.turnManager.addEntity(bossId, fighter ? fighter.speed : 60, false);
+      game.pokedexSeen.add(bossSpeciesId);
+      game.eventBus.emit('message', `¡Alerta! ¡El Jefe ${bossName} ha aparecido!`);
+      return;
+    }
 
     const minEnemies = zone.enemiesPerFloor[0];
     const maxEnemies = zone.enemiesPerFloor[1];
@@ -78,28 +125,6 @@ export class FloorManager {
       const fighter = game.entityManager.getComponent(enemyId, 'fighter');
       game.turnManager.addEntity(enemyId, fighter ? fighter.speed : 50, false);
       game.pokedexSeen.add(speciesId);
-    }
-
-    if (zone.boss && game._currentFloor === zone.floors[1]) {
-      const bossPoint = points[actualCount] || game._stairsPos;
-      const bossId = game.entityManager.createPokemon(zone.boss.id, zone.boss.level, bossPoint.x, bossPoint.y, true);
-
-      const info = game.entityManager.getComponent(bossId, 'pokemonInfo');
-      if (info) {
-        info.name = `JEFE: ${zone.boss.name}`;
-        game.entityManager.setComponent(bossId, 'pokemonInfo', info);
-      }
-
-      const fighter = game.entityManager.getComponent(bossId, 'fighter');
-      if (fighter) {
-        fighter.maxHp = fighter.maxHp * 2;
-        fighter.hp = fighter.maxHp;
-        game.entityManager.setComponent(bossId, 'fighter', fighter);
-      }
-
-      game.turnManager.addEntity(bossId, fighter ? fighter.speed : 60, false);
-      game.pokedexSeen.add(zone.boss.id);
-      game.eventBus.emit('message', `¡Alerta! ¡${zone.boss.name} ha aparecido!`);
     }
   }
 

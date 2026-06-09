@@ -103,6 +103,9 @@ export function createComponentStore() {
     itemDrop: new Map(),
 
     /** @type {Map<number, {url: string, image: Image|null, loaded: boolean}>} */
-    sprite: new Map()
+    sprite: new Map(),
+
+    /** @type {Map<number, {active: boolean}>} */
+    boss: new Map()
   };
 }

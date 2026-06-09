@@ -51,7 +51,8 @@ export function useInventoryItem(game, itemId, targetPokemonId) {
           if (party.length < 4) {
             game.entityManager.setComponent(targetPokemonId, 'partyMember', {
               slot: party.length,
-              isLeader: false
+              isLeader: false,
+              tactic: 'follow'
             });
             
             const ai = game.entityManager.getComponent(targetPokemonId, 'aiControlled') || {};

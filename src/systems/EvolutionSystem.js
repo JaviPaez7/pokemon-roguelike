@@ -94,7 +94,8 @@ export function evolve(entityId, evolution, entityManager, pokemonDB, movesDB) {
             pokemonInfo.currentMoves.push({
               moveId: moveEntry.moveId,
               currentPP: moveData.pp,
-              maxPP: moveData.pp
+              maxPP: moveData.pp,
+              enabled: true
             });
             messages.push(`¡${pokemonInfo.name} aprendió ${moveData.name}!`);
           }

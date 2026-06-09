@@ -249,7 +249,8 @@ export class EntityManager {
       return [{
         moveId: 'tackle',
         currentPP: 35,
-        maxPP: 35
+        maxPP: 35,
+        enabled: true
       }];
     }
 
@@ -271,7 +272,8 @@ export class EntityManager {
       return {
         moveId: entry.moveId,
         currentPP: maxPP,
-        maxPP: maxPP
+        maxPP: maxPP,
+        enabled: true
       };
     });
   }

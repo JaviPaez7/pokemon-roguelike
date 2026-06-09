@@ -91,26 +91,45 @@ export function openItemActionsMenu(ui) {
     () => {
       if (item.type === 'capture' || item.type === 'escape') {
         ui.closeMenu();
-        const enemyEntities = ui.game.entityManager.getEntitiesWithComponents('aiControlled');
         if (item.type === 'capture') {
           const playerId = ui.game.getPlayerId();
           const pPos = ui.game.entityManager.getComponent(playerId, 'position');
           let targetId = null;
           
           if (pPos) {
-            targetId = enemyEntities.find(id => {
-              const pos = ui.game.entityManager.getComponent(id, 'position');
-              if (!pos) return false;
-              const dx = Math.abs(pos.x - pPos.x);
-              const dy = Math.abs(pos.y - pPos.y);
-              return dx <= 4 && dy <= 4 && ui.game.tileMap.getVisibility(pos.x, pos.y) > 0;
-            });
+            let dx = 0;
+            let dy = 0;
+            if (pPos.facing === 'up') dy = -1;
+            else if (pPos.facing === 'down') dy = 1;
+            else if (pPos.facing === 'left') dx = -1;
+            else if (pPos.facing === 'right') dx = 1;
+
+            if (dx !== 0 || dy !== 0) {
+              for (let dist = 1; dist <= 5; dist++) {
+                const tx = pPos.x + dx * dist;
+                const ty = pPos.y + dy * dist;
+                
+                if (!ui.game.tileMap.isInBounds(tx, ty) || !ui.game.tileMap.isWalkable(tx, ty)) {
+                  break;
+                }
+                
+                const entId = ui.game.entityManager.getEntityAt(tx, ty, false);
+                if (entId) {
+                  const hasAI = ui.game.entityManager.hasComponent(entId, 'aiControlled');
+                  const isParty = ui.game.entityManager.hasComponent(entId, 'partyMember');
+                  if (hasAI && !isParty) {
+                    targetId = entId;
+                    break;
+                  }
+                }
+              }
+            }
           }
           
           if (targetId) {
             ui.game.useInventoryItem(item.id, targetId);
           } else {
-            ui.showDialog('No hay ningún Pokémon salvaje cerca para capturar.', () => openInventoryMenu(ui));
+            ui.showDialog('No hay ningún Pokémon salvaje en esa dirección para capturar.', () => openInventoryMenu(ui));
           }
         } else if (item.type === 'escape') {
           ui.game.useInventoryItem(item.id, ui.game.getPlayerId());

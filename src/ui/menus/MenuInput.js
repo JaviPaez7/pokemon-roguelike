@@ -1,8 +1,8 @@
 import { STARTERS } from './starterData.js';
 import { openTitleScreen } from './TitleMenu.js';
 import { openInventoryMenu } from './InventoryMenus.js';
-import { openTeamMenu } from './TeamMenus.js';
-import { openPauseMenu } from './PauseMenu.js';
+import { openTeamMenu, openPokemonActionsMenu, updateTacticDetails } from './TeamMenus.js';
+import { openPauseMenu, updateMoveDetails } from './PauseMenu.js';
 import { updateItemDetails } from './InventoryMenus.js';
 import { updateStarterDetails } from './StarterMenu.js';
 
@@ -50,9 +50,18 @@ export function handleCancelAction(ui) {
     case 'use_item_target':
       openInventoryMenu(ui);
       break;
+    case 'moves_select':
+      openPauseMenu(ui);
+      break;
     case 'pokemon_actions':
     case 'moves_view':
       openTeamMenu(ui);
+      break;
+    case 'tactic_select':
+      openPokemonActionsMenu(ui);
+      break;
+    case 'stairs_confirm':
+      ui.closeMenu();
       break;
     default:
       ui.closeMenu();
@@ -79,9 +88,9 @@ export function updateSelectionVisuals(ui) {
     if (inv[ui.selectedIndex]) {
       updateItemDetails(ui, inv[ui.selectedIndex].itemId);
     }
-  } else if (ui.currentMenuType === 'starter') {
-    if (STARTERS[ui.selectedIndex]) {
-      updateStarterDetails(STARTERS[ui.selectedIndex]);
-    }
+  } else if (ui.currentMenuType === 'moves_select') {
+    updateMoveDetails(ui);
+  } else if (ui.currentMenuType === 'tactic_select') {
+    updateTacticDetails(ui);
   }
 }

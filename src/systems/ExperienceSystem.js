@@ -88,7 +88,8 @@ export function grantExperience(pokemonInfo, fighter, xpGained, pokemonDB, moves
                   pokemonInfo.currentMoves.push({
                     moveId: moveEntry.moveId,
                     currentPP: moveData.pp,
-                    maxPP: moveData.pp
+                    maxPP: moveData.pp,
+                    enabled: true
                   });
                   result.newMoves.push({ moveId: moveEntry.moveId, moveName: moveData.name });
                   result.messages.push(`¡${pokemonInfo.name} aprendió ${moveData.name}!`);
@@ -99,7 +100,8 @@ export function grantExperience(pokemonInfo, fighter, xpGained, pokemonDB, moves
                   pokemonInfo.currentMoves[weakestIdx] = {
                     moveId: moveEntry.moveId,
                     currentPP: moveData.pp,
-                    maxPP: moveData.pp
+                    maxPP: moveData.pp,
+                    enabled: true
                   };
                   result.newMoves.push({ moveId: moveEntry.moveId, moveName: moveData.name });
                   result.messages.push(`¡${pokemonInfo.name} aprendió ${moveData.name}!`);

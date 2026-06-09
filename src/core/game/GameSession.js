@@ -42,7 +42,8 @@ export function startNewGame(game, starterPokemonId) {
 
   game.entityManager.setComponent(game._playerId, 'partyMember', {
     slot: 0,
-    isLeader: true
+    isLeader: true,
+    tactic: 'follow'
   });
 
   const fighterData = game.entityManager.getComponent(game._playerId, 'fighter');
@@ -103,7 +104,12 @@ export function loadSavedGame(game) {
       name: p.name,
       level: p.level,
       xp: p.xp,
-      currentMoves: p.currentMoves,
+      currentMoves: (p.currentMoves || []).map(m => ({
+        moveId: m.moveId,
+        currentPP: m.currentPP,
+        maxPP: m.maxPP,
+        enabled: m.enabled !== undefined ? m.enabled : true
+      })),
       types: p.types
     });
 
@@ -127,7 +133,8 @@ export function loadSavedGame(game) {
 
     game.entityManager.setComponent(id, 'partyMember', {
       slot: idx,
-      isLeader: p.isLeader
+      isLeader: p.isLeader,
+      tactic: p.tactic || 'follow'
     });
 
     if (p.isLeader) {

@@ -256,7 +256,8 @@ export function executeMove(params) {
 
       // Aplicar efectos secundarios del movimiento (solo una vez)
       if (move.effect && move.effect !== 'multi_hit' && i === 0) {
-        const effectApplied = tryApplyEffect(move, defenderFighter, defenderInfo, messages, attackerFighter, attackerInfo, result.damage);
+        const isBoss = entityManager.hasComponent(defenderId, 'boss');
+        const effectApplied = tryApplyEffect(move, defenderFighter, defenderInfo, messages, attackerFighter, attackerInfo, result.damage, isBoss);
         if (effectApplied && eventBus && move.effect !== 'heal_self' && move.effect !== 'recoil') {
           eventBus.emit('status_applied', { targetId: defenderId, effect: move.effect });
         }
@@ -344,7 +345,7 @@ export function executeMove(params) {
  * @param {number} damageDealt - Daño infligido en este turno
  * @returns {boolean} Si el efecto se aplicó
  */
-function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFighter, attackerInfo, damageDealt = 0) {
+function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFighter, attackerInfo, damageDealt = 0, isBoss = false) {
   const chance = move.effectChance || 100;
   if (Math.random() * 100 > chance) return false;
 
@@ -356,14 +357,14 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFight
   switch (move.effect) {
     case 'burn':
       if (!targetFighter.statusEffects.some(s => s.type === 'burn') && !targetInfo.types.includes('fire')) {
-        targetFighter.statusEffects.push({ type: 'burn', turnsLeft: -1 });
+        targetFighter.statusEffects.push({ type: 'burn', turnsLeft: isBoss ? 1 : -1 });
         messages.push(`¡${targetInfo.name} se quemó!`);
         return true;
       }
       break;
     case 'paralyze':
       if (!targetFighter.statusEffects.some(s => s.type === 'paralyze') && !targetInfo.types.includes('electric')) {
-        targetFighter.statusEffects.push({ type: 'paralyze', turnsLeft: -1 });
+        targetFighter.statusEffects.push({ type: 'paralyze', turnsLeft: isBoss ? 1 : -1 });
         messages.push(`¡${targetInfo.name} está paralizado!`);
         return true;
       }
@@ -371,46 +372,50 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFight
     case 'poison':
       if (!targetFighter.statusEffects.some(s => s.type === 'poison') && 
           !targetInfo.types.includes('poison') && !targetInfo.types.includes('steel')) {
-        targetFighter.statusEffects.push({ type: 'poison', turnsLeft: -1 });
+        targetFighter.statusEffects.push({ type: 'poison', turnsLeft: isBoss ? 1 : -1 });
         messages.push(`¡${targetInfo.name} fue envenenado!`);
         return true;
       }
       break;
     case 'freeze':
       if (!targetFighter.statusEffects.some(s => s.type === 'freeze') && !targetInfo.types.includes('ice')) {
-        targetFighter.statusEffects.push({ type: 'freeze', turnsLeft: -1 });
+        targetFighter.statusEffects.push({ type: 'freeze', turnsLeft: isBoss ? 1 : -1 });
         messages.push(`¡${targetInfo.name} fue congelado!`);
         return true;
       }
       break;
     case 'sleep':
       if (!targetFighter.statusEffects.some(s => s.type === 'sleep')) {
-        targetFighter.statusEffects.push({ type: 'sleep', turnsLeft: Math.floor(Math.random() * 3) + 1 });
+        targetFighter.statusEffects.push({ type: 'sleep', turnsLeft: isBoss ? 1 : (Math.floor(Math.random() * 3) + 1) });
         messages.push(`¡${targetInfo.name} se durmió!`);
         return true;
       }
       break;
     case 'confuse':
       if (!targetFighter.statusEffects.some(s => s.type === 'confuse')) {
-        targetFighter.statusEffects.push({ type: 'confuse', turnsLeft: Math.floor(Math.random() * 4) + 1 });
+        targetFighter.statusEffects.push({ type: 'confuse', turnsLeft: isBoss ? 1 : (Math.floor(Math.random() * 4) + 1) });
         messages.push(`¡${targetInfo.name} está confuso!`);
         return true;
       }
       break;
     case 'flinch':
+      if (isBoss) return false;
       targetFighter.flinched = true;
       return true;
     case 'stat_down_attack':
+      if (isBoss) return false;
       if (!targetFighter.statModifiers) targetFighter.statModifiers = {};
       targetFighter.statModifiers.attack = (targetFighter.statModifiers.attack || 0) - 1;
       messages.push(`¡El Ataque de ${targetInfo.name} bajó!`);
       return true;
     case 'stat_down_defense':
+      if (isBoss) return false;
       if (!targetFighter.statModifiers) targetFighter.statModifiers = {};
       targetFighter.statModifiers.defense = (targetFighter.statModifiers.defense || 0) - 1;
       messages.push(`¡La Defensa de ${targetInfo.name} bajó!`);
       return true;
     case 'stat_down_speed':
+      if (isBoss) return false;
       if (!targetFighter.statModifiers) targetFighter.statModifiers = {};
       targetFighter.statModifiers.speed = (targetFighter.statModifiers.speed || 0) - 1;
       messages.push(`¡La Velocidad de ${targetInfo.name} bajó!`);
@@ -466,6 +471,13 @@ export function processStatusEffects(entityId, entityManager) {
     statusDamage = Math.max(1, Math.floor(fighter.maxHp / 16));
     fighter.hp = Math.max(0, fighter.hp - statusDamage);
     messages.push(`${info.name} sufre por la quemadura (-${statusDamage} PS)`);
+    if (burn.turnsLeft > 0) {
+      burn.turnsLeft--;
+      if (burn.turnsLeft <= 0) {
+        fighter.statusEffects = fighter.statusEffects.filter(s => s.type !== 'burn');
+        messages.push(`¡La quemadura de ${info.name} se curó!`);
+      }
+    }
   }
 
   // Veneno: daño continuo
@@ -474,6 +486,13 @@ export function processStatusEffects(entityId, entityManager) {
     statusDamage = Math.max(1, Math.floor(fighter.maxHp / 8));
     fighter.hp = Math.max(0, fighter.hp - statusDamage);
     messages.push(`${info.name} sufre por el veneno (-${statusDamage} PS)`);
+    if (poison.turnsLeft > 0) {
+      poison.turnsLeft--;
+      if (poison.turnsLeft <= 0) {
+        fighter.statusEffects = fighter.statusEffects.filter(s => s.type !== 'poison');
+        messages.push(`¡El veneno de ${info.name} se curó!`);
+      }
+    }
   }
 
   // Parálisis: 25% de no poder actuar
@@ -482,6 +501,13 @@ export function processStatusEffects(entityId, entityManager) {
     if (Math.random() < 0.25) {
       canAct = false;
       messages.push(`¡${info.name} está paralizado y no puede moverse!`);
+    }
+    if (paralyze.turnsLeft > 0) {
+      paralyze.turnsLeft--;
+      if (paralyze.turnsLeft <= 0) {
+        fighter.statusEffects = fighter.statusEffects.filter(s => s.type !== 'paralyze');
+        messages.push(`¡La parálisis de ${info.name} se curó!`);
+      }
     }
   }
 
@@ -494,6 +520,13 @@ export function processStatusEffects(entityId, entityManager) {
     } else {
       canAct = false;
       messages.push(`¡${info.name} está congelado!`);
+      if (freeze.turnsLeft > 0) {
+        freeze.turnsLeft--;
+        if (freeze.turnsLeft <= 0) {
+          fighter.statusEffects = fighter.statusEffects.filter(s => s.type !== 'freeze');
+          messages.push(`¡El hielo de ${info.name} se derritió!`);
+        }
+      }
     }
   }
 
@@ -559,6 +592,7 @@ export function selectBestMove(attackerInfo, defenderInfo, movesData, typeChart,
 
   for (const moveSlot of attackerInfo.currentMoves) {
     if (moveSlot.currentPP <= 0) continue;
+    if (moveSlot.enabled === false) continue;
 
     const moveData = movesData.find(m => m.id === moveSlot.moveId);
     if (!moveData) continue;

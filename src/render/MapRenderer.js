@@ -128,7 +128,7 @@ export class MapRenderer {
     ctx.fillRect(sx, sy, size, size);
 
     // Textura procedural y decoraciones
-    if (tile.id === TILES.WALL.id || tile.id === TILES.FLOOR.id || tile.id === TILES.TRAP.id) {
+    if (tile.id === TILES.WALL.id || tile.id === TILES.FLOOR.id || tile.id === TILES.TRAP_HIDDEN.id || tile.id === TILES.TRAP_REVEALED.id) {
       // Hash rápido para determinar patrón (ruido)
       const hash1 = Math.abs(Math.sin(worldX * 12.9898 + worldY * 78.233)) * 43758.5453;
       const hash2 = Math.abs(Math.sin(worldX * 78.233 + worldY * 12.9898)) * 43758.5453;
@@ -163,7 +163,7 @@ export class MapRenderer {
     }
 
     // Sombras de pared (si es FLOOR o TRAP y hay WALL arriba)
-    if ((tile.id === TILES.FLOOR.id || tile.id === TILES.TRAP.id) && tileMap && tileMap.isInBounds(worldX, worldY - 1)) {
+    if ((tile.id === TILES.FLOOR.id || tile.id === TILES.TRAP_HIDDEN.id || tile.id === TILES.TRAP_REVEALED.id) && tileMap && tileMap.isInBounds(worldX, worldY - 1)) {
         const topTile = tileMap.getTile(worldX, worldY - 1);
         if (topTile.id === TILES.WALL.id) {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';

@@ -100,6 +100,15 @@ export const TILES = {
     char: '~',
     colors: { floor: '#e67e22', wall: '#d35400' }
   },
+
+  /** Baldosa mágica (Wonder Tile) - limpia los modificadores de estadísticas */
+  WONDER_TILE: {
+    id: 8,
+    walkable: true,
+    transparent: true,
+    char: '*',
+    colors: { floor: '#00ccff', wall: '#0099cc' }
+  },
 };
 
 /**

@@ -24,6 +24,49 @@ export function setupGameEventListeners(game) {
       }
       game.turnManager.removeEntity(data.entityId);
 
+      const isBoss = game.entityManager.hasComponent(data.entityId, 'boss');
+
+      if (isBoss) {
+        const targetInfo = game.entityManager.getComponent(data.entityId, 'pokemonInfo');
+        const bossName = targetInfo ? targetInfo.name.replace('JEFE: ', '') : 'Jefe';
+        
+        // Spawn stairs
+        if (game._stairsPos) {
+          game.tileMap.setTile(game._stairsPos.x, game._stairsPos.y, 3); // 3 is STAIRS_DOWN
+        }
+
+        // Spawn a high-value reward item
+        const pool = ['rare_candy', 'max_revive', 'full_restore', 'fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone', 'golden_apple'];
+        const selectedItem = pool[Math.floor(Math.random() * pool.length)];
+        
+        let dropX = game._stairsPos ? game._stairsPos.x : 10;
+        let dropY = game._stairsPos ? game._stairsPos.y + 1 : 10;
+        if (game.tileMap && !game.tileMap.isWalkable(dropX, dropY)) {
+          dropX = game._stairsPos ? game._stairsPos.x - 1 : 10;
+          dropY = game._stairsPos ? game._stairsPos.y : 10;
+        }
+        
+        const itemDbInfo = game.itemsData ? game.itemsData.find(i => i.id === selectedItem) : null;
+        const itemName = itemDbInfo ? itemDbInfo.name : selectedItem;
+
+        game.entityManager.createItemEntity(selectedItem, 1, dropX, dropY);
+
+        game.entityManager.destroyEntity(data.entityId);
+
+        game.eventBus.emit('show_dialog', { 
+          text: `¡El Jefe ${bossName} ha sido derrotado!\n\nLas escaleras han aparecido en el centro de la sala, y ha caído un objeto valioso: ¡${itemName}!` 
+        });
+        
+        game.eventBus.emit('message', { 
+          text: `¡Las escaleras y un ${itemName} aparecieron!`, 
+          color: '#ffff00' 
+        });
+
+        game.saveGameData();
+        game.needsRender = true;
+        return;
+      }
+
       // Reclutamiento Post-Combate
       const party = game.entityManager.getEntitiesWithComponents('partyMember');
       if (data.attackerId === game._playerId && Math.random() < 0.15 && party.length < 4) {
@@ -33,7 +76,8 @@ export function setupGameEventListeners(game) {
         if (targetInfo && targetFighter) {
           game.entityManager.setComponent(data.entityId, 'partyMember', {
             slot: party.length,
-            isLeader: false
+            isLeader: false,
+            tactic: 'follow'
           });
           
           const ai = game.entityManager.getComponent(data.entityId, 'aiControlled') || {};

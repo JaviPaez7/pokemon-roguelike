@@ -9,7 +9,7 @@ import { MusicManager } from './MusicManager.js';
 import { DialogController } from './DialogController.js';
 import { openTitleScreen } from './menus/TitleMenu.js';
 import { openStarterSelectScreen } from './menus/StarterMenu.js';
-import { openPauseMenu } from './menus/PauseMenu.js';
+import { openPauseMenu, openStairsConfirmationMenu } from './menus/PauseMenu.js';
 import { openInventoryMenu } from './menus/InventoryMenus.js';
 import { openTeamMenu } from './menus/TeamMenus.js';
 import { openGameOverScreen, openVictoryScreen } from './menus/EndScreens.js';
@@ -200,6 +200,7 @@ export class UIManager {
   openTitleScreen() { openTitleScreen(this); }
   openStarterSelectScreen() { openStarterSelectScreen(this); }
   openPauseMenu() { openPauseMenu(this); }
+  openStairsConfirmationMenu() { openStairsConfirmationMenu(this); }
   openInventoryMenu() { openInventoryMenu(this); }
   openTeamMenu() { openTeamMenu(this); }
   openGameOverScreen() { openGameOverScreen(this); }

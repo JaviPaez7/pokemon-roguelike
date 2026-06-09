@@ -193,52 +193,232 @@ function moveTowards(pos, target, tileMap, entityManager, entityId) {
 }
 
 /**
+ * Encuentra la casilla caminable y desocupada más cercana adyacente a una posición central
+ * usando búsqueda concéntrica de radio 0 a 3.
+ */
+function findClosestSafeTile(entityId, centerPos, tileMap, entityManager) {
+  for (let r = 0; r <= 3; r++) {
+    for (let dx = -r; dx <= r; dx++) {
+      for (let dy = -r; dy <= r; dy++) {
+        // Solo comprobar el borde exterior del cuadrado de radio r
+        if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+
+        const tx = centerPos.x + dx;
+        const ty = centerPos.y + dy;
+
+        // Verificar límites del mapa
+        const width = tileMap.getWidth ? tileMap.getWidth() : tileMap.width;
+        const height = tileMap.getHeight ? tileMap.getHeight() : tileMap.height;
+        if (tx < 0 || tx >= width || ty < 0 || ty >= height) continue;
+
+        // Verificar si la entidad puede caminar por este tipo de tile
+        if (!canWalkOnTile(entityId, tx, ty, tileMap, entityManager)) continue;
+
+        // Verificar que no esté ocupada por otra entidad
+        const occupant = entityManager.getEntityAt(tx, ty);
+        if (occupant === null) {
+          return { x: tx, y: ty };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Comportamiento de seguidor (miembros del equipo)
  */
 function followerAction(entityId, pos, playerPos, tileMap, entityManager, game) {
   const partyMember = entityManager.getComponent(entityId, 'partyMember');
   if (!partyMember || !game) return { type: 'wait' };
 
-  // 1. Buscar enemigos adyacentes para atacar
-  const adjacentOffsets = [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]];
-  for (const offset of adjacentOffsets) {
-    const targetX = pos.x + offset[0];
-    const targetY = pos.y + offset[1];
-    const targetId = entityManager.getEntityAt(targetX, targetY);
-    
-    if (targetId !== null && targetId !== game._playerId) {
-      // Asegurarse de que el objetivo no es otro miembro del equipo
-      if (!entityManager.hasComponent(targetId, 'partyMember') && entityManager.hasComponent(targetId, 'fighter')) {
-        return { type: 'attack', targetId: targetId };
+  const tactic = partyMember.tactic || 'follow';
+  const distToPlayer = Math.max(Math.abs(pos.x - playerPos.x), Math.abs(pos.y - playerPos.y));
+
+  // ── 1. TÁCTICA "ESPERAR AHÍ" (STAY) ──
+  if (tactic === 'stay') {
+    // Buscar enemigo adyacente (distancia 1) para atacar
+    const adjacentOffsets = [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]];
+    for (const offset of adjacentOffsets) {
+      const targetX = pos.x + offset[0];
+      const targetY = pos.y + offset[1];
+      const targetId = entityManager.getEntityAt(targetX, targetY);
+      if (targetId !== null && targetId !== game._playerId) {
+        if (!entityManager.hasComponent(targetId, 'partyMember') && entityManager.hasComponent(targetId, 'fighter')) {
+          return { type: 'attack', targetId: targetId };
+        }
+      }
+    }
+    // Teletransporte de seguridad extrema si el jugador se aleja más de 12 baldosas
+    if (distToPlayer > 12) {
+      const safeTile = findClosestSafeTile(entityId, playerPos, tileMap, entityManager);
+      if (safeTile) {
+        pos.prevX = pos.x;
+        pos.prevY = pos.y;
+        pos.x = safeTile.x;
+        pos.y = safeTile.y;
+        entityManager.setComponent(entityId, 'position', pos);
+      }
+    }
+    return { type: 'wait' };
+  }
+
+  // ── 2. TÁCTICA "EVITAR PROBLEMAS" (FLEE) ──
+  if (tactic === 'flee') {
+    // Buscar enemigos en un rango Chebyshev de 4 casillas
+    const hostiles = entityManager.getEntitiesWithComponents('position', 'fighter').filter(id => {
+      if (id === game._playerId) return false;
+      if (entityManager.hasComponent(id, 'partyMember')) return false;
+      const hPos = entityManager.getComponent(id, 'position');
+      if (!hPos) return false;
+      const dist = Math.max(Math.abs(pos.x - hPos.x), Math.abs(pos.y - hPos.y));
+      return dist <= 4;
+    });
+
+    if (hostiles.length > 0) {
+      let closestHostilePos = null;
+      let minHDis = 999;
+      for (const hid of hostiles) {
+        const hPos = entityManager.getComponent(hid, 'position');
+        if (hPos) {
+          const dist = Math.max(Math.abs(pos.x - hPos.x), Math.abs(pos.y - hPos.y));
+          if (dist < minHDis) {
+            minHDis = dist;
+            closestHostilePos = hPos;
+          }
+        }
+      }
+
+      if (closestHostilePos) {
+        // Moverse en dirección opuesta al enemigo más cercano
+        const dx = pos.x - closestHostilePos.x;
+        const dy = pos.y - closestHostilePos.y;
+        
+        const directions = [];
+        if (dx !== 0) directions.push({ dx: Math.sign(dx), dy: 0 });
+        if (dy !== 0) directions.push({ dx: 0, dy: Math.sign(dy) });
+        directions.push(
+          { dx: 0, dy: 1 }, { dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
+          { dx: 1, dy: 1 }, { dx: -1, dy: 1 }, { dx: 1, dy: -1 }, { dx: -1, dy: -1 }
+        );
+
+        for (const dir of directions) {
+          const newX = pos.x + dir.dx;
+          const newY = pos.y + dir.dy;
+          if (canWalkOnTile(entityId, newX, newY, tileMap, entityManager) && !entityManager.getEntityAt(newX, newY)) {
+            return { type: 'move', dx: dir.dx, dy: dir.dy };
+          }
+        }
+      }
+      return { type: 'wait' };
+    }
+    // Si no hay enemigos en rango, sigue al jugador (cae al flujo normal de abajo)
+  }
+
+  // ── 3. TÁCTICAS "IR JUNTOS" (FOLLOW) / "A POR ELLOS" (AGGRESSIVE) ──
+  const scanRange = tactic === 'aggressive' ? 8 : 3;
+  const hostiles = entityManager.getEntitiesWithComponents('position', 'fighter').filter(id => {
+    if (id === game._playerId) return false;
+    if (entityManager.hasComponent(id, 'partyMember')) return false;
+
+    const hPos = entityManager.getComponent(id, 'position');
+    if (!hPos) return false;
+
+    const dist = Math.max(Math.abs(pos.x - hPos.x), Math.abs(pos.y - hPos.y));
+    return dist <= scanRange;
+  });
+
+  // Encontrar el hostil más cercano
+  let targetHostileId = null;
+  let minDistance = 999;
+  let targetHostilePos = null;
+
+  for (const hostileId of hostiles) {
+    const hPos = entityManager.getComponent(hostileId, 'position');
+    if (hPos) {
+      const dist = Math.max(Math.abs(pos.x - hPos.x), Math.abs(pos.y - hPos.y));
+      if (dist < minDistance) {
+        minDistance = dist;
+        targetHostileId = hostileId;
+        targetHostilePos = hPos;
       }
     }
   }
 
-  // 2. Moverse siguiendo el historial del jugador
+  // Si hay un enemigo en rango
+  if (targetHostileId !== null) {
+    // Si está adyacente, atacarle
+    if (minDistance === 1) {
+      return { type: 'attack', targetId: targetHostileId };
+    }
+
+    // Si está a distancia, perseguirle usando A*
+    const passableCallback = (x, y) => {
+      if (x === targetHostilePos.x && y === targetHostilePos.y) return true;
+      if (!canWalkOnTile(entityId, x, y, tileMap, entityManager)) return false;
+
+      // Evitar chocar con otras entidades (jugador, aliados u otros enemigos)
+      const entityAtPos = entityManager.getEntityAt(x, y);
+      if (entityAtPos !== null && entityAtPos !== entityId) return false;
+      return true;
+    };
+
+    const astar = new Path.AStar(targetHostilePos.x, targetHostilePos.y, passableCallback, { topology: 8 });
+    const path = [];
+    astar.compute(pos.x, pos.y, (x, y) => {
+      path.push({ x, y });
+    });
+
+    if (path.length >= 2) {
+      const nextStep = path[1];
+      const dx = nextStep.x - pos.x;
+      const dy = nextStep.y - pos.y;
+      return { type: 'move', dx, dy };
+    } else {
+      // Intentar acercarse usando moveTowards como fallback
+      const action = moveTowards(pos, targetHostilePos, tileMap, entityManager, entityId);
+      if (action) return action;
+    }
+  }
+
+  // ── 4. SEGUIMIENTO DEL JUGADOR (STANDARD) ──
   const historyIndex = partyMember.slot - 1; // slot 1 -> index 0 (posición anterior)
   let targetPos = playerPos;
-  
+
   if (game.playerPathHistory && game.playerPathHistory.length > historyIndex) {
     targetPos = game.playerPathHistory[historyIndex];
   }
 
-  // Calcular distancia al objetivo de seguimiento
+  // Calcular distancia al objetivo de seguimiento y al jugador
   const distToTarget = Math.max(Math.abs(pos.x - targetPos.x), Math.abs(pos.y - targetPos.y));
-  const distToPlayer = Math.max(Math.abs(pos.x - playerPos.x), Math.abs(pos.y - playerPos.y));
 
   // Si ya estamos en la posicion objetivo o muy cerca, esperar
   if (pos.x === targetPos.x && pos.y === targetPos.y) {
     return { type: 'wait' };
   }
 
-  // Si estamos MUY lejos del jugador (> 5), teleportar cerca (evita atascos)
+  // Si estamos MUY lejos del jugador (> 5), teleportar cerca de forma segura (evita atascos)
   if (distToPlayer > 5) {
-    pos.prevX = pos.x;
-    pos.prevY = pos.y;
-    pos.x = targetPos.x;
-    pos.y = targetPos.y;
-    entityManager.setComponent(entityId, 'position', pos);
-    return { type: 'wait' }; // Devuelve wait para no chocar ni hacer doble turno
+    // Buscar casilla libre transitable cerca del targetPos
+    const safeTile = findClosestSafeTile(entityId, targetPos, tileMap, entityManager);
+    if (safeTile) {
+      pos.prevX = pos.x;
+      pos.prevY = pos.y;
+      pos.x = safeTile.x;
+      pos.y = safeTile.y;
+      entityManager.setComponent(entityId, 'position', pos);
+    } else {
+      // Como fallback alternativo, intentar buscar una casilla libre cerca del jugador directamente
+      const safeTilePlayer = findClosestSafeTile(entityId, playerPos, tileMap, entityManager);
+      if (safeTilePlayer) {
+        pos.prevX = pos.x;
+        pos.prevY = pos.y;
+        pos.x = safeTilePlayer.x;
+        pos.y = safeTilePlayer.y;
+        entityManager.setComponent(entityId, 'position', pos);
+      }
+    }
+    return { type: 'wait' }; // Devuelve wait para no hacer doble turno tras teletransporte
   }
 
   // Moverse hacia targetPos

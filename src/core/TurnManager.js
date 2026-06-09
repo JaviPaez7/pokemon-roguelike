@@ -58,6 +58,15 @@ export class TurnManager {
   }
 
   /**
+   * Cambiar el ID de la entidad que se considera el jugador.
+   * Útil al cambiar de líder en el equipo.
+   * @param {number} id - Nuevo ID de entidad del jugador
+   */
+  setPlayerEntityId(id) {
+    this._playerId = id;
+  }
+
+  /**
    * Eliminar una entidad del sistema de turnos.
    * Se llama cuando una entidad es destruida (ej. Pokémon debilitado).
    * @param {number} entityId - ID de la entidad a eliminar

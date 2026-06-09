@@ -278,6 +278,10 @@ export class Game {
       case GAME_STATES.TITLE:
         this.inputHandler.setContext('menu');
         this.inputHandler.enabled = true;
+        this.tileMap = null;
+        this.entityManager.clear();
+        this._playerId = null;
+        this.turnManager.reset();
         break;
       case GAME_STATES.STARTER_SELECT:
         this.inputHandler.setContext('menu');
@@ -659,7 +663,8 @@ export class Game {
         spDef: fighter.spDef,
         speed: fighter.speed,
         statusEffects: fighter.statusEffects,
-        isLeader: member.isLeader
+        isLeader: member.isLeader,
+        tactic: member.tactic || 'follow'
       };
     });
   }

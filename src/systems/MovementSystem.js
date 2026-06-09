@@ -11,6 +11,7 @@
  */
 
 import { ACTIONS } from '../constants.js';
+import { getAbility } from '../combat/AbilitySystem.js';
 
 export class MovementSystem {
   constructor() {
@@ -79,6 +80,11 @@ export class MovementSystem {
     // ── 3. Verificar si hay otra entidad (Pokémon) en la posición ──
     const occupant = entityManager.getEntityAt(targetX, targetY, false);
     if (occupant !== null && occupant !== entityId) {
+      // Prevención de fuego amigo: si ambos son del equipo, no hay ataque por choque (bump_attack)
+      if (entityManager.hasComponent(entityId, 'partyMember') && entityManager.hasComponent(occupant, 'partyMember')) {
+        return { success: false, type: 'blocked' };
+      }
+
       // Hay un Pokémon en la casilla: atacar por choque (bump-to-attack)
       return {
         success: true,
@@ -115,12 +121,22 @@ export class MovementSystem {
     // ── 5. Verificar si hay un objeto en el suelo ──
     const itemEntity = entityManager.getItemAt(targetX, targetY);
 
-    // ── 6. Verificar si pisamos una trampa (id 5) ──
+    // ── 6. Verificar si pisamos una trampa (id 5) o baldosa mágica (id 8) ──
     const tileId = tileMap.getTile(targetX, targetY).id;
     const isTrap = (tileId === 5);
+    const isWonderTile = (tileId === 8);
 
     // ── 7. Ejecutar el movimiento ──
     this._moveEntity(position, targetX, targetY);
+
+    if (isWonderTile) {
+      return {
+        success: true,
+        type: 'wonder_tile',
+        x: targetX,
+        y: targetY
+      };
+    }
 
     // Si hay un objeto, señalarlo en el resultado (pero nos movemos de todas formas)
     if (itemEntity !== null) {
@@ -260,12 +276,16 @@ export function canWalkOnTile(entityId, x, y, tileMap, entityManager) {
   if (tile.id === 4 || tile.id === 6) {
     const info = entityManager.getComponent(entityId, 'pokemonInfo');
     if (!info) return false;
-    const type1 = info.type1 ? info.type1.toLowerCase() : '';
-    const type2 = info.type2 ? info.type2.toLowerCase() : '';
+    
+    // Habilidad Levitate
+    const ability = getAbility(info);
+    if (ability === 'Levitate') return true;
+
+    const types = info.types || [];
     if (tile.id === 4) {
-      if (type1 === 'water' || type2 === 'water' || type1 === 'flying' || type2 === 'flying') return true;
+      if (types.includes('water') || types.includes('flying')) return true;
     } else if (tile.id === 6) {
-      if (type1 === 'fire' || type2 === 'fire' || type1 === 'flying' || type2 === 'flying') return true;
+      if (types.includes('fire') || types.includes('flying')) return true;
     }
   }
   return false;

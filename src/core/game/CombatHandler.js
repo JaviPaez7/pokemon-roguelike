@@ -74,7 +74,10 @@ export class CombatHandler {
               game.changeState(GAME_STATES.VICTORY);
               return { success: true, type: 'victory' };
             }
-            game.eventBus.emit('floor_change', { direction: 'down' });
+            
+            // Cambiar a estado MENU y abrir el diálogo de confirmación de escaleras
+            game.changeState(GAME_STATES.MENU);
+            game.uiManager.openStairsConfirmationMenu();
           }
           return result;
         }
@@ -94,6 +97,23 @@ export class CombatHandler {
 
         if (result.type === 'trap') {
           triggerTrap(entityId, game.entityManager, game.tileMap, game.eventBus);
+          return result;
+        }
+
+        if (result.type === 'wonder_tile') {
+          const fighter = game.entityManager.getComponent(entityId, 'fighter');
+          const info = game.entityManager.getComponent(entityId, 'pokemonInfo');
+          if (fighter && info) {
+            fighter.statModifiers = {
+              attack: 0,
+              defense: 0,
+              speed: 0,
+              spAtk: 0,
+              spDef: 0
+            };
+            game.entityManager.setComponent(entityId, 'fighter', fighter);
+            game.eventBus.emit('message', `¡La Baldosa Mágica devolvió las estadísticas de ${info.name} a la normalidad!`);
+          }
           return result;
         }
 

@@ -35,7 +35,8 @@ export function saveGame(gameState) {
         spDef: p.spDef,
         speed: p.speed,
         statusEffects: p.statusEffects || [],
-        isLeader: p.isLeader || false
+        isLeader: p.isLeader || false,
+        tactic: p.tactic || 'follow'
       })),
       inventory: gameState.inventory.map(slot => ({
         itemId: slot.itemId,

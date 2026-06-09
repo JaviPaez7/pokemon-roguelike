@@ -61,7 +61,9 @@ export class DungeonGenerator {
    *   stairsPos: {x: number, y: number}
    * }} Datos completos de la mazmorra generada
    */
-  generate(width, height, seed) {
+  generate(width, height, seed, floorNumber = 1, isBossFloor = false) {
+    const isBoss = isBossFloor || (floorNumber > 0 && floorNumber % 10 === 0);
+
     // Inicializar el generador de números aleatorios con la semilla
     if (seed !== undefined) {
       RNG.setSeed(seed);
@@ -70,6 +72,10 @@ export class DungeonGenerator {
     // Crear el mapa lleno de muros
     const tileMap = new TileMap(width, height);
     // (TileMap ya se inicializa con WALL por defecto, no hace falta rellenar)
+
+    if (isBoss) {
+      return this._generateBossRoom(width, height, tileMap);
+    }
 
     // === PASO 1: División en cuadrícula ===
     const celdas = this._crearCuadricula(width, height);
@@ -107,6 +113,10 @@ export class DungeonGenerator {
 
     // === PASO 10: Generación de agua ===
     this._generarLagos(rooms, tileMap, playerStart, stairsPos);
+
+    // === PASO 11: Generación de baldosas mágicas ===
+    this._generarBaldosasMagicas(rooms, tileMap, playerStart, stairsPos);
+
     tileMap.rooms = rooms;
     return {
       tileMap,
@@ -751,5 +761,89 @@ export class DungeonGenerator {
         tileMap.setTile(cx, cy, terrainType);
       }
     }
+  }
+
+  /**
+   * Genera proceduralmente baldosas mágicas en el mapa (1-2).
+   */
+  _generarBaldosasMagicas(rooms, tileMap, playerStart, stairsPos) {
+    if (!rooms || rooms.length === 0) return;
+    
+    // Decidir cuántas baldosas colocar (1 a 2)
+    const numTiles = 1 + Math.floor(RNG.getUniform() * 2);
+    let placed = 0;
+    
+    const shuffledRooms = RNG.shuffle([...rooms]);
+    
+    for (const room of shuffledRooms) {
+      if (placed >= numTiles) break;
+      
+      const validCoords = [];
+      for (let y = room.y + 1; y < room.y + room.h - 1; y++) {
+        for (let x = room.x + 1; x < room.x + room.w - 1; x++) {
+          if (tileMap.getTile(x, y).id === TILES.FLOOR.id) {
+            if (x === playerStart.x && y === playerStart.y) continue;
+            if (x === stairsPos.x && y === stairsPos.y) continue;
+            validCoords.push({ x, y });
+          }
+        }
+      }
+      
+      if (validCoords.length > 0) {
+        const choice = validCoords[Math.floor(RNG.getUniform() * validCoords.length)];
+        tileMap.setTile(choice.x, choice.y, TILES.WONDER_TILE.id);
+        placed++;
+      }
+    }
+  }
+
+  /**
+   * Genera una habitación de Jefe única (arena abierta).
+   */
+  _generateBossRoom(width, height, tileMap) {
+    const w = 20;
+    const h = 16;
+    
+    const cx = Math.floor(width / 2);
+    const cy = Math.floor(height / 2);
+    
+    const rx = cx - Math.floor(w / 2);
+    const ry = cy - Math.floor(h / 2);
+    
+    const bossRoom = {
+      x: rx,
+      y: ry,
+      w: w,
+      h: h,
+      type: 'boss'
+    };
+    
+    this._tallarHabitacion(bossRoom, tileMap);
+    
+    const playerStart = {
+      x: cx,
+      y: ry + h - 3
+    };
+    
+    const bossSpawnPoint = {
+      x: cx,
+      y: ry + 3
+    };
+    
+    const stairsPos = {
+      x: cx,
+      y: cy
+    };
+    
+    tileMap.rooms = [bossRoom];
+    
+    return {
+      tileMap,
+      rooms: [bossRoom],
+      spawnPoints: [bossSpawnPoint],
+      itemPoints: [],
+      playerStart,
+      stairsPos
+    };
   }
 }

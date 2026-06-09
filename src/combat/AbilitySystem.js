@@ -78,8 +78,9 @@ export function applyPostAttackAbilities(attackerAbility, attackerFighter, defen
   // Ejemplo: Static paraliza al atacante con 30% prob si es un ataque de contacto (físico)
   if (defenderAbility === 'Static' && move.damageClass === 'physical') {
     if (Math.random() < 0.30) {
-      if (!attackerFighter.status) {
-        attackerFighter.status = 'paralyzed';
+      if (!attackerFighter.statusEffects) attackerFighter.statusEffects = [];
+      if (!attackerFighter.statusEffects.some(s => s.type === 'paralyze')) {
+        attackerFighter.statusEffects.push({ type: 'paralyze', turnsLeft: -1 });
         messages.push(`¡Electricidad Estática paralizó al atacante!`);
       }
     }
