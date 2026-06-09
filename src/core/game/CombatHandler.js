@@ -92,6 +92,28 @@ export class CombatHandler {
           return this.handleCombat(entityId, result.targetEntity);
         }
 
+        if (result.type === 'swap') {
+          const targetPos = game.entityManager.getComponent(result.targetEntity, 'position');
+          const entityPos = game.entityManager.getComponent(entityId, 'position');
+          if (targetPos && entityPos) {
+            const oldX = entityPos.x;
+            const oldY = entityPos.y;
+
+            entityPos.prevX = entityPos.x;
+            entityPos.prevY = entityPos.y;
+            entityPos.moveStartTime = performance.now();
+            entityPos.x = targetPos.x;
+            entityPos.y = targetPos.y;
+
+            targetPos.prevX = targetPos.x;
+            targetPos.prevY = targetPos.y;
+            targetPos.moveStartTime = performance.now();
+            targetPos.x = oldX;
+            targetPos.y = oldY;
+          }
+          return { success: true, type: 'swapped' };
+        }
+
         if (result.type === 'stairs') {
           if (entityId === game._playerId) {
             const bossAlive = game.entityManager.getEntitiesWithComponents('isBoss');

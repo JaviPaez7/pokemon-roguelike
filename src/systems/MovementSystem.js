@@ -82,7 +82,13 @@ export class MovementSystem {
     if (occupant !== null && occupant !== entityId) {
       // Prevención de fuego amigo: si ambos son del equipo, no hay ataque por choque (bump_attack)
       if (entityManager.hasComponent(entityId, 'partyMember') && entityManager.hasComponent(occupant, 'partyMember')) {
-        return { success: false, type: 'blocked' };
+        return {
+          success: true,
+          type: 'swap',
+          targetEntity: occupant,
+          x: targetX,
+          y: targetY
+        };
       }
 
       // Hay un Pokémon en la casilla: atacar por choque (bump-to-attack)
