@@ -120,6 +120,9 @@ export function setupGameEventListeners(game) {
           // Restaurar PS del nuevo aliado
           targetFighter.hp = Math.floor(targetFighter.maxHp * 0.5);
 
+          // ¡Añadir al TurnManager para que pueda actuar!
+          game.turnManager.addEntity(data.entityId, targetFighter.speed, false);
+
           game.stats.pokemonCaptured++;
           
           game.eventBus.emit('show_dialog', { text: `¡El ${targetInfo.name} enemigo está impresionado por tu fuerza!\n\n¡${targetInfo.name} se ha unido a tu equipo!` });

@@ -97,13 +97,14 @@ export class DialogController {
         this.ui.sfx.playConfirmSound();
         this.dialogQueue.shift();
 
-        if (this.currentDialogCallback) {
-          const cb = this.currentDialogCallback;
-          this.currentDialogCallback = null;
+        const cb = this.currentDialogCallback;
+        this.currentDialogCallback = null;
+        
+        this.displayNextDialog();
+
+        if (cb) {
           cb();
         }
-
-        this.displayNextDialog();
       }
     }
   }
