@@ -111,6 +111,18 @@ export class CombatHandler {
             targetPos.x = oldX;
             targetPos.y = oldY;
           }
+
+          // Verificar si al intercambiar hemos caído sobre un objeto
+          if (entityId === game._playerId) {
+            const item = game.entityManager.getItemAt(entityPos.x, entityPos.y);
+            if (item !== null) {
+              game.eventBus.emit('item_picked_up', {
+                entityId,
+                itemEntity: item
+              });
+            }
+          }
+
           return { success: true, type: 'swapped' };
         }
 

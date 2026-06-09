@@ -224,6 +224,7 @@ export class InputHandler {
       case 'Tab':
         this._actionQueue = { type: 'swap_leader' };
         break;
+      case 'Enter':
       case 'KeyZ':
         // Confirmar: intentar usar escaleras o recoger objeto
         this._actionQueue = { type: 'confirm' };
