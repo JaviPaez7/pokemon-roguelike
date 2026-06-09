@@ -64,7 +64,7 @@ export function grantExperience(pokemonInfo, fighter, xpGained, pokemonDB, moves
     // Recalcular stats
     const speciesData = pokemonDB.find(p => p.id === pokemonInfo.speciesId);
     if (speciesData) {
-      const newStats = calculateStats(speciesData.stats, pokemonInfo.level);
+      const newStats = calculateStats(speciesData.stats, pokemonInfo.level, fighter.bonusStats);
       const hpIncrease = newStats.maxHp - fighter.maxHp;
       
       fighter.maxHp = newStats.maxHp;
@@ -94,19 +94,15 @@ export function grantExperience(pokemonInfo, fighter, xpGained, pokemonDB, moves
                   result.newMoves.push({ moveId: moveEntry.moveId, moveName: moveData.name });
                   result.messages.push(`¡${pokemonInfo.name} aprendió ${moveData.name}!`);
                 } else {
-                  // Reemplazar el movimiento más débil automáticamente
-                  const weakestIdx = findWeakestMoveIndex(pokemonInfo.currentMoves, movesDB);
-                  const oldMove = movesDB.find(m => m.id === pokemonInfo.currentMoves[weakestIdx].moveId);
-                  pokemonInfo.currentMoves[weakestIdx] = {
-                    moveId: moveEntry.moveId,
-                    currentPP: moveData.pp,
-                    maxPP: moveData.pp,
-                    enabled: true
-                  };
-                  result.newMoves.push({ moveId: moveEntry.moveId, moveName: moveData.name });
-                  result.messages.push(`¡${pokemonInfo.name} aprendió ${moveData.name}!`);
-                  if (oldMove) {
-                    result.messages.push(`...y olvidó ${oldMove.name}.`);
+                  // Guardar movimiento pendiente para que el jugador elija cuál olvidar
+                  pokemonInfo.pendingMovesToLearn = pokemonInfo.pendingMovesToLearn || [];
+                  const alreadyPending = pokemonInfo.pendingMovesToLearn.some(pm => pm.moveId === moveEntry.moveId);
+                  if (!alreadyPending) {
+                    pokemonInfo.pendingMovesToLearn.push({
+                      moveId: moveEntry.moveId,
+                      moveName: moveData.name
+                    });
+                    result.messages.push(`¡${pokemonInfo.name} quiere aprender ${moveData.name}, pero ya conoce 4 movimientos!`);
                   }
                 }
               }
@@ -148,8 +144,9 @@ import { calculateAllStats } from './StatCalculator.js';
  * Calcula stats a partir de base stats y nivel
  * @param {Object} baseStats - Stats base de la especie
  * @param {number} level - Nivel actual
+ * @param {Object} [bonusStats] - Bonus permanentes
  * @returns {Object} Stats calculados
  */
-export function calculateStats(baseStats, level) {
-  return calculateAllStats(baseStats, level);
+export function calculateStats(baseStats, level, bonusStats = null) {
+  return calculateAllStats(baseStats, level, bonusStats);
 }

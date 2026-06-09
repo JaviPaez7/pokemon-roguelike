@@ -1,5 +1,9 @@
 import { MAP_WIDTH, MAP_HEIGHT } from '../../constants.js';
 import { spawnItems } from '../../systems/ItemSystem.js';
+import { triggerFloorEvent } from '../../systems/FloorEvents.js';
+import { spawnTraps } from '../../systems/TrapSystem.js';
+
+import { getBiomeForFloor } from '../../map/Biomes.js';
 
 /**
  * Generación de pisos, spawn de enemigos y pre-carga de sprites.
@@ -19,38 +23,31 @@ export class FloorManager {
   generateFloor() {
     const game = this.game;
     game.seed = Math.floor(Math.random() * 1000000);
-    
     const zone = this.getZoneConfig();
-    const isBossFloor = (zone && zone.boss && game._currentFloor === zone.floors[1]) || (game._currentFloor > 0 && game._currentFloor % 10 === 0);
-
-    const genResult = game.dungeonGenerator.generate(MAP_WIDTH, MAP_HEIGHT, game.seed, game._currentFloor, isBossFloor);
+    const theme = zone ? zone.theme : 'default';
+    const isBossRoom = zone && zone.boss && game._currentFloor === zone.floors[1];
+    const genResult = game.dungeonGenerator.generate(MAP_WIDTH, MAP_HEIGHT, game.seed, theme, isBossRoom);
     game.tileMap = genResult.tileMap;
+    
+    // Setear el bioma estético para este piso
+    game.tileMap.biome = getBiomeForFloor(game._currentFloor);
+    
     game._stairsPos = genResult.stairsPos;
     game._spawnPoints = genResult.spawnPoints;
     game._itemPoints = genResult.itemPoints;
     game._playerStart = genResult.playerStart;
 
-    // Asignar clima aleatorio
-    const randWeather = Math.random();
-    if (randWeather < 0.70) {
-      game.weather = 'none';
-    } else if (randWeather < 0.80) {
-      game.weather = 'rain';
-    } else if (randWeather < 0.90) {
-      game.weather = 'sun';
-    } else if (randWeather < 0.95) {
-      game.weather = 'sandstorm';
-    } else {
-      game.weather = 'hail';
-    }
+    const minItems = zone ? zone.itemsPerFloor[0] : 3;
+    const maxItems = zone ? zone.itemsPerFloor[1] : 5;
+    const count = minItems + Math.floor(Math.random() * (maxItems - minItems + 1));
+    spawnItems(game._itemPoints, count, game.itemsData, game.entityManager);
 
-    if (!isBossFloor) {
-      game.tileMap.setTile(game._stairsPos.x, game._stairsPos.y, 3);
+    // Spawn traps (2 a 4 trampas por piso)
+    const trapCount = 2 + Math.floor(Math.random() * 3);
+    spawnTraps(game._itemPoints, trapCount, game.entityManager); // Usamos itemPoints (suelo libre)
 
-      const minItems = zone ? zone.itemsPerFloor[0] : 3;
-      const maxItems = zone ? zone.itemsPerFloor[1] : 5;
-      const count = minItems + Math.floor(Math.random() * (maxItems - minItems + 1));
-      spawnItems(game._itemPoints, count, game.itemsData, game.entityManager);
+    if (game.weatherSystem) {
+      game.weatherSystem.generateFloorWeather(game);
     }
   }
 
@@ -61,45 +58,29 @@ export class FloorManager {
     const zone = this.getZoneConfig();
     if (!zone) return;
 
-    const isBossFloor = (zone.boss && game._currentFloor === zone.floors[1]) || (game._currentFloor > 0 && game._currentFloor % 10 === 0);
+    const isBossRoom = zone.boss && game._currentFloor === zone.floors[1];
 
-    if (isBossFloor) {
-      let bossId = null;
-      let bossName = "Mega-Pokemon";
-      let bossSpeciesId = 19; // Default Rattata
-      let bossLevel = 15;
-
-      if (zone.boss) {
-        bossSpeciesId = zone.boss.id;
-        bossLevel = zone.boss.level;
-        bossName = zone.boss.name;
-      } else if (zone.pokemon && zone.pokemon.length > 0) {
-        bossSpeciesId = zone.pokemon[zone.pokemon.length - 1].id;
-        bossLevel = zone.levelRange[1] + 2;
-        bossName = "Guardián";
+    if (isBossRoom) {
+      if (game._spawnPoints && game._spawnPoints.length > 0) {
+        const point = game._spawnPoints[0];
+        const bossInfo = zone.boss;
+        const bossId = game.entityManager.createPokemon(
+          bossInfo.id, bossInfo.level, point.x, point.y, true
+        );
+        game.entityManager.setComponent(bossId, 'isBoss', true);
+        game.entityManager.setComponent(bossId, 'boss', { active: true });
+        
+        // Boost de PS para el jefe
+        const fighter = game.entityManager.getComponent(bossId, 'fighter');
+        if (fighter) {
+          fighter.maxHp *= 3;
+          fighter.hp = fighter.maxHp;
+          game.entityManager.setComponent(bossId, 'fighter', fighter);
+        }
+        
+        game.turnManager.addEntity(bossId, fighter ? fighter.speed : 50, false);
+        game.pokedexSeen.add(bossInfo.id);
       }
-
-      const bossPoint = game._spawnPoints[0] || game._stairsPos;
-      bossId = game.entityManager.createPokemon(bossSpeciesId, bossLevel, bossPoint.x, bossPoint.y, true);
-
-      game.entityManager.setComponent(bossId, 'boss', { active: true });
-
-      const info = game.entityManager.getComponent(bossId, 'pokemonInfo');
-      if (info) {
-        info.name = `JEFE: ${bossName}`;
-        game.entityManager.setComponent(bossId, 'pokemonInfo', info);
-      }
-
-      const fighter = game.entityManager.getComponent(bossId, 'fighter');
-      if (fighter) {
-        fighter.maxHp = fighter.maxHp * 5; // Multiplicador x5
-        fighter.hp = fighter.maxHp;
-        game.entityManager.setComponent(bossId, 'fighter', fighter);
-      }
-
-      game.turnManager.addEntity(bossId, fighter ? fighter.speed : 60, false);
-      game.pokedexSeen.add(bossSpeciesId);
-      game.eventBus.emit('message', `¡Alerta! ¡El Jefe ${bossName} ha aparecido!`);
       return;
     }
 
@@ -126,6 +107,58 @@ export class FloorManager {
       game.turnManager.addEntity(enemyId, fighter ? fighter.speed : 50, false);
       game.pokedexSeen.add(speciesId);
     }
+  }
+
+  spawnMonsterHouse(room) {
+    const game = this.game;
+    if (!game.tileMap) return;
+
+    const zone = this.getZoneConfig();
+    if (!zone) return;
+
+    // Flash y sonido
+    if (game.renderer && game.renderer.screenFlash) {
+      game.renderer.screenFlash('rgba(255, 0, 0, 0.6)', 1000);
+    }
+    game.eventBus.emit('message', '¡ES UNA CASA DE MONSTRUOS!');
+    game.eventBus.emit('message', '¡Múltiples Pokémon cayeron del techo!');
+
+    // Recolectar tiles transitables y desocupados dentro de la habitación
+    const validPoints = [];
+    for (let y = room.y; y < room.y + room.h; y++) {
+      for (let x = room.x; x < room.x + room.w; x++) {
+        if (game.tileMap.isWalkable(x, y)) {
+          if (!game.entityManager.getEntityAt(x, y, false)) {
+            validPoints.push({ x, y });
+          }
+        }
+      }
+    }
+
+    // Barajar
+    for (let i = validPoints.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [validPoints[i], validPoints[j]] = [validPoints[j], validPoints[i]];
+    }
+
+    // Generar de 4 a 8 enemigos
+    const enemyCount = 4 + Math.floor(Math.random() * 5);
+    const actualCount = Math.min(enemyCount, validPoints.length);
+
+    for (let i = 0; i < actualCount; i++) {
+      const point = validPoints[i];
+      const speciesId = this._selectRandomEnemySpecies(zone.pokemon);
+      const minLvl = zone.levelRange[0];
+      const maxLvl = zone.levelRange[1];
+      const level = minLvl + Math.floor(Math.random() * (maxLvl - minLvl + 1));
+
+      const enemyId = game.entityManager.createPokemon(speciesId, level, point.x, point.y, true);
+      const fighter = game.entityManager.getComponent(enemyId, 'fighter');
+      game.turnManager.addEntity(enemyId, fighter ? fighter.speed : 50, false);
+      game.pokedexSeen.add(speciesId);
+    }
+    
+    game.needsRender = true;
   }
 
   async changeFloor(direction) {
@@ -171,6 +204,7 @@ export class FloorManager {
     });
 
     this.spawnEnemies();
+    triggerFloorEvent(game);
     this.preloadVisibleSprites();
 
     game._updateCamera();
@@ -179,7 +213,6 @@ export class FloorManager {
 
     const zone = this.getZoneConfig();
     if (zone) {
-      game.zoneName = zone.name;
       if (game.uiManager && game.uiManager.music) {
         game.uiManager.music.playZone(zone.name);
       }

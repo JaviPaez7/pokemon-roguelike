@@ -46,6 +46,16 @@ export function handleCancelAction(ui) {
     case 'team':
       openPauseMenu(ui);
       break;
+    case 'stats':
+      if (ui.game && ui.game.getPlayerId() !== null) {
+        openPauseMenu(ui);
+      } else {
+        openTitleScreen(ui);
+      }
+      break;
+    case 'log_history':
+      openPauseMenu(ui);
+      break;
     case 'item_actions':
     case 'use_item_target':
       openInventoryMenu(ui);

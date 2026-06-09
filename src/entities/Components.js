@@ -13,6 +13,7 @@
  * - aiControlled: Datos de comportamiento para entidades controladas por IA
  * - partyMember: Información de pertenencia al equipo del jugador
  * - itemDrop:    Datos de objeto en el suelo
+ * - trap:        Datos de trampa en el suelo
  * - sprite:      Datos de renderizado visual
  */
 
@@ -66,6 +67,11 @@
  *   alertedTo: number|null // ID de la entidad a la que está alerta (null si no)
  * }
  *
+ * npcFriendly: {
+ *   // Componente sin datos (tag). 
+ *   // Si una entidad lo tiene, no ataca y puede unirse al equipo si hablas con él.
+ * }
+ *
  * partyMember: {
  *   slot: number,       // Posición en el equipo (0-3)
  *   isLeader: boolean   // Si es el Pokémon líder (aparece en el mapa)
@@ -74,6 +80,12 @@
  * itemDrop: {
  *   itemId: string,     // ID del objeto
  *   quantity: number    // Cantidad
+ * }
+ *
+ * trap: {
+ *   type: string,       // Tipo: 'poison', 'sleep', 'explosion', 'warp', 'sticky'
+ *   isHidden: boolean,  // Si está oculta (true) o revelada (false)
+ *   uses: number        // Usos restantes
  * }
  *
  * sprite: {
@@ -96,16 +108,24 @@ export function createComponentStore() {
     /** @type {Map<number, {behavior: string, detectRange: number, alertedTo: number|null}>} */
     aiControlled: new Map(),
 
+    /** @type {Map<number, {}>} */
+    npcFriendly: new Map(),
+
     /** @type {Map<number, {slot: number, isLeader: boolean}>} */
     partyMember: new Map(),
 
     /** @type {Map<number, {itemId: string, quantity: number}>} */
     itemDrop: new Map(),
 
+    /** @type {Map<number, {type: string, isHidden: boolean, uses: number}>} */
+    trap: new Map(),
+
     /** @type {Map<number, {url: string, image: Image|null, loaded: boolean}>} */
     sprite: new Map(),
 
     /** @type {Map<number, {active: boolean}>} */
-    boss: new Map()
+    boss: new Map(),
+    /** @type {Map<number, boolean>} */
+    isBoss: new Map()
   };
 }

@@ -18,7 +18,7 @@ import { getAbility, applyPreAttackAbilities, applyPostAttackAbilities } from '.
  * @param {string} weather - Clima actual
  * @returns {Object} { damage, effectiveness, isCritical, isSTAB, messages }
  */
-export function calculateDamage(attacker, defender, move, attackerInfo, defenderInfo, typeChart, weather = 'none') {
+export function calculateDamage(attacker, defender, move, attackerInfo, defenderInfo, typeChart, currentWeather = 'normal') {
   const result = {
     damage: 0,
     effectiveness: 1,
@@ -41,6 +41,29 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
     }
   }
 
+  // Habilidades Pasivas: Inmunidades y Absorciones
+  if (defenderInfo.ability === 'levitate' && move.type === 'ground') {
+    result.messages.push(`¡No afecta a ${defenderInfo.name} gracias a Levitación!`);
+    result.damage = 0;
+    return result;
+  } else if (defenderInfo.ability === 'water_absorb' && move.type === 'water') {
+    result.messages.push(`¡${defenderInfo.name} absorbió el ataque de Agua y se curó!`);
+    defender.hp = Math.min(defender.maxHp, defender.hp + Math.max(1, Math.floor(defender.maxHp * 0.25)));
+    result.damage = 0;
+    return result;
+  } else if (defenderInfo.ability === 'volt_absorb' && move.type === 'electric') {
+    result.messages.push(`¡${defenderInfo.name} absorbió la electricidad y se curó!`);
+    defender.hp = Math.min(defender.maxHp, defender.hp + Math.max(1, Math.floor(defender.maxHp * 0.25)));
+    result.damage = 0;
+    return result;
+  } else if (defenderInfo.ability === 'flash_fire' && move.type === 'fire') {
+    result.messages.push(`¡El fuego potenció a ${defenderInfo.name} (Absorbe Fuego)!`);
+    if (!defender.statModifiers) defender.statModifiers = {};
+    defender.statModifiers.spAtk = (defender.statModifiers.spAtk || 0) + 1;
+    result.damage = 0;
+    return result;
+  }
+
   // Determinar stats ofensivo/defensivo según clase de daño
   let atk, def;
   if (move.damageClass === 'physical') {
@@ -55,6 +78,11 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
   if (attacker.statModifiers) {
     atk = applyStatModifier(atk, attacker.statModifiers.attack || 0);
   }
+
+  // Agallas (Guts)
+  if (move.damageClass === 'physical' && attackerInfo.ability === 'guts' && attacker.statusEffects && attacker.statusEffects.length > 0) {
+    atk = Math.floor(atk * 1.5);
+  }
   if (defender.statModifiers) {
     def = applyStatModifier(def, defender.statModifiers.defense || 0);
   }
@@ -64,6 +92,30 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
   let damage = Math.floor(
     ((2 * level / 5 + 2) * move.power * (atk / def)) / 50 + 2
   );
+
+  // Habilidades Pasivas de Aumento de Daño
+  const hpPercent = attacker.hp / attacker.maxHp;
+  if (hpPercent <= 0.33) {
+    if (attackerInfo.ability === 'overgrow' && move.type === 'grass') {
+      damage = Math.floor(damage * 1.5);
+      result.messages.push('¡La habilidad Espesura potencia el ataque!');
+    } else if (attackerInfo.ability === 'blaze' && move.type === 'fire') {
+      damage = Math.floor(damage * 1.5);
+      result.messages.push('¡La habilidad Mar Llamas potencia el ataque!');
+    } else if (attackerInfo.ability === 'torrent' && move.type === 'water') {
+      damage = Math.floor(damage * 1.5);
+      result.messages.push('¡La habilidad Torrente potencia el ataque!');
+    } else if (attackerInfo.ability === 'swarm' && move.type === 'bug') {
+      damage = Math.floor(damage * 1.5);
+      result.messages.push('¡La habilidad Enjambre potencia el ataque!');
+    }
+  }
+
+  // Habilidad Agallas (Guts)
+  if (attackerInfo.ability === 'guts' && attacker.statusEffects && attacker.statusEffects.length > 0 && move.damageClass === 'physical') {
+    damage = Math.floor(damage * 1.5);
+    result.messages.push('¡La habilidad Agallas potencia el ataque!');
+  }
 
   // STAB (Same Type Attack Bonus)
   if (attackerInfo.types.includes(move.type)) {
@@ -80,14 +132,7 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
   damage = Math.floor(damage * effectiveness);
   result.effectiveness = effectiveness;
 
-  // Clima
-  if (weather === 'rain') {
-    if (move.type === 'water') damage = Math.floor(damage * 1.5);
-    if (move.type === 'fire') damage = Math.floor(damage * 0.5);
-  } else if (weather === 'sun') {
-    if (move.type === 'fire') damage = Math.floor(damage * 1.5);
-    if (move.type === 'water') damage = Math.floor(damage * 0.5);
-  }
+
 
   // Mensajes de efectividad
   if (effectiveness > 1) {
@@ -106,6 +151,25 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
     damage = Math.floor(damage * 1.5);
     result.isCritical = true;
     result.messages.push('¡Golpe crítico!');
+  }
+
+  // Modificador de clima
+  if (currentWeather === 'lluvia') {
+    if (move.type === 'water') {
+      damage = Math.floor(damage * 1.3);
+      result.messages.push('¡La lluvia potencia los ataques de Agua! 🌧️');
+    } else if (move.type === 'fire') {
+      damage = Math.floor(damage * 0.7);
+      result.messages.push('¡La lluvia debilita los ataques de Fuego! 🌧️');
+    }
+  } else if (currentWeather === 'sol') {
+    if (move.type === 'fire') {
+      damage = Math.floor(damage * 1.3);
+      result.messages.push('¡El sol radiante potencia los ataques de Fuego! ☀️');
+    } else if (move.type === 'water') {
+      damage = Math.floor(damage * 0.7);
+      result.messages.push('¡El sol radiante debilita los ataques de Agua! ☀️');
+    }
   }
 
   // Variación aleatoria (85% - 100%)
@@ -176,7 +240,8 @@ function applyStatModifier(baseStat, stage) {
  * @returns {Object} { success, damage, effectiveness, messages, defenderFainted }
  */
 export function executeMove(params) {
-  const { attackerId, defenderId, move, entityManager, typeChart, eventBus, game } = params;
+  const { attackerId, defenderId, move, entityManager, typeChart, eventBus, game, currentWeather } = params;
+  const activeWeather = currentWeather || (game ? game.currentWeather : 'normal');
   
   const attackerFighter = entityManager.getComponent(attackerId, 'fighter');
   const defenderFighter = entityManager.getComponent(defenderId, 'fighter');
@@ -208,8 +273,6 @@ export function executeMove(params) {
     else hits = 5;
   }
 
-  const weather = game ? game.weather : 'none';
-
   let totalDamage = 0;
   let effectiveness = 1;
   let isSTAB = false;
@@ -219,7 +282,7 @@ export function executeMove(params) {
     if (defenderFainted) break;
 
     // Calcular daño
-    const result = calculateDamage(attackerFighter, defenderFighter, move, attackerInfo, defenderInfo, typeChart, weather);
+    const result = calculateDamage(attackerFighter, defenderFighter, move, attackerInfo, defenderInfo, typeChart, activeWeather);
     
     // Solo mostramos los mensajes de efectividad en el primer golpe
     if (i === 0) {
@@ -238,8 +301,13 @@ export function executeMove(params) {
       messages.push('¡Golpe crítico!');
     }
 
-    // Aplicar daño
     if (result.damage > 0) {
+      // Habilidad Sturdy (Robustez)
+      if (defenderInfo.ability === 'sturdy' && defenderFighter.hp === defenderFighter.maxHp && result.damage >= defenderFighter.maxHp) {
+        result.damage = defenderFighter.maxHp - 1;
+        messages.push(`¡La habilidad Robustez de ${defenderInfo.name} evitó el K.O. directo!`);
+      }
+
       defenderFighter.hp = Math.max(0, defenderFighter.hp - result.damage);
       totalDamage += result.damage;
       
@@ -252,6 +320,40 @@ export function executeMove(params) {
           effectiveness: result.effectiveness,
           isCritical: result.isCritical
         });
+      }
+
+      // Habilidades pasivas defensivas (Contacto) al recibir daño físico
+      if (move.damageClass === 'physical' && Math.random() < 0.3) {
+        if (!attackerFighter.statusEffects) attackerFighter.statusEffects = [];
+        
+        if (defenderInfo.ability === 'static' && !attackerFighter.statusEffects.some(s => s.type === 'paralyze')) {
+          attackerFighter.statusEffects.push({ type: 'paralyze', duration: 3 });
+          messages.push(`¡${attackerInfo.name} se paralizó por Elec. Estática de ${defenderInfo.name}!`);
+          if (eventBus) eventBus.emit('status_applied', { targetId: attackerId, effect: 'paralyze' });
+        } else if (defenderInfo.ability === 'poison_point' && !attackerFighter.statusEffects.some(s => s.type === 'poison')) {
+          attackerFighter.statusEffects.push({ type: 'poison', duration: 5 });
+          messages.push(`¡${attackerInfo.name} fue envenenado por Punto Tóxico de ${defenderInfo.name}!`);
+          if (eventBus) eventBus.emit('status_applied', { targetId: attackerId, effect: 'poison' });
+        } else if (defenderInfo.ability === 'flame_body' && !attackerFighter.statusEffects.some(s => s.type === 'burn')) {
+          attackerFighter.statusEffects.push({ type: 'burn', duration: 5 });
+          messages.push(`¡${attackerInfo.name} se quemó por Cuerpo Llama de ${defenderInfo.name}!`);
+          if (eventBus) eventBus.emit('status_applied', { targetId: attackerId, effect: 'burn' });
+        } else if (defenderInfo.ability === 'effect_spore') {
+          const rand = Math.random();
+          if (rand < 0.33 && !attackerFighter.statusEffects.some(s => s.type === 'poison')) {
+            attackerFighter.statusEffects.push({ type: 'poison', duration: 5 });
+            messages.push(`¡${attackerInfo.name} fue envenenado por Efecto Espora de ${defenderInfo.name}!`);
+            if (eventBus) eventBus.emit('status_applied', { targetId: attackerId, effect: 'poison' });
+          } else if (rand >= 0.33 && rand < 0.66 && !attackerFighter.statusEffects.some(s => s.type === 'paralyze')) {
+            attackerFighter.statusEffects.push({ type: 'paralyze', duration: 3 });
+            messages.push(`¡${attackerInfo.name} se paralizó por Efecto Espora de ${defenderInfo.name}!`);
+            if (eventBus) eventBus.emit('status_applied', { targetId: attackerId, effect: 'paralyze' });
+          } else if (rand >= 0.66 && !attackerFighter.statusEffects.some(s => s.type === 'sleep')) {
+            attackerFighter.statusEffects.push({ type: 'sleep', duration: 3 });
+            messages.push(`¡${attackerInfo.name} se durmió por Efecto Espora de ${defenderInfo.name}!`);
+            if (eventBus) eventBus.emit('status_applied', { targetId: attackerId, effect: 'sleep' });
+          }
+        }
       }
 
       // Aplicar efectos secundarios del movimiento (solo una vez)
@@ -289,39 +391,92 @@ export function executeMove(params) {
   // Verificar si el atacante cayó por retroceso
   const attackerFainted = attackerFighter.hp <= 0;
   if (attackerFainted) {
-    messages.push(`¡${attackerInfo.name} se debilitó por el retroceso!`);
-    if (eventBus) {
-      const pos = entityManager.getComponent(attackerId, 'position');
-      const sprite = entityManager.getComponent(attackerId, 'sprite');
-      eventBus.emit('pokemon_fainted', { 
-        entityId: attackerId, 
-        speciesId: attackerInfo.speciesId,
-        pos: pos ? { x: pos.x, y: pos.y } : null,
-        spriteUrl: sprite ? sprite.url : ''
-      });
+    let reviverUsed = false;
+    if (params.game && entityManager.hasComponent(attackerId, 'partyMember')) {
+      const invIndex = params.game.inventory.findIndex(item => item.itemId === 'reviver_seed');
+      if (invIndex !== -1) {
+        reviverUsed = true;
+        params.game.inventory[invIndex].quantity--;
+        if (params.game.inventory[invIndex].quantity <= 0) {
+          params.game.inventory.splice(invIndex, 1);
+        }
+        attackerFighter.hp = attackerFighter.maxHp;
+        attackerFighter.belly = attackerFighter.maxBelly || 100;
+        if (attackerInfo.currentMoves) attackerInfo.currentMoves.forEach(m => m.currentPP = m.maxPP);
+        attackerFighter.statusEffects = [];
+        messages.push(`¡${attackerInfo.name} se debilitó por el retroceso...`);
+        messages.push(`...pero revivió gracias a la Semilla Revivir!`);
+        if (params.game.renderer && params.game.renderer.screenFlash) {
+          params.game.renderer.screenFlash('rgba(0, 255, 0, 0.4)', 400);
+        }
+      }
+    }
+
+    if (!reviverUsed) {
+      messages.push(`¡${attackerInfo.name} se debilitó por el retroceso!`);
+      if (eventBus) {
+        const pos = entityManager.getComponent(attackerId, 'position');
+        const sprite = entityManager.getComponent(attackerId, 'sprite');
+        eventBus.emit('pokemon_fainted', { 
+          entityId: attackerId, 
+          speciesId: attackerInfo.speciesId,
+          pos: pos ? { x: pos.x, y: pos.y } : null,
+          spriteUrl: sprite ? sprite.url : '',
+          attackerId: defenderId // El defensor causó el retroceso
+        });
+      }
     }
   }
 
   // Verificar si el defensor cayó
   defenderFainted = defenderFighter.hp <= 0;
   if (defenderFainted) {
-    messages.push(`¡${defenderInfo.name} se debilitó!`);
-    if (eventBus) {
-      const pos = entityManager.getComponent(defenderId, 'position');
-      const sprite = entityManager.getComponent(defenderId, 'sprite');
-      eventBus.emit('pokemon_fainted', { 
-        entityId: defenderId, 
-        attackerId: attackerId,
-        speciesId: defenderInfo.speciesId,
-        pos: pos ? { x: pos.x, y: pos.y } : null,
-        spriteUrl: sprite ? sprite.url : ''
-      });
+    let reviverUsed = false;
+    if (params.game && entityManager.hasComponent(defenderId, 'partyMember')) {
+      const invIndex = params.game.inventory.findIndex(item => item.itemId === 'reviver_seed');
+      if (invIndex !== -1) {
+        reviverUsed = true;
+        params.game.inventory[invIndex].quantity--;
+        if (params.game.inventory[invIndex].quantity <= 0) {
+          params.game.inventory.splice(invIndex, 1);
+        }
+        defenderFighter.hp = defenderFighter.maxHp;
+        defenderFighter.belly = defenderFighter.maxBelly || 100;
+        if (defenderInfo.currentMoves) defenderInfo.currentMoves.forEach(m => m.currentPP = m.maxPP);
+        defenderFighter.statusEffects = [];
+        defenderFainted = false;
+        messages.push(`¡${defenderInfo.name} se debilitó...`);
+        messages.push(`...pero revivió gracias a la Semilla Revivir!`);
+        if (params.game.renderer && params.game.renderer.screenFlash) {
+          params.game.renderer.screenFlash('rgba(0, 255, 0, 0.4)', 400);
+        }
+      }
+    }
+
+    if (!reviverUsed) {
+      messages.push(`¡${defenderInfo.name} se debilitó!`);
+      if (eventBus) {
+        const pos = entityManager.getComponent(defenderId, 'position');
+        const sprite = entityManager.getComponent(defenderId, 'sprite');
+        eventBus.emit('pokemon_fainted', { 
+          entityId: defenderId, 
+          speciesId: defenderInfo.speciesId,
+          pos: pos ? { x: pos.x, y: pos.y } : null,
+          spriteUrl: sprite ? sprite.url : '',
+          attackerId: attackerId // Quien asestó el golpe
+        });
+      }
     }
   }
 
   // Actualizar componentes
   entityManager.setComponent(attackerId, 'pokemonInfo', attackerInfo);
-  entityManager.setComponent(defenderId, 'fighter', defenderFighter);
+  if (attackerFighter && attackerFighter.hp > 0) {
+    entityManager.setComponent(attackerId, 'fighter', attackerFighter);
+  }
+  if (!defenderFainted) {
+    entityManager.setComponent(defenderId, 'fighter', defenderFighter);
+  }
 
   return {
     success: true,
@@ -444,6 +599,16 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFight
       }
       break;
   }
+
+  // Sincronía (Synchronize)
+  if (targetInfo.ability === 'synchronize' && attackerFighter && (move.effect === 'burn' || move.effect === 'poison' || move.effect === 'paralyze')) {
+     if (!attackerFighter.statusEffects) attackerFighter.statusEffects = [];
+     if (!attackerFighter.statusEffects.some(s => s.type === move.effect)) {
+       attackerFighter.statusEffects.push({ type: move.effect, turnsLeft: -1 });
+       messages.push(`¡La Sincronía de ${targetInfo.name} transmitió el estado a ${attackerInfo.name}!`);
+     }
+  }
+
   return false;
 }
 

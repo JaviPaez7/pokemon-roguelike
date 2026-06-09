@@ -2,6 +2,9 @@
  * ItemSystem.js — Sistema de objetos: spawn, pickup, uso
  */
 
+import { grantExperience, expForLevel, calculateStats } from './ExperienceSystem.js';
+import { checkEvolution, evolve } from './EvolutionSystem.js';
+
 /**
  * Genera items en un piso
  * @param {Array} itemPoints - Posiciones válidas [{x,y}]
@@ -26,7 +29,7 @@ export function spawnItems(itemPoints, count, itemsDB, entityManager) {
     const point = availablePoints[i];
     const item = selectRandomItem(itemsDB);
     if (item) {
-      const entityId = entityManager.createItemEntity(item.id, 1, point.x, point.y);
+      const entityId = entityManager.createItemEntity(item.id, 1, point.x, point.y, item.spriteUrl);
       createdItems.push(entityId);
     }
   }
@@ -96,7 +99,7 @@ export function pickupItem(playerEntityId, itemEntityId, entityManager, inventor
  * @param {Array} itemsDB - Base de datos de items
  * @returns {Object} { success, messages, consumed }
  */
-export function useItem(itemId, targetEntityId, entityManager, inventory, itemsDB) {
+export function useItem(itemId, targetEntityId, entityManager, inventory, itemsDB, pokemonDB = null, movesDB = null, game = null) {
   const messages = [];
   
   // Buscar item en inventario
@@ -225,8 +228,58 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
     }
 
     case 'evolution_stone': {
-      // La evolución por piedra se maneja en EvolutionSystem
-      messages.push('Selecciona un Pokémon para evolucionar.');
+      const evo = checkEvolution(pokemonInfo, game.evolutionData, itemData.id);
+      if (evo) {
+        const evoResult = evolve(targetEntityId, evo, entityManager, game.pokemonData, game.movesData);
+        if (evoResult.success) {
+          messages.push(...evoResult.messages);
+          if (game.renderer && game.renderer.screenFlash) {
+            game.renderer.screenFlash('rgba(255, 255, 255, 0.8)', 800);
+          }
+          consumed = true;
+          game.needsRender = true;
+        } else {
+          messages.push(...evoResult.messages);
+        }
+      } else {
+        messages.push(`No tiene ningún efecto en ${pokemonInfo.name}.`);
+      }
+      break;
+    }
+
+    case 'gummi': {
+      if (!fighter.bonusStats) {
+        fighter.bonusStats = { maxHp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 };
+      }
+      const stat = itemData.stat;
+      fighter.bonusStats[stat] = (fighter.bonusStats[stat] || 0) + 1;
+      
+      // Recalcular
+      const speciesData = game.pokemonData.find(p => p.id === pokemonInfo.speciesId);
+      if (speciesData) {
+        const newStats = calculateStats(speciesData.stats, pokemonInfo.level, fighter.bonusStats);
+        const hpIncrease = newStats.maxHp - fighter.maxHp;
+        fighter.maxHp = newStats.maxHp;
+        fighter.hp = Math.min(fighter.maxHp, fighter.hp + hpIncrease);
+        fighter.attack = newStats.attack;
+        fighter.defense = newStats.defense;
+        fighter.spAtk = newStats.spAtk;
+        fighter.spDef = newStats.spDef;
+        fighter.speed = newStats.speed;
+      }
+      
+      // Mensaje según el stat
+      const statNames = {
+        maxHp: 'PS Máximos',
+        attack: 'Ataque',
+        defense: 'Defensa',
+        spAtk: 'Ataque Especial',
+        spDef: 'Defensa Especial',
+        speed: 'Velocidad'
+      };
+      messages.push(`¡${pokemonInfo.name} se comió la ${itemData.name}!`);
+      messages.push(`¡Su ${statNames[stat]} aumentó permanentemente!`);
+      consumed = true;
       break;
     }
 
@@ -234,6 +287,77 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
       // Escapar de la mazmorra - se maneja en Game.js
       messages.push('¡Escapaste de la mazmorra!');
       consumed = true;
+      break;
+    }
+
+    case 'slumber_orb':
+    case 'petrify_orb': {
+      if (!game || !game.tileMap || !game.tileMap.rooms) {
+        messages.push('No tiene ningún efecto aquí.');
+        break;
+      }
+      
+      const userPos = entityManager.getComponent(targetEntityId, 'position');
+      if (!userPos) break;
+      
+      // Buscar la habitación en la que está el usuario
+      const currentRoom = game.tileMap.rooms.find(r => 
+        userPos.x >= r.x && userPos.x < r.x + r.w &&
+        userPos.y >= r.y && userPos.y < r.y + r.h
+      );
+
+      let affected = 0;
+      const allEntities = entityManager.getEntitiesWithComponents('position', 'fighter');
+      
+      for (const eId of allEntities) {
+        if (entityManager.hasComponent(eId, 'partyMember')) continue; // No afectar a nuestro equipo
+        
+        const pos = entityManager.getComponent(eId, 'position');
+        const f = entityManager.getComponent(eId, 'fighter');
+        const ai = entityManager.getComponent(eId, 'aiControlled');
+        if (!pos || !f || f.hp <= 0 || !ai) continue;
+        
+        let inRange = false;
+        if (currentRoom) {
+          // Si estamos en una sala, afecta a todos en la misma sala
+          if (pos.x >= currentRoom.x && pos.x < currentRoom.x + currentRoom.w &&
+              pos.y >= currentRoom.y && pos.y < currentRoom.y + currentRoom.h) {
+            inRange = true;
+          }
+        } else {
+          // En pasillo, solo a enemigos muy cercanos (distancia de Chebyshev <= 2)
+          if (Math.abs(pos.x - userPos.x) <= 2 && Math.abs(pos.y - userPos.y) <= 2) {
+            inRange = true;
+          }
+        }
+        
+        if (inRange) {
+          if (!f.statusEffects) f.statusEffects = [];
+          if (itemData.type === 'slumber_orb') {
+            f.statusEffects.push({ type: 'sleep', turnsLeft: 4 });
+          } else if (itemData.type === 'petrify_orb') {
+            f.statusEffects.push({ type: 'freeze', turnsLeft: -1 }); // freeze se rompe al recibir daño
+          }
+          affected++;
+        }
+      }
+
+      if (affected > 0) {
+        if (itemData.type === 'slumber_orb') {
+          messages.push('¡Todos los enemigos cayeron en un profundo sueño!');
+          if (game.renderer && game.renderer.screenFlash) {
+            game.renderer.screenFlash('rgba(100, 100, 255, 0.4)', 400); // Flash azul
+          }
+        } else {
+          messages.push('¡Todos los enemigos quedaron petrificados!');
+          if (game.renderer && game.renderer.screenFlash) {
+            game.renderer.screenFlash('rgba(150, 150, 150, 0.5)', 400); // Flash gris
+          }
+        }
+        consumed = true;
+      } else {
+        messages.push('¡No hubo ningún enemigo al que afectar!');
+      }
       break;
     }
 
@@ -259,6 +383,66 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
       const restored = Math.floor(fighter.belly - oldBelly);
       
       messages.push(`¡${pokemonInfo.name} comió ${itemData.name} y recuperó ${restored} de tripa!`);
+      consumed = true;
+      break;
+    }
+
+    case 'status_cure': {
+      const cures = itemData.cures;
+      if (cures === 'all') {
+        if (!fighter.statusEffects || fighter.statusEffects.length === 0) {
+          messages.push(`¡${pokemonInfo.name} no tiene ningún problema de estado!`);
+          break;
+        }
+        fighter.statusEffects = [];
+        messages.push(`¡Se curaron todos los problemas de estado de ${pokemonInfo.name}!`);
+        consumed = true;
+      } else {
+        const hasStatus = fighter.statusEffects && fighter.statusEffects.some(s => s.type === cures);
+        if (!hasStatus) {
+          const statusNames = {
+            poison: 'envenenamiento',
+            paralyze: 'parálisis',
+            burn: 'quemadura',
+            sleep: 'sueño',
+            freeze: 'congelación',
+            confuse: 'confusión'
+          };
+          const statusName = statusNames[cures] || cures;
+          messages.push(`¡${pokemonInfo.name} no sufre de ${statusName}!`);
+          break;
+        }
+        fighter.statusEffects = fighter.statusEffects.filter(s => s.type !== cures);
+        const statusNames = {
+          poison: 'envenenamiento',
+          paralyze: 'parálisis',
+          burn: 'quemadura',
+          sleep: 'sueño',
+          freeze: 'congelación',
+          confuse: 'confusión'
+        };
+        const statusName = statusNames[cures] || cures;
+        messages.push(`¡${pokemonInfo.name} se curó de su ${statusName}!`);
+        consumed = true;
+      }
+      break;
+    }
+
+    case 'level_up': {
+      if (!pokemonDB || !movesDB) {
+        messages.push('Error: Base de datos no disponible.');
+        break;
+      }
+      if (pokemonInfo.level >= 100) {
+        messages.push(`¡${pokemonInfo.name} ya está al nivel máximo (100)!`);
+        break;
+      }
+      const levelsToAdd = itemData.value || 1;
+      const targetLevel = Math.min(100, pokemonInfo.level + levelsToAdd);
+      const xpNeeded = expForLevel(targetLevel) - (pokemonInfo.xp || 0);
+      
+      const expResult = grantExperience(pokemonInfo, fighter, xpNeeded, pokemonDB, movesDB);
+      messages.push(...expResult.messages);
       consumed = true;
       break;
     }

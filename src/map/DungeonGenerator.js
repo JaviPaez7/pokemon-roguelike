@@ -52,6 +52,8 @@ export class DungeonGenerator {
    * @param {number} width - Ancho del mapa en tiles (ej: 50)
    * @param {number} height - Alto del mapa en tiles (ej: 40)
    * @param {number} [seed] - Semilla para generación determinística
+   * @param {string} [theme] - Tema visual de la zona (ej: 'forest', 'volcano')
+   * @param {boolean} [isBossRoom=false] - Si es una sala de jefe
    * @returns {{
    *   tileMap: TileMap,
    *   rooms: {x: number, y: number, w: number, h: number}[],
@@ -61,9 +63,7 @@ export class DungeonGenerator {
    *   stairsPos: {x: number, y: number}
    * }} Datos completos de la mazmorra generada
    */
-  generate(width, height, seed, floorNumber = 1, isBossFloor = false) {
-    const isBoss = isBossFloor || (floorNumber > 0 && floorNumber % 10 === 0);
-
+  generate(width, height, seed, theme = 'default', isBossRoom = false) {
     // Inicializar el generador de números aleatorios con la semilla
     if (seed !== undefined) {
       RNG.setSeed(seed);
@@ -71,10 +71,40 @@ export class DungeonGenerator {
 
     // Crear el mapa lleno de muros
     const tileMap = new TileMap(width, height);
-    // (TileMap ya se inicializa con WALL por defecto, no hace falta rellenar)
 
-    if (isBoss) {
-      return this._generateBossRoom(width, height, tileMap);
+    if (isBossRoom) {
+      const marginX = Math.floor(width / 4);
+      const marginY = Math.floor(height / 4);
+      const room = {
+        x: marginX,
+        y: marginY,
+        w: width - marginX * 2,
+        h: height - marginY * 2,
+        type: 'boss'
+      };
+
+      for (let x = room.x; x < room.x + room.w; x++) {
+        for (let y = room.y; y < room.y + room.h; y++) {
+          tileMap.setTile(x, y, TILES.FLOOR.id);
+        }
+      }
+
+      const playerStart = { x: Math.floor(width / 2), y: room.y + room.h - 2 };
+      const stairsPos = { x: Math.floor(width / 2), y: room.y + 2 };
+      // El punto del boss estará justo delante de las escaleras
+      const spawnPoints = [{ x: stairsPos.x, y: stairsPos.y + 3 }];
+      const itemPoints = [];
+
+      tileMap.rooms = [room];
+      tileMap.theme = theme;
+      return {
+        tileMap,
+        rooms: [room],
+        spawnPoints,
+        itemPoints,
+        playerStart,
+        stairsPos,
+      };
     }
 
     // === PASO 1: División en cuadrícula ===
@@ -102,7 +132,7 @@ export class DungeonGenerator {
     const stairsPos = this._colocarEscaleras(rooms, playerStart, tileMap);
 
     // === PASO 7.5: Añadir terrenos especiales (Agua, Lava) ===
-    this._addSpecialTerrain(rooms, stairsPos, tileMap);
+    this._addSpecialTerrain(rooms, stairsPos, tileMap, theme);
 
     // === PASO 8: Puntos de aparición ===
     const spawnPoints = this._generarPuntosAparicion(rooms, playerStart, stairsPos, tileMap);
@@ -111,13 +141,10 @@ export class DungeonGenerator {
     // === PASO 9: Generación de trampas ===
     this._colocarTrampas(rooms, playerStart, stairsPos, tileMap);
 
-    // === PASO 10: Generación de agua ===
-    this._generarLagos(rooms, tileMap, playerStart, stairsPos);
-
     // === PASO 11: Generación de baldosas mágicas ===
     this._generarBaldosasMagicas(rooms, tileMap, playerStart, stairsPos);
-
     tileMap.rooms = rooms;
+    tileMap.theme = theme;
     return {
       tileMap,
       rooms,
@@ -258,6 +285,14 @@ export class DungeonGenerator {
       }
     }
 
+    // Elegir una Monster House (10% de probabilidad si hay más de 3 habitaciones)
+    if (rooms.length >= 3 && RNG.getUniform() < 0.10) {
+      // Elegir aleatoriamente, excluyendo la primera habitación (usualmente la del jugador o cerca)
+      const index = 1 + Math.floor(RNG.getUniform() * (rooms.length - 1));
+      rooms[index].type = 'monster_house';
+      rooms[index].monsterHouseTriggered = false;
+    }
+
     return rooms;
   }
 
@@ -285,8 +320,8 @@ export class DungeonGenerator {
   _asignarTiposEspeciales(rooms) {
     if (rooms.length <= 2) return;
     
-    // 10% de probabilidad de tener una monster house
-    if (RNG.getUniform() < 0.10) {
+    // 15% de probabilidad de tener una monster house
+    if (RNG.getUniform() < 0.20) {
       const idx = 1 + Math.floor(RNG.getUniform() * (rooms.length - 1));
       rooms[idx].type = 'monster_house';
     }
@@ -299,8 +334,8 @@ export class DungeonGenerator {
       }
     }
 
-    // 15% de probabilidad de tener una habitación de descanso
-    if (RNG.getUniform() < 0.15) {
+    // 20% de probabilidad de tener una habitación de descanso
+    if (RNG.getUniform() < 0.20) {
       const idx = 1 + Math.floor(RNG.getUniform() * (rooms.length - 1));
       if (rooms[idx].type === 'normal') {
         rooms[idx].type = 'rest';
@@ -680,65 +715,22 @@ export class DungeonGenerator {
   }
 
   /**
-   * PASO 10: Genera lagos o charcos de agua en las habitaciones.
-   * 
-   * @param {Object[]} rooms - Lista de habitaciones
-   * @param {TileMap} tileMap - Mapa de tiles
-   * @param {Object} playerStart - Posición inicial del jugador
-   * @param {Object} stairsPos - Posición de las escaleras
-   * @private
+   * Genera charcos de agua o lava aleatorios dentro de algunas habitaciones según el tema de la zona.
    */
-  _generarLagos(rooms, tileMap, playerStart, stairsPos) {
-    for (const room of rooms) {
-      // No generar agua en la habitación del jugador o de las escaleras
-      if (playerStart.x >= room.x && playerStart.x < room.x + room.w &&
-          playerStart.y >= room.y && playerStart.y < room.y + room.h) {
-        continue;
-      }
-      if (stairsPos.x >= room.x && stairsPos.x < room.x + room.w &&
-          stairsPos.y >= room.y && stairsPos.y < room.y + room.h) {
-        continue;
-      }
-
-      // No generar agua en habitaciones muy pequeñas
-      if (room.w < 6 || room.h < 6) continue;
-
-      // 30% de probabilidad de tener agua por habitación
-      if (RNG.getUniform() < 0.3) {
-        const cx = Math.floor(room.x + room.w / 2);
-        const cy = Math.floor(room.y + room.h / 2);
-        const maxSafeRadius = Math.floor(Math.min(room.w, room.h) / 2) - 2;
-        if (maxSafeRadius < 1) continue;
-        
-        const radius = Math.floor(RNG.getUniform() * Math.min(2, maxSafeRadius)) + 1; // Radio de 1 a 2 tiles
-        
-        for (let y = cy - radius; y <= cy + radius; y++) {
-          for (let x = cx - radius; x <= cx + radius; x++) {
-            // Forma circular (aproximada)
-            if ((x - cx) * (x - cx) + (y - cy) * (y - cy) <= radius * radius + 0.5) {
-              if (tileMap.isInBounds(x, y)) {
-                // Solo reemplazar suelo normal
-                if (tileMap.getTile(x, y).id === TILES.FLOOR.id) {
-                  tileMap.setTile(x, y, TILES.WATER.id);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * Genera charcos de agua o lava aleatorios dentro de algunas habitaciones.
-   */
-  _addSpecialTerrain(rooms, stairsPos, tileMap) {
+  _addSpecialTerrain(rooms, stairsPos, tileMap, theme) {
     const specialRooms = RNG.shuffle([...rooms]).slice(0, Math.max(1, Math.floor(rooms.length * 0.3))); // 30% of rooms
 
     for (const room of specialRooms) {
       if (room.isStart) continue; // No water in start room
       
-      const terrainType = RNG.getUniform() > 0.5 ? TILES.WATER.id : TILES.LAVA.id;
+      let terrainType = TILES.WATER.id;
+      if (theme === 'volcano') {
+        terrainType = RNG.getUniform() > 0.2 ? TILES.LAVA.id : TILES.WATER.id;
+      } else if (theme === 'dark' || theme === 'cave' || theme === 'lab') {
+        terrainType = RNG.getUniform() > 0.8 ? TILES.LAVA.id : TILES.WATER.id; // rare lava
+      } else {
+        terrainType = TILES.WATER.id; // only water
+      }
       
       // Random walk para generar un "charco"
       let cx = Math.floor(room.x + room.w / 2);

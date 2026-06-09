@@ -20,7 +20,40 @@ export function setupGameEventListeners(game) {
       game.gameOver();
     } else {
       if (game.entityManager.hasComponent(data.entityId, 'aiControlled')) {
-        game.stats.pokemonDefeated++;
+        // --- Lógica de Reclutamiento ---
+        const attackerId = data.attackerId;
+        if (attackerId !== null && attackerId !== undefined && game.entityManager.hasComponent(attackerId, 'partyMember')) {
+          const enemyInfo = game.entityManager.getComponent(data.entityId, 'pokemonInfo');
+          const leaderInfo = game.entityManager.getComponent(game._playerId, 'pokemonInfo');
+          
+          if (enemyInfo && leaderInfo && !enemyInfo.name.includes('JEFE:')) {
+            // Probabilidad base de 15% + 1% por cada nivel de ventaja
+            const levelDiff = Math.max(0, leaderInfo.level - enemyInfo.level);
+            const recruitChance = 15 + levelDiff;
+            
+            if (Math.random() * 100 < recruitChance) {
+              // Reclutamiento exitoso
+              game.eventBus.emit('message', `¡${enemyInfo.name} se ha quedado impresionado por tu fuerza!`);
+              game.eventBus.emit('message', `Acércate para que se una al equipo.`);
+              
+              // Mantener al enemigo vivo con 1 HP
+              const fighter = game.entityManager.getComponent(data.entityId, 'fighter');
+              if (fighter) {
+                fighter.hp = 1;
+                game.entityManager.setComponent(data.entityId, 'fighter', fighter);
+              }
+              
+              // Cambiar de enemigo a NPC amigable
+              game.entityManager.removeComponent(data.entityId, 'aiControlled');
+              game.entityManager.setComponent(data.entityId, 'npcFriendly', {});
+              
+              // Lo sacamos del gestor de turnos, actuará cuando le hablemos
+              game.turnManager.removeEntity(data.entityId);
+              game.needsRender = true;
+              return; // Importante: Salir para no destruir la entidad
+            }
+          }
+        }
       }
       game.turnManager.removeEntity(data.entityId);
 
@@ -100,6 +133,31 @@ export function setupGameEventListeners(game) {
       }
       
       game.needsRender = true;
+    }
+  });
+
+  game.eventBus.on('recruit_pokemon', (data) => {
+    if (data.accepted) {
+      const npcId = data.entityId;
+      const info = game.entityManager.getComponent(npcId, 'pokemonInfo');
+      const party = game.entityManager.getEntitiesWithComponents('partyMember');
+      if (party.length < 4 && info) {
+        game.entityManager.setComponent(npcId, 'partyMember', {
+          slot: party.length,
+          isLeader: false
+        });
+        game.entityManager.setComponent(npcId, 'aiControlled', { behavior: 'follower' });
+        game.entityManager.removeComponent(npcId, 'npcFriendly');
+        
+        const fighter = game.entityManager.getComponent(npcId, 'fighter');
+        game.turnManager.addEntity(npcId, fighter ? fighter.speed : 50, false);
+
+        game.eventBus.emit('show_dialog', {
+          text: `¡${info.name} se ha unido a tu equipo de exploración!`
+        });
+      }
+    } else {
+      game.entityManager.destroyEntity(data.entityId);
     }
   });
 

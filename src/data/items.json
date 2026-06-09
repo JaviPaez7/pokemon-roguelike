@@ -30,6 +30,42 @@
     "spriteUrl": "/sprites/items/hyper_potion.png"
   },
   {
+    "id": "reviver_seed",
+    "name": "Semilla Revivir",
+    "type": "seed",
+    "rarity": 0.05,
+    "description": "Revive y restaura PS y PP al instante.",
+    "sprite": "🌱",
+    "spriteUrl": "/sprites/items/reviver_seed.png"
+  },
+  {
+    "id": "max_elixir",
+    "name": "Elixir Máx.",
+    "type": "pp_restore_full",
+    "rarity": 0.08,
+    "description": "Restaura todos los PP de todos los movimientos.",
+    "sprite": "🧪",
+    "spriteUrl": "/sprites/items/potion.png"
+  },
+  {
+    "id": "slumber_orb",
+    "name": "Sueñosfera",
+    "type": "slumber_orb",
+    "rarity": 0.1,
+    "description": "Duerme a todos los enemigos de la sala.",
+    "sprite": "🔮",
+    "spriteUrl": "/sprites/items/pokeball.png"
+  },
+  {
+    "id": "petrify_orb",
+    "name": "Petriesfera",
+    "type": "petrify_orb",
+    "rarity": 0.08,
+    "description": "Petrifica a todos los enemigos de la sala.",
+    "sprite": "🔮",
+    "spriteUrl": "/sprites/items/pokeball.png"
+  },
+  {
     "id": "pokeball",
     "name": "Poké Ball",
     "type": "capture",
@@ -299,7 +335,7 @@
     "rarity": 0.3,
     "description": "Restaura 50 de Tripa",
     "sprite": "🍎",
-    "spriteUrl": ""
+    "spriteUrl": "/sprites/items/potion.png"
   },
   {
     "id": "big_apple",
@@ -309,7 +345,7 @@
     "rarity": 0.1,
     "description": "Restaura 100 de Tripa",
     "sprite": "🍏",
-    "spriteUrl": ""
+    "spriteUrl": "/sprites/items/potion.png"
   },
   {
     "id": "golden_apple",
@@ -320,6 +356,76 @@
     "rarity": 0.02,
     "description": "Llena la Tripa y expande su límite",
     "sprite": "🌟",
+    "spriteUrl": "/sprites/items/potion.png"
+  },
+  {
+    "id": "red_gummi",
+    "name": "Gominola Roja",
+    "type": "gummi",
+    "stat": "attack",
+    "rarity": 0.05,
+    "description": "Aumenta el Ataque permanentemente",
+    "sprite": "🍬",
+    "spriteUrl": "/sprites/items/potion.png"
+  },
+  {
+    "id": "blue_gummi",
+    "name": "Gominola Azul",
+    "type": "gummi",
+    "stat": "spAtk",
+    "rarity": 0.05,
+    "description": "Aumenta el Ataque Especial permanentemente",
+    "sprite": "🍬",
+    "spriteUrl": "/sprites/items/potion.png"
+  },
+  {
+    "id": "yellow_gummi",
+    "name": "Gominola Amarilla",
+    "type": "gummi",
+    "stat": "speed",
+    "rarity": 0.05,
+    "description": "Aumenta la Velocidad permanentemente",
+    "sprite": "🍬",
+    "spriteUrl": "/sprites/items/potion.png"
+  },
+  {
+    "id": "green_gummi",
+    "name": "Gominola Verde",
+    "type": "gummi",
+    "stat": "defense",
+    "rarity": 0.05,
+    "description": "Aumenta la Defensa permanentemente",
+    "sprite": "🍬",
+    "spriteUrl": "/sprites/items/potion.png"
+  },
+  {
+    "id": "clear_gummi",
+    "name": "Gominola Transparente",
+    "type": "gummi",
+    "stat": "maxHp",
+    "rarity": 0.02,
+    "description": "Aumenta los PS Máximos permanentemente",
+    "sprite": "🍬",
+    "spriteUrl": "/sprites/items/potion.png"
+  },
+  {
+    "id": "gravelerock",
+    "name": "Roca Viajero",
+    "type": "throwable",
+    "value": 20,
+    "rarity": 0.25,
+    "description": "Lánzala para infligir 20 PS de daño a distancia.",
+    "sprite": "🪨",
+    "spriteUrl": ""
+  },
+  {
+    "id": "iron_thorn",
+    "name": "Púa Férrea",
+    "type": "throwable",
+    "value": 15,
+    "rarity": 0.2,
+    "description": "Lánzala para infligir daño fijo a distancia.",
+    "sprite": "📌",
     "spriteUrl": ""
   }
 ]

@@ -83,6 +83,9 @@ export class EntityRenderer {
 
     /** @type {Array<{entityId: number, pos: Object, spriteUrl: string, startTime: number, duration: number}>} */
     this._faintingEntities = [];
+
+    /** @type {Array<{startX: number, startY: number, endX: number, endY: number, spriteUrl: string, sprite: string, startTime: number, duration: number}>} */
+    this._projectiles = [];
   }
 
   /**
@@ -98,6 +101,18 @@ export class EntityRenderer {
       spriteUrl,
       startTime: performance.now(),
       duration: 500
+    });
+  }
+
+  /**
+   * Añade una animación de proyectil.
+   * @param {Object} data - Datos del proyectil
+   */
+  spawnProjectileAnimation(data) {
+    this._projectiles.push({
+      ...data,
+      startTime: performance.now(),
+      duration: 300 // ms
     });
   }
 
@@ -145,13 +160,16 @@ export class EntityRenderer {
     this._faintingEntities = this._faintingEntities.filter(
       (f) => now - f.startTime < f.duration
     );
+    this._projectiles = this._projectiles.filter(
+      (p) => now - p.startTime < p.duration
+    );
   }
 
   /**
    * @returns {boolean} true si hay animaciones VFX activas
    */
   hasActiveEffects() {
-    return this._danosFlotantes.length > 0 || this._damageFlashes.length > 0 || this._faintingEntities.length > 0;
+    return this._danosFlotantes.length > 0 || this._damageFlashes.length > 0 || this._faintingEntities.length > 0 || this._projectiles.length > 0;
   }
 
   /**
@@ -188,11 +206,61 @@ export class EntityRenderer {
         this._dibujarPokemon(ctx, entityId, entityManager, camera, pos);
       } else if (entityManager.hasComponent(entityId, 'itemDrop')) {
         this._dibujarItem(ctx, entityId, entityManager, camera, pos, itemsData);
+      } else if (entityManager.hasComponent(entityId, 'trap')) {
+        this._dibujarTrap(ctx, entityId, entityManager, camera, pos);
       }
     }
 
     this._dibujarDanosFlotantes(ctx, entityManager, camera, tileMap);
     this._dibujarFaintingEntities(ctx, camera);
+    this._dibujarProjectiles(ctx, camera);
+  }
+
+  /**
+   * Dibuja los proyectiles en vuelo.
+   * @private
+   */
+  _dibujarProjectiles(ctx, camera) {
+    if (this._projectiles.length === 0) return;
+
+    const tileSize = camera.tileSize;
+    for (const p of this._projectiles) {
+      const elapsed = this._tiempo - p.startTime;
+      const progress = Math.min(1, elapsed / p.duration);
+      
+      const currentWorldX = p.startX + (p.endX - p.startX) * progress;
+      const currentWorldY = p.startY + (p.endY - p.startY) * progress;
+      
+      if (!camera.isVisible(Math.floor(currentWorldX), Math.floor(currentWorldY))) continue;
+
+      const screenPos = camera.worldToScreen(currentWorldX, currentWorldY);
+      const margen = Math.floor(tileSize * 0.2);
+      const spriteSize = tileSize - margen * 2;
+
+      ctx.save();
+      // Pequeño giro para que parezca que vuela
+      const angle = progress * Math.PI * 4;
+      ctx.translate(screenPos.x + tileSize/2, screenPos.y + tileSize/2);
+      ctx.rotate(angle);
+
+      if (p.spriteUrl) {
+        this.spriteManager.drawSprite(
+          ctx,
+          p.spriteUrl,
+          -spriteSize/2,
+          -spriteSize/2,
+          spriteSize,
+          spriteSize,
+          ''
+        );
+      } else {
+        ctx.font = `${spriteSize}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.sprite || '📦', 0, 0);
+      }
+      ctx.restore();
+    }
   }
 
   /**
@@ -561,6 +629,48 @@ export class EntityRenderer {
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(centroX, centroY, radio, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  /**
+   * Dibuja una trampa en el suelo si ha sido revelada.
+   * 
+   * @param {CanvasRenderingContext2D} ctx - Contexto del canvas
+   * @param {number} entityId - ID de la entidad
+   * @param {Object} entityManager - Gestor de entidades ECS
+   * @param {import('./Camera.js').Camera} camera - Cámara actual
+   * @param {Object} pos - Componente de posición {x, y}
+   * @private
+   */
+  _dibujarTrap(ctx, entityId, entityManager, camera, pos) {
+    const trap = entityManager.getComponent(entityId, 'trap');
+    if (!trap || trap.isHidden) return; // No dibujar si está oculta
+
+    const tileSize = camera.tileSize;
+    const screenPos = camera.worldToScreen(pos.x, pos.y);
+
+    const centroX = screenPos.x + tileSize / 2;
+    const centroY = screenPos.y + tileSize / 2;
+
+    // Dibujar una base grisácea/metálica
+    ctx.fillStyle = '#7f8c8d';
+    ctx.beginPath();
+    ctx.arc(centroX, centroY, tileSize * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#2c3e50';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Dibujar una 'X' roja o símbolo dentro
+    ctx.strokeStyle = '#c0392b';
+    ctx.lineWidth = 2;
+    const r = tileSize * 0.2;
+    ctx.beginPath();
+    ctx.moveTo(centroX - r, centroY - r);
+    ctx.lineTo(centroX + r, centroY + r);
+    ctx.moveTo(centroX + r, centroY - r);
+    ctx.lineTo(centroX - r, centroY + r);
     ctx.stroke();
   }
 }

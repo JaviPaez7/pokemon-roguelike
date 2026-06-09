@@ -233,6 +233,24 @@ export class EntityManager {
     return null;
   }
 
+  /**
+   * Obtener la trampa (trap) en una posición específica.
+   * @param {number} x - Coordenada X
+   * @param {number} y - Coordenada Y
+   * @returns {number|null} ID de la entidad trampa, o null
+   */
+  getTrapAt(x, y) {
+    for (const [entityId, pos] of this._components.position) {
+      if (pos.x === x && pos.y === y && this._activeEntities.has(entityId)) {
+        if (this._components.trap.has(entityId)) {
+          return entityId;
+        }
+      }
+    }
+    return null;
+  }
+
+
   // ─── Fábricas de entidades preconfiguradas ────────────────────────────────
 
   /**
@@ -331,7 +349,8 @@ export class EntityManager {
       level: level,
       xp: 0,
       currentMoves: moves,
-      types: species?.types ?? ['normal']
+      types: species?.types ?? ['normal'],
+      ability: species?.ability ?? 'none'
     });
 
     // Estadísticas de combate
@@ -345,7 +364,8 @@ export class EntityManager {
       speed: speed,
       statusEffects: [],
       belly: 100,
-      maxBelly: 100
+      maxBelly: 100,
+      bonusStats: { maxHp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 }
     });
 
     // Sprite (se carga asíncronamente después)
@@ -381,7 +401,7 @@ export class EntityManager {
    * @param {number} y - Posición Y
    * @returns {number} ID de la entidad creada
    */
-  createItemEntity(itemId, quantity, x, y) {
+  createItemEntity(itemId, quantity, x, y, spriteUrl = '') {
     const id = this.createEntity();
 
     // Posición
@@ -402,9 +422,41 @@ export class EntityManager {
 
     // Sprite del objeto
     this.setComponent(id, 'sprite', {
-      url: `assets/items/${itemId}.png`,
+      url: spriteUrl || '',
       image: null,
       loaded: false
+    });
+
+    return id;
+  }
+
+  /**
+   * Crear una entidad trampa en el suelo.
+   *
+   * @param {string} type - Tipo de trampa ('poison', 'sleep', etc.)
+   * @param {number} x - Posición X
+   * @param {number} y - Posición Y
+   * @param {boolean} isHidden - Si la trampa empieza oculta
+   * @returns {number} ID de la entidad creada
+   */
+  createTrapEntity(type, x, y, isHidden = true) {
+    const id = this.createEntity();
+
+    // Posición
+    this.setComponent(id, 'position', {
+      x: x,
+      y: y,
+      facing: 'down',
+      prevX: x,
+      prevY: y,
+      moveStartTime: 0
+    });
+
+    // Datos de la trampa
+    this.setComponent(id, 'trap', {
+      type: type,
+      isHidden: isHidden,
+      uses: 1
     });
 
     return id;

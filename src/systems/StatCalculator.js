@@ -34,10 +34,11 @@ export function calculateStat(baseStat, level) {
  * Calcula el conjunto completo de estadísticas de un Pokémon.
  * @param {Object} baseStats - { hp, attack, defense, spAtk, spDef, speed }
  * @param {number} level     - Nivel del Pokémon
+ * @param {Object} [bonusStats] - { maxHp, attack, defense, spAtk, spDef, speed } opcional (Gummis)
  * @returns {Object} { maxHp, attack, defense, spAtk, spDef, speed }
  */
-export function calculateAllStats(baseStats, level) {
-  return {
+export function calculateAllStats(baseStats, level, bonusStats = null) {
+  const stats = {
     maxHp:   calculateHP(baseStats.hp, level),
     attack:  calculateStat(baseStats.attack, level),
     defense: calculateStat(baseStats.defense, level),
@@ -45,4 +46,15 @@ export function calculateAllStats(baseStats, level) {
     spDef:   calculateStat(baseStats.spDef, level),
     speed:   calculateStat(baseStats.speed, level)
   };
+
+  if (bonusStats) {
+    stats.maxHp += (bonusStats.maxHp || 0);
+    stats.attack += (bonusStats.attack || 0);
+    stats.defense += (bonusStats.defense || 0);
+    stats.spAtk += (bonusStats.spAtk || 0);
+    stats.spDef += (bonusStats.spDef || 0);
+    stats.speed += (bonusStats.speed || 0);
+  }
+
+  return stats;
 }

@@ -31,12 +31,12 @@ export function attemptCapture(targetFighter, targetInfo, ball, pokemonDB) {
   
   // Bonus por estado alterado
   let statusBonus = 1;
-  if (targetFighter.statusEffects) {
-    if (targetFighter.statusEffects.includes('sleep') || targetFighter.statusEffects.includes('freeze')) {
+  if (targetFighter.statusEffects && targetFighter.statusEffects.length > 0) {
+    if (targetFighter.statusEffects.some(s => s.type === 'sleep') || targetFighter.statusEffects.some(s => s.type === 'freeze')) {
       statusBonus = 2;
-    } else if (targetFighter.statusEffects.includes('paralyze') || 
-               targetFighter.statusEffects.includes('burn') || 
-               targetFighter.statusEffects.includes('poison')) {
+    } else if (targetFighter.statusEffects.some(s => s.type === 'paralyze') || 
+               targetFighter.statusEffects.some(s => s.type === 'burn') || 
+               targetFighter.statusEffects.some(s => s.type === 'poison')) {
       statusBonus = 1.5;
     }
   }
@@ -96,12 +96,12 @@ export function getCaptureChance(targetFighter, targetInfo, ball, pokemonDB) {
   const rate = ((3 * maxHp - 2 * currentHp) * captureRate * ballBonus) / (3 * maxHp);
   
   let statusBonus = 1;
-  if (targetFighter.statusEffects) {
-    if (targetFighter.statusEffects.includes('sleep') || targetFighter.statusEffects.includes('freeze')) {
+  if (targetFighter.statusEffects && targetFighter.statusEffects.length > 0) {
+    if (targetFighter.statusEffects.some(s => s.type === 'sleep') || targetFighter.statusEffects.some(s => s.type === 'freeze')) {
       statusBonus = 2;
-    } else if (targetFighter.statusEffects.includes('paralyze') || 
-               targetFighter.statusEffects.includes('burn') || 
-               targetFighter.statusEffects.includes('poison')) {
+    } else if (targetFighter.statusEffects.some(s => s.type === 'paralyze') || 
+               targetFighter.statusEffects.some(s => s.type === 'burn') || 
+               targetFighter.statusEffects.some(s => s.type === 'poison')) {
       statusBonus = 1.5;
     }
   }

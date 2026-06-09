@@ -1,4 +1,5 @@
 import { GAME_STATES } from '../../constants.js';
+import { saveLifetimeStats } from './StatsMenu.js';
 
 /** @param {import('../UIManager.js').UIManager} ui */
 export function openGameOverScreen(ui) {
@@ -7,7 +8,7 @@ export function openGameOverScreen(ui) {
     <div class="game-panel" style="text-align: center; width: 340px; border-color: var(--hp-red);">
       <h1 class="loading-title" style="color: var(--hp-red); font-size: 24px; text-shadow: 2px 2px 0 #880000; margin-bottom: 20px;">FIN DE PARTIDA</h1>
       <p style="font-size: 8px; line-height: 1.6; margin-bottom: 12px; color: var(--text-primary);">
-        Tu equipo ha caído debilitado en el <br>
+         Tu equipo ha caído debilitado en el <br>
         <span style="color: var(--text-accent); font-size: 12px;">PISO ${floor}</span>.
       </p>
 
@@ -32,6 +33,7 @@ export function openGameOverScreen(ui) {
 
   ui.menuOptions = [
     () => {
+      saveLifetimeStats(ui.game, false);
       localStorage.removeItem('pokerogue_save');
       ui.game.changeState(GAME_STATES.TITLE);
     }
@@ -71,6 +73,7 @@ export function openVictoryScreen(ui) {
   ui.menuOptions = [
     () => {
       try {
+        saveLifetimeStats(ui.game, true);
         localStorage.removeItem('pokerogue_save');
       } catch (e) {}
       ui.game.changeState(GAME_STATES.TITLE);

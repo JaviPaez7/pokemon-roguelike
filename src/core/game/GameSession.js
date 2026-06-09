@@ -17,6 +17,7 @@ export function startNewGame(game, starterPokemonId) {
     { itemId: 'potion', quantity: 3 },
     { itemId: 'pokeball', quantity: 5 }
   ];
+  game.coins = 100;
   game.stats = {
     pokemonDefeated: 0,
     pokemonCaptured: 0,
@@ -81,6 +82,7 @@ export function loadSavedGame(game) {
   game.weather = data.weather;
   game.inventory = data.inventory;
   game.stats = data.stats;
+  game.coins = data.coins || 100;
   game.pokedexSeen = data.pokedexSeen;
 
   game.entityManager.clear();

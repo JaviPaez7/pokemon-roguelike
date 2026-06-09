@@ -20,39 +20,50 @@ export function openOptionsMenu(ui) {
 
   ui.showMenu('options', html);
 
+  const originalHandleMenuInput = ui.handleMenuInput;
+
+  const restoreAndGoBack = () => {
+    ui.handleMenuInput = originalHandleMenuInput;
+    openPauseMenu(ui);
+  };
+
   ui.menuOptions = [
     // SFX
     (dir) => {
-        if (dir === 'left') ui.sfx.setVolume(Math.max(0, ui.sfx._volume - 0.1));
-        if (dir === 'right') ui.sfx.setVolume(Math.min(1, ui.sfx._volume + 0.1));
-        document.getElementById('sfx-vol').textContent = Math.round(ui.sfx._volume * 100);
-        ui.sfx.playMenuSound();
+      if (dir === 'left') ui.sfx.setVolume(Math.max(0, ui.sfx._volume - 0.1));
+      if (dir === 'right') ui.sfx.setVolume(Math.min(1, ui.sfx._volume + 0.1));
+      document.getElementById('sfx-vol').textContent = Math.round(ui.sfx._volume * 100);
+      ui.sfx.playMenuSound();
     },
     // Music
     (dir) => {
-        if (dir === 'left') ui.music.setVolume(Math.max(0, ui.music.masterGain.gain.value - 0.1));
-        if (dir === 'right') ui.music.setVolume(Math.min(1, ui.music.masterGain.gain.value + 0.1));
-        document.getElementById('music-vol').textContent = Math.round(ui.music.masterGain.gain.value * 100);
-        ui.sfx.playMenuSound();
+      if (dir === 'left') ui.music.setVolume(Math.max(0, ui.music.masterGain.gain.value - 0.1));
+      if (dir === 'right') ui.music.setVolume(Math.min(1, ui.music.masterGain.gain.value + 0.1));
+      document.getElementById('music-vol').textContent = Math.round(ui.music.masterGain.gain.value * 100);
+      ui.sfx.playMenuSound();
     },
     // Volver
-    () => openPauseMenu(ui)
+    restoreAndGoBack
   ];
   
   // Custom input handler for Left/Right
-  const oldHandleInput = ui.handleInput.bind(ui);
-  ui.handleInput = (action) => {
-      if (action === 'left' || action === 'right') {
-          if (ui.selectedIndex < 2) {
-              ui.menuOptions[ui.selectedIndex](action);
-          }
-          return;
+  ui.handleMenuInput = (data) => {
+    if (data.direction === 'left' || data.direction === 'right') {
+      if (ui.selectedIndex < 2) {
+        ui.menuOptions[ui.selectedIndex](data.direction);
       }
-      if (action === 'confirm' && ui.selectedIndex < 2) {
-          // Do nothing on confirm for volume options
-          return;
-      }
-      oldHandleInput(action);
+      return;
+    }
+    if (data.action === 'confirm' && ui.selectedIndex < 2) {
+      // No hacer nada en confirm para opciones de volumen
+      return;
+    }
+    if (data.action === 'cancel') {
+      ui.sfx.playCancelSound();
+      restoreAndGoBack();
+      return;
+    }
+    originalHandleMenuInput.call(ui, data);
   };
 
   ui.selectedIndex = 0;

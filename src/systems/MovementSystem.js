@@ -107,23 +107,16 @@ export class MovementSystem {
       };
     }
 
-    // ── 4.5. Verificar si hay trampas ──
-    if (tileMap.isTrap && tileMap.isTrap(targetX, targetY)) {
-      this._moveEntity(position, targetX, targetY);
-      return {
-        success: true,
-        type: 'trap',
-        x: targetX,
-        y: targetY
-      };
-    }
-
     // ── 5. Verificar si hay un objeto en el suelo ──
     const itemEntity = entityManager.getItemAt(targetX, targetY);
 
-    // ── 6. Verificar si pisamos una trampa (id 5) o baldosa mágica (id 8) ──
+    // ── 6. Verificar si hay una trampa o baldosa especial ──
+    let trapEntity = entityManager.getTrapAt ? entityManager.getTrapAt(targetX, targetY) : null;
+    const pokemonInfo = entityManager.getComponent(entityId, 'pokemonInfo');
+    if (pokemonInfo && pokemonInfo.ability === 'levitate') {
+      trapEntity = null; // Inmune a las trampas del suelo
+    }
     const tileId = tileMap.getTile(targetX, targetY).id;
-    const isTrap = (tileId === 5);
     const isWonderTile = (tileId === 8);
 
     // ── 7. Ejecutar el movimiento ──
@@ -137,23 +130,23 @@ export class MovementSystem {
         y: targetY
       };
     }
-
-    // Si hay un objeto, señalarlo en el resultado (pero nos movemos de todas formas)
     if (itemEntity !== null) {
       return {
         success: true,
         type: 'pickup',
         itemEntity: itemEntity,
-        isTrap: isTrap,
+        isTrap: trapEntity !== null,
+        trapEntity: trapEntity,
         x: targetX,
         y: targetY
       };
     }
 
-    if (isTrap) {
+    if (trapEntity !== null) {
       return {
         success: true,
         type: 'trap',
+        trapEntity: trapEntity,
         x: targetX,
         y: targetY
       };

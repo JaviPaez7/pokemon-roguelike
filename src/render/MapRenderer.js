@@ -83,7 +83,7 @@ export class MapRenderer {
         this._dibujarTile(ctx, tile, sx, sy, tileSize, visibilidad, x, y, tileMap);
 
         // Dibujar líneas de cuadrícula sutiles
-        this._dibujarGrid(ctx, sx, sy, tileSize);
+        this._dibujarGrid(ctx, sx, sy, tileSize, tileMap);
       }
     }
 
@@ -114,13 +114,37 @@ export class MapRenderer {
       ctx.globalAlpha = OPACIDAD_SEEN;
     }
 
-    // Color base del tile
+    // Color base del tile (fallback a colores originales si no hay bioma)
     let colorSuelo = tile.colors.floor;
     let colorBorde = tile.colors.wall;
 
+    if (tileMap && tileMap.biome) {
+      if (tile.id === 2) { // WALL
+        colorSuelo = tileMap.biome.wall;
+        colorBorde = tileMap.biome.void;
+      } else if (tile.id === 4) { // WATER
+        colorSuelo = tileMap.biome.water;
+        colorBorde = tileMap.biome.wall;
+      } else { // FLOOR, STAIRS, TRAPS
+        colorSuelo = tileMap.biome.floor;
+        colorBorde = tileMap.biome.wall;
+      }
+    }
+
+    let isRestRoom = false;
+    if (tileMap && tileMap.rooms && tile.walkable) {
+        const room = tileMap.rooms.find(r => worldX >= r.x && worldX < r.x + r.w && worldY >= r.y && worldY < r.y + r.h);
+        if (room && room.type === 'rest') isRestRoom = true;
+    }
+
     // Efecto especial para agua: animación de olas
-    if (tile.id === TILES.WATER.id) {
+    if (tile.id === 4) { // 4 es WATER
       colorSuelo = this._calcularColorOla(tile.colors.floor, worldX, worldY);
+    } else if (isRestRoom && tile.id !== 2) { // Si no es WALL (2)
+      // Tintar un poco la sala de descanso, combinándolo con el bioma si queremos, 
+      // pero por ahora lo dejamos verde claro.
+      colorSuelo = '#3d5c4d'; 
+      colorBorde = '#2c4538';
     }
 
     // Rellenar el tile con el color base
@@ -253,8 +277,8 @@ export class MapRenderer {
    * @param {number} size - Tamaño del tile
    * @private
    */
-  _dibujarGrid(ctx, sx, sy, size) {
-    ctx.strokeStyle = COLOR_GRID;
+  _dibujarGrid(ctx, sx, sy, size, tileMap) {
+    ctx.strokeStyle = tileMap && tileMap.biome && tileMap.biome.gridLines ? tileMap.biome.gridLines : COLOR_GRID;
     ctx.lineWidth = ANCHO_GRID;
 
     // Línea derecha del tile

@@ -98,8 +98,16 @@ export class InputHandler {
     // No procesar si la entrada está desactivada
     if (!this.enabled) return;
 
-    // Prevenir repetición de tecla mantenida
-    if (this._keysDown.has(event.code)) return;
+    const isMovementKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Numpad8', 'Numpad2', 'Numpad4', 'Numpad6', 'Numpad7', 'Numpad9', 'Numpad1', 'Numpad3'].includes(event.code);
+    const isRepeat = this._keysDown.has(event.code);
+    
+    // Prevenir repetición de tecla mantenida, EXCEPTO para movimiento en modo exploración
+    if (isRepeat) {
+      if (this._context !== 'exploration' || !isMovementKey) {
+        return;
+      }
+    }
+    
     this._keysDown.add(event.code);
 
     // Prevenir comportamiento por defecto del navegador para teclas del juego
@@ -141,12 +149,13 @@ export class InputHandler {
     const gameKeys = [
       'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
       'KeyW', 'KeyA', 'KeyS', 'KeyD',
-      'KeyZ', 'KeyX', 'KeyC', 'KeyM',
+      'KeyZ', 'KeyX', 'KeyC', 'KeyM', 'KeyQ', 'Tab',
       'Space', 'Escape',
       'Digit1', 'Digit2', 'Digit3', 'Digit4',
       'Numpad1', 'Numpad2', 'Numpad3', 'Numpad4',
       'Numpad6', 'Numpad7', 'Numpad8', 'Numpad9',
-      'Home', 'End', 'PageUp', 'PageDown'
+      'Home', 'End', 'PageUp', 'PageDown',
+      'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'KeyY', 'KeyU', 'KeyB', 'KeyN'
     ];
     return gameKeys.includes(code);
   }
@@ -163,45 +172,57 @@ export class InputHandler {
       case 'ArrowUp':
       case 'KeyW':
       case 'Numpad8':
+      case 'KeyK': // Vim Up
         this._actionQueue = { type: ACTIONS.MOVE, dx: 0, dy: -1 };
         break;
       case 'ArrowDown':
       case 'KeyS':
       case 'Numpad2':
+      case 'KeyJ': // Vim Down
         this._actionQueue = { type: ACTIONS.MOVE, dx: 0, dy: 1 };
         break;
       case 'ArrowLeft':
       case 'KeyA':
       case 'Numpad4':
+      case 'KeyH': // Vim Left
         this._actionQueue = { type: ACTIONS.MOVE, dx: -1, dy: 0 };
         break;
       case 'ArrowRight':
       case 'KeyD':
       case 'Numpad6':
+      case 'KeyL': // Vim Right
         this._actionQueue = { type: ACTIONS.MOVE, dx: 1, dy: 0 };
         break;
 
       // ── Movimiento Diagonal ──
       case 'Home':
       case 'Numpad7':
+      case 'KeyY': // Vim NW
         this._actionQueue = { type: ACTIONS.MOVE, dx: -1, dy: -1 };
         break;
       case 'PageUp':
       case 'Numpad9':
+      case 'KeyU': // Vim NE
         this._actionQueue = { type: ACTIONS.MOVE, dx: 1, dy: -1 };
         break;
       case 'End':
       case 'Numpad1':
+      case 'KeyB': // Vim SW
         this._actionQueue = { type: ACTIONS.MOVE, dx: -1, dy: 1 };
         break;
       case 'PageDown':
       case 'Numpad3':
+      case 'KeyN': // Vim SE
         this._actionQueue = { type: ACTIONS.MOVE, dx: 1, dy: 1 };
         break;
 
       // ── Acciones ──
       case 'Space':
         this._actionQueue = { type: ACTIONS.WAIT };
+        break;
+      case 'KeyQ':
+      case 'Tab':
+        this._actionQueue = { type: 'swap_leader' };
         break;
       case 'KeyZ':
         // Confirmar: intentar usar escaleras o recoger objeto

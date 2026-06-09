@@ -308,10 +308,18 @@ export class HUD {
         const tile = tileMap.getTile(tx, ty);
         if (!tile) continue;
 
+        let isRestRoom = false;
+        if (tileMap.rooms && tile.walkable) {
+            const room = tileMap.rooms.find(r => tx >= r.x && tx < r.x + r.w && ty >= r.y && ty < r.y + r.h);
+            if (room && room.type === 'rest') isRestRoom = true;
+        }
+
         if (vis === 2) {
-          ctx.fillStyle = tile.walkable ? '#6a6a8a' : '#3a3a5a';
+          if (isRestRoom) ctx.fillStyle = '#4ade80';
+          else ctx.fillStyle = tile.walkable ? '#6a6a8a' : '#3a3a5a';
         } else {
-          ctx.fillStyle = tile.walkable ? '#3a3a4a' : '#2a2a3a';
+          if (isRestRoom) ctx.fillStyle = '#166534';
+          else ctx.fillStyle = tile.walkable ? '#3a3a4a' : '#2a2a3a';
         }
         ctx.fillRect(x + tx * scale, y + ty * scale, scale, scale);
       }
