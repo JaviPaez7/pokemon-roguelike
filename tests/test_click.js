@@ -5,9 +5,10 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const rootDir = path.join(__dirname, '..');
 
 async function run() {
-  const server = spawn('npm', ['run', 'dev'], { cwd: __dirname, shell: true });
+  const server = spawn('npm', ['run', 'dev'], { cwd: rootDir, shell: true });
   
   server.stdout.on('data', (data) => console.log(`server: ${data}`));
   server.stderr.on('data', (data) => console.error(`server err: ${data}`));

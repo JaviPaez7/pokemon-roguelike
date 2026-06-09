@@ -8,7 +8,8 @@
     "build": "vite build",
     "build:ghpages": "vite build --mode ghpages",
     "build:itch": "vite build --mode itch",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node tests/test_play.js"
   },
   "devDependencies": {
     "puppeteer": "^25.1.0",
