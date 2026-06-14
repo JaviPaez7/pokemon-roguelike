@@ -11,7 +11,7 @@
  */
 
 import { ACTIONS } from '../constants.js';
-import { getAbility } from '../combat/AbilitySystem.js';
+import { getAbility } from './AbilitySystem.js';
 
 export class MovementSystem {
   constructor() {

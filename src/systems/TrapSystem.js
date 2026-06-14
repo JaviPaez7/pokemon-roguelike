@@ -1,4 +1,4 @@
-import { getAbility } from '../combat/AbilitySystem.js';
+import { getAbility } from './AbilitySystem.js';
 
 /**
  * TrapSystem.js

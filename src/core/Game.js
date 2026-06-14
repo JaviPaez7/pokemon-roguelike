@@ -33,11 +33,11 @@ import { Camera } from '../render/Camera.js';
 import { Renderer } from '../render/Renderer.js';
 import { UIManager } from '../ui/UIManager.js';
 import { saveGame } from './SaveManager.js';
-import { FloorManager } from './game/FloorManager.js';
-import { CombatHandler } from './game/CombatHandler.js';
-import { setupGameEventListeners } from './game/setupGameEventListeners.js';
-import { startNewGame as startNewGameSession, loadSavedGame as loadSavedGameSession } from './game/GameSession.js';
-import { useInventoryItem as useInventoryItemHandler, throwInventoryItem } from './game/InventoryHandler.js';
+import { FloorManager } from '../map/FloorManager.js';
+import { CombatHandler } from '../systems/ActionSystem.js';
+import { setupGameEventListeners } from './GameEvents.js';
+import { startNewGame as startNewGameSession, loadSavedGame as loadSavedGameSession } from './GameSession.js';
+import { useInventoryItem as useInventoryItemHandler, throwInventoryItem } from '../systems/InventorySystem.js';
 
 // Importar JSONs estáticos directamente para empaquetarlos con Vite
 import pokemonData from '../data/pokemon.json';

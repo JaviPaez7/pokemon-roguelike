@@ -1,7 +1,7 @@
-import { ACTIONS, GAME_STATES } from '../../constants.js';
-import { attemptCapture } from '../../combat/CaptureSystem.js';
-import { useItem } from '../../systems/ItemSystem.js';
-import { checkEvolution, evolve } from '../../systems/EvolutionSystem.js';
+import { ACTIONS, GAME_STATES } from '../constants.js';
+import { attemptCapture } from './CaptureSystem.js';
+import { useItem } from './ItemSystem.js';
+import { checkEvolution, evolve } from './EvolutionSystem.js';
 
 /**
  * Usa un objeto del inventario sobre un objetivo.

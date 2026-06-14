@@ -313,9 +313,8 @@ export class HUD {
         if (!tile) continue;
 
         let isRestRoom = false;
-        if (tileMap.rooms && tile.walkable) {
-            const room = tileMap.rooms.find(r => tx >= r.x && tx < r.x + r.w && ty >= r.y && ty < r.y + r.h);
-            if (room && room.type === 'rest') isRestRoom = true;
+        if (tileMap.rooms && tile.walkable && typeof tileMap.isRestRoom === 'function') {
+            isRestRoom = tileMap.isRestRoom(tx, ty);
         }
 
         if (vis === 2) {

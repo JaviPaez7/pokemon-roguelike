@@ -1,4 +1,4 @@
-import { STARTERS } from './starterData.js';
+import { STARTERS } from '../../data/starterData.js';
 import { openTitleScreen } from './TitleMenu.js';
 import { openInventoryMenu } from './InventoryMenus.js';
 import { openTeamMenu, openPokemonActionsMenu, updateTacticDetails } from './TeamMenus.js';

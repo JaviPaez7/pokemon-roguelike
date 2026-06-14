@@ -384,7 +384,7 @@ html, body {
   cursor: pointer;
   border: 1px solid transparent;
   border-radius: 4px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.05s ease-out;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -405,7 +405,7 @@ html, body {
 
 .menu-option .cursor {
   opacity: 0;
-  transition: opacity 0.2s ease, text-shadow 0.2s ease;
+  transition: opacity 0.05s ease, text-shadow 0.05s ease;
 }
 
 .menu-option.selected .cursor {

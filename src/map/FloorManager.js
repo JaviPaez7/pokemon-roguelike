@@ -1,9 +1,9 @@
-import { MAP_WIDTH, MAP_HEIGHT } from '../../constants.js';
-import { spawnItems } from '../../systems/ItemSystem.js';
-import { triggerFloorEvent } from '../../systems/FloorEvents.js';
-import { spawnTraps } from '../../systems/TrapSystem.js';
+import { MAP_WIDTH, MAP_HEIGHT } from '../constants.js';
+import { spawnItems } from '../systems/ItemSystem.js';
+import { triggerFloorEvent } from '../systems/FloorEvents.js';
+import { spawnTraps } from '../systems/TrapSystem.js';
 
-import { getBiomeForFloor } from '../../map/Biomes.js';
+import { getBiomeForFloor } from './Biomes.js';
 
 /**
  * Generación de pisos, spawn de enemigos y pre-carga de sprites.

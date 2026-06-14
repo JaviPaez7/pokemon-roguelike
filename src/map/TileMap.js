@@ -233,4 +233,40 @@ export class TileMap {
     }
     return vecinos;
   }
+
+  /**
+   * Comprueba de manera eficiente si una coordenada pertenece a una habitación de descanso,
+   * utilizando una cuadrícula cacheada para evitar iterar sobre el array de habitaciones repetidamente.
+   * 
+   * @param {number} x - Coordenada X
+   * @param {number} y - Coordenada Y
+   * @returns {boolean} true si es sala de descanso
+   */
+  isRestRoom(x, y) {
+    if (!this.isInBounds(x, y)) return false;
+    
+    // Generar la cache si no existe
+    if (!this._restRoomsGrid) {
+      this._restRoomsGrid = new Array(this.height);
+      for (let i = 0; i < this.height; i++) {
+        this._restRoomsGrid[i] = new Array(this.width).fill(false);
+      }
+      
+      if (this.rooms) {
+        for (const room of this.rooms) {
+          if (room.type === 'rest') {
+            for (let ry = room.y; ry < room.y + room.h; ry++) {
+              for (let rx = room.x; rx < room.x + room.w; rx++) {
+                if (this.isInBounds(rx, ry)) {
+                  this._restRoomsGrid[ry][rx] = true;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    return this._restRoomsGrid[y][x];
+  }
 }

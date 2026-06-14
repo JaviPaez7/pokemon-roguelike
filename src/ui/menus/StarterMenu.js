@@ -1,4 +1,4 @@
-import { STARTERS } from './starterData.js';
+import { STARTERS } from '../../data/starterData.js';
 
 /** @param {import('../UIManager.js').UIManager} ui */
 export function openStarterSelectScreen(ui) {

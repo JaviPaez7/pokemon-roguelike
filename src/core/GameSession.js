@@ -1,5 +1,5 @@
-import { GAME_STATES } from '../../constants.js';
-import { loadGame } from '../SaveManager.js';
+import { GAME_STATES } from '../constants.js';
+import { loadGame } from './SaveManager.js';
 
 /**
  * Inicia una nueva partida con el Pokémon inicial seleccionado.

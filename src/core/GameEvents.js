@@ -1,5 +1,5 @@
-import { GAME_STATES, MAX_INVENTORY } from '../../constants.js';
-import { pickupItem } from '../../systems/ItemSystem.js';
+import { GAME_STATES, MAX_INVENTORY } from '../constants.js';
+import { pickupItem } from '../systems/ItemSystem.js';
 
 /**
  * Registra los listeners globales del EventBus en la instancia del juego.

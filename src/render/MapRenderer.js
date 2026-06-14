@@ -132,9 +132,8 @@ export class MapRenderer {
     }
 
     let isRestRoom = false;
-    if (tileMap && tileMap.rooms && tile.walkable) {
-        const room = tileMap.rooms.find(r => worldX >= r.x && worldX < r.x + r.w && worldY >= r.y && worldY < r.y + r.h);
-        if (room && room.type === 'rest') isRestRoom = true;
+    if (tileMap && tileMap.rooms && tile.walkable && typeof tileMap.isRestRoom === 'function') {
+        isRestRoom = tileMap.isRestRoom(worldX, worldY);
     }
 
     // Efecto especial para agua: animación de olas

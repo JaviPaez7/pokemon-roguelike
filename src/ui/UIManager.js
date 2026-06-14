@@ -4,8 +4,8 @@
  */
 
 import { GAME_STATES } from '../constants.js';
-import { SfxManager } from './SfxManager.js';
-import { MusicManager } from './MusicManager.js';
+import { SfxManager } from '../audio/SfxManager.js';
+import { MusicManager } from '../audio/MusicManager.js';
 import { DialogController } from './DialogController.js';
 import { openTitleScreen } from './menus/TitleMenu.js';
 import { openStarterSelectScreen } from './menus/StarterMenu.js';

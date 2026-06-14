@@ -1,9 +1,9 @@
-import { ACTIONS, GAME_STATES } from '../../constants.js';
-import { getEnemyAction } from '../../entities/EnemyAI.js';
-import { executeMove, processStatusEffects, selectBestMove } from '../../combat/CombatSystem.js';
-import { grantExperience } from '../../systems/ExperienceSystem.js';
-import { checkEvolution, evolve } from '../../systems/EvolutionSystem.js';
-import { triggerTrap } from '../../systems/TrapSystem.js';
+import { ACTIONS, GAME_STATES } from '../constants.js';
+import { getEnemyAction } from '../entities/EnemyAI.js';
+import { executeMove, processStatusEffects, selectBestMove } from './CombatSystem.js';
+import { grantExperience } from './ExperienceSystem.js';
+import { checkEvolution, evolve } from './EvolutionSystem.js';
+import { triggerTrap } from './TrapSystem.js';
 
 /**
  * Combate, movimiento de entidades y acciones de IA enemiga.
