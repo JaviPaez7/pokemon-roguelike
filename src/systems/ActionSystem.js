@@ -60,7 +60,7 @@ export class CombatHandler {
 
         const result = game.movementSystem.tryMove(
           entityId, action.dx, action.dy,
-          game.tileMap, game.entityManager
+          game.tileMap, game.entityManager, game.eventBus, game
         );
 
         if (result.success && entityId === game._playerId) {

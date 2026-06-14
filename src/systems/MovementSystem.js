@@ -44,7 +44,7 @@ export class MovementSystem {
    *   y?: number
    * }} Resultado del intento de movimiento
    */
-  tryMove(entityId, dx, dy, tileMap, entityManager) {
+  tryMove(entityId, dx, dy, tileMap, entityManager, eventBus, game) {
     // Obtener la posición actual de la entidad
     const position = entityManager.getComponent(entityId, 'position');
     if (!position) {
@@ -61,11 +61,16 @@ export class MovementSystem {
 
     // ── 1. Verificar límites del mapa ──
     if (!this._isInBounds(targetX, targetY, tileMap)) {
+      if (game && entityId === game._playerId) eventBus?.emit('message', { text: `Bloqueado por límite del mapa (${targetX}, ${targetY})`, color: '#ffaaaa' });
       return { success: false, type: 'blocked' };
     }
 
     // ── 2. Verificar si el tile es transitable ──
     if (!canWalkOnTile(entityId, targetX, targetY, tileMap, entityManager)) {
+      if (game && entityId === game._playerId) {
+        const tile = tileMap.getTile(targetX, targetY);
+        eventBus?.emit('message', { text: `Bloqueado por tile no transitable: ${tile ? tile.name : 'Desconocido'} en (${targetX}, ${targetY})`, color: '#ffaaaa' });
+      }
       return { success: false, type: 'blocked' };
     }
 
@@ -92,6 +97,9 @@ export class MovementSystem {
       }
 
       // Hay un Pokémon en la casilla: atacar por choque (bump-to-attack)
+      if (game && entityId === game._playerId) {
+        eventBus?.emit('message', { text: `Bump attack a entidad ${occupant} en (${targetX}, ${targetY})`, color: '#aaaaaa' });
+      }
       return {
         success: true,
         type: 'bump_attack',
