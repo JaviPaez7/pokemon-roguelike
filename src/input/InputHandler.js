@@ -43,81 +43,106 @@ export class InputHandler {
      */
     this._context = 'exploration';
 
-    /**
-     * Conjunto de teclas actualmente presionadas.
-     * Se usa para prevenir repetición de teclas (solo keydown, no hold).
-     * @type {Set<string>}
-     */
+    /** @type {Set<string>} */
     this._keysDown = new Set();
 
-    // Vincular los handlers para poder removerlos después
+    this._lastMoveTime = 0;
+    this._moveRepeatRate = 120; // ms por tile al mantener pulsado
+    this._firstMoveTime = 0;    // Tiempo inicial en que se pulsó la tecla
+
     this._onKeyDown = this._handleKeyDown.bind(this);
     this._onKeyUp = this._handleKeyUp.bind(this);
 
-    // Registrar listeners en el documento
     document.addEventListener('keydown', this._onKeyDown);
     document.addEventListener('keyup', this._onKeyUp);
   }
 
-  /**
-   * Cambiar el contexto de entrada.
-   * Limpia la cola de acciones al cambiar de contexto.
-   * @param {'exploration'|'menu'|'dialog'} context - Nuevo contexto
-   */
   setContext(context) {
     this._context = context;
     this._actionQueue = null;
     this._keysDown.clear();
   }
 
-  /**
-   * Obtener y consumir la siguiente acción en cola.
-   * @returns {Object|null} La acción pendiente, o null si no hay ninguna
-   */
   getAction() {
     const action = this._actionQueue;
     this._actionQueue = null;
     return action;
   }
 
-  /**
-   * Ver la acción en cola sin consumirla.
-   * @returns {Object|null}
-   */
   peekAction() {
     return this._actionQueue;
   }
 
-  /**
-   * Manejador interno de keydown.
-   * Previene la repetición de teclas y mapea según el contexto.
-   * @param {KeyboardEvent} event
-   * @private
-   */
-  _handleKeyDown(event) {
-    // No procesar si la entrada está desactivada
-    if (!this.enabled) return;
+  _isMovementKey(code) {
+    const movementKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Numpad8', 'Numpad2', 'Numpad4', 'Numpad6', 'Numpad7', 'Numpad9', 'Numpad1', 'Numpad3', 'Home', 'End', 'PageUp', 'PageDown', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'KeyY', 'KeyU', 'KeyB', 'KeyN'];
+    return movementKeys.includes(code);
+  }
 
-    const isMovementKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Numpad8', 'Numpad2', 'Numpad4', 'Numpad6', 'Numpad7', 'Numpad9', 'Numpad1', 'Numpad3'].includes(event.code);
-    const isRepeat = this._keysDown.has(event.code);
+  getHeldMovementAction() {
+    if (this._context !== 'exploration' || !this.enabled) return null;
     
-    // Prevenir repetición de tecla mantenida, EXCEPTO para movimiento en modo exploración
-    if (isRepeat) {
-      if (this._context !== 'exploration' || !isMovementKey) {
-        return;
+    let isMoving = false;
+    for (const code of this._keysDown) {
+      if (this._isMovementKey(code)) {
+        isMoving = true;
+        break;
       }
     }
+    if (!isMoving) return null;
+
+    const now = performance.now();
+    const timeSinceFirstPress = now - this._firstMoveTime;
+    const timeSinceLastMove = now - this._lastMoveTime;
+
+    // Retardo inicial (250ms) antes de repetir rápido (120ms)
+    if (timeSinceFirstPress > 250 && timeSinceLastMove >= this._moveRepeatRate) {
+      const action = this._createMovementActionFromKeys();
+      if (action) {
+        this._lastMoveTime = now;
+        return action;
+      }
+    }
+    return null;
+  }
+
+  _createMovementActionFromKeys() {
+    let dx = 0;
+    let dy = 0;
+    
+    if (this._keysDown.has('ArrowUp') || this._keysDown.has('KeyW') || this._keysDown.has('Numpad8') || this._keysDown.has('KeyK')) dy -= 1;
+    if (this._keysDown.has('ArrowDown') || this._keysDown.has('KeyS') || this._keysDown.has('Numpad2') || this._keysDown.has('KeyJ')) dy += 1;
+    if (this._keysDown.has('ArrowLeft') || this._keysDown.has('KeyA') || this._keysDown.has('Numpad4') || this._keysDown.has('KeyH')) dx -= 1;
+    if (this._keysDown.has('ArrowRight') || this._keysDown.has('KeyD') || this._keysDown.has('Numpad6') || this._keysDown.has('KeyL')) dx += 1;
+    
+    if (this._keysDown.has('Home') || this._keysDown.has('Numpad7') || this._keysDown.has('KeyY')) { dx = -1; dy = -1; }
+    if (this._keysDown.has('PageUp') || this._keysDown.has('Numpad9') || this._keysDown.has('KeyU')) { dx = 1; dy = -1; }
+    if (this._keysDown.has('End') || this._keysDown.has('Numpad1') || this._keysDown.has('KeyB')) { dx = -1; dy = 1; }
+    if (this._keysDown.has('PageDown') || this._keysDown.has('Numpad3') || this._keysDown.has('KeyN')) { dx = 1; dy = 1; }
+    
+    if (dx !== 0 || dy !== 0) {
+      return { type: ACTIONS.MOVE, dx: Math.sign(dx), dy: Math.sign(dy) };
+    }
+    return null;
+  }
+
+  _handleKeyDown(event) {
+    if (!this.enabled) return;
+
+    if (event.repeat) return; // Ignorar repeticiones del SO
+    if (this._keysDown.has(event.code)) return; // Prevenir duplicados
     
     this._keysDown.add(event.code);
 
-    // Prevenir comportamiento por defecto del navegador para teclas del juego
     if (this._isGameKey(event.code)) {
       event.preventDefault();
     }
 
-    // Despachar según el contexto actual
     switch (this._context) {
       case 'exploration':
+        if (this._isMovementKey(event.code)) {
+          this._firstMoveTime = performance.now();
+          this._lastMoveTime = this._firstMoveTime;
+        }
         this._handleExplorationInput(event.code);
         break;
       case 'menu':
