@@ -427,6 +427,8 @@ export class Game {
       this.ui.openLearnMoveMenu(pendingPoke, pendingMove);
       this.changeState(GAME_STATES.MENU);
       return;
+    }
+
     let action = this.inputHandler.getAction();
     
     if (!action && this.inputHandler.enabled) {
