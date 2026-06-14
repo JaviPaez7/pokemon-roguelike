@@ -150,34 +150,19 @@ export class MapRenderer {
     ctx.fillStyle = colorSuelo;
     ctx.fillRect(sx, sy, size, size);
 
-    // Textura procedural y decoraciones
-    if (tile.id === TILES.WALL.id || tile.id === TILES.FLOOR.id || tile.id === TILES.TRAP_HIDDEN.id || tile.id === TILES.TRAP_REVEALED.id) {
-      // Hash rápido para determinar patrón (ruido)
-      const hash1 = Math.abs(Math.sin(worldX * 12.9898 + worldY * 78.233)) * 43758.5453;
-      const hash2 = Math.abs(Math.sin(worldX * 78.233 + worldY * 12.9898)) * 43758.5453;
-      
-      ctx.fillStyle = tile.id === TILES.WALL.id ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.03)';
-      
-      // Dibujar un par de rectángulos pequeños (ruido/textura)
-      const dotCount = Math.floor((hash1 - Math.floor(hash1)) * 3) + 1;
-      for (let i = 0; i < dotCount; i++) {
-          const rx = (hash1 * (i+1)) % 1;
-          const ry = (hash2 * (i+1)) % 1;
-          ctx.fillRect(sx + rx * (size - 2) + 1, sy + ry * (size - 2) + 1, 2, 2);
-      }
-    }
-
-    // Decoraciones en el suelo
+    // Decoraciones en el suelo usando aritmética simple para el seudo-random (mucho más rápido que Math.sin)
     if (tile.id === TILES.FLOOR.id) {
-        const hashDecoration = Math.abs(Math.sin(worldX * 33.33 + worldY * 44.44)) * 10000;
-        const dec = hashDecoration - Math.floor(hashDecoration);
-        if (dec < 0.05) {
+        // Hash ultra rápido usando bits
+        const n = (worldX * 31337 + worldY * 31337) ^ (worldX | worldY);
+        const dec = n % 100;
+        
+        if (dec < 5) {
             // Dibujar una piedrita
             ctx.fillStyle = 'rgba(0,0,0,0.3)';
             ctx.fillRect(sx + size*0.7, sy + size*0.2, 3, 2);
             ctx.fillStyle = 'rgba(150,150,150,0.6)';
             ctx.fillRect(sx + size*0.7, sy + size*0.2 - 1, 2, 1);
-        } else if (dec < 0.1) {
+        } else if (dec < 10) {
             // Dibujar una brizna de hierba
             ctx.fillStyle = 'rgba(50, 150, 50, 0.4)';
             ctx.fillRect(sx + size*0.2, sy + size*0.8, 2, -4);
