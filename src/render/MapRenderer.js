@@ -119,13 +119,13 @@ export class MapRenderer {
     let colorBorde = tile.colors.wall;
 
     if (tileMap && tileMap.biome) {
-      if (tile.id === 2) { // WALL
+      if (tile.id === 0) { // WALL (0)
         colorSuelo = tileMap.biome.wall;
         colorBorde = tileMap.biome.void;
       } else if (tile.id === 4) { // WATER
         colorSuelo = tileMap.biome.water;
         colorBorde = tileMap.biome.wall;
-      } else { // FLOOR, STAIRS, TRAPS
+      } else { // FLOOR (1), CORRIDOR (2), STAIRS, TRAPS
         colorSuelo = tileMap.biome.floor;
         colorBorde = tileMap.biome.wall;
       }
