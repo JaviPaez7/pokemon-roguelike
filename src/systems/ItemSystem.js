@@ -72,12 +72,13 @@ export function pickupItem(playerEntityId, itemEntityId, entityManager, inventor
     return { success: false, message: 'No hay nada que recoger.' };
   }
 
-  if (inventory.length >= maxInventory) {
+  // Buscar si ya tiene el mismo item (para apilar)
+  const existingSlot = inventory.find(slot => slot.itemId === itemDrop.itemId);
+
+  if (!existingSlot && inventory.length >= maxInventory) {
     return { success: false, message: '¡La mochila está llena!' };
   }
 
-  // Buscar si ya tiene el mismo item (para apilar)
-  const existingSlot = inventory.find(slot => slot.itemId === itemDrop.itemId);
   if (existingSlot) {
     existingSlot.quantity += itemDrop.quantity;
   } else {
