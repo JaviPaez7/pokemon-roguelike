@@ -1,22 +1,27 @@
-name: CI
-
+name: Deploy to VPS
 on:
   push:
-    branches:
-      - master
-      - main
-  pull_request:
-
+    branches: [master]
+  workflow_dispatch:
+concurrency:
+  group: deploy-master
+  cancel-in-progress: true
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: npm
-
-      - run: npm ci
+          node-version: '22'
+      - run: npm ci || npm install
       - run: npm run build
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Deploy (rsync dist/)
+        run: |
+          rsync -az --delete -e "ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes" dist/ "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.DEPLOY_PATH }}/"
