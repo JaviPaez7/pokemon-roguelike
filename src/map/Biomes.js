@@ -30,8 +30,9 @@ export const BIOMES = {
     floor: '#5c2a2a',
     wall: '#3b1414',
     corridor: '#7a3b3b',
-    stairs: '#3b1414',
-    water: '#cc4400', // Lava
+    stairs: '#ffaa44',
+    water: '#cc4400',
+    lava: '#ff5500',
     gridLines: 'rgba(0, 0, 0, 0.25)',
     void: '#210808'
   },
@@ -63,9 +64,10 @@ export const BIOMES = {
  * @returns {Object} Bioma configurado
  */
 export function getBiomeForFloor(floor) {
-  if (floor <= 10) return BIOMES.FOREST;
-  if (floor <= 20) return BIOMES.CAVE;
-  if (floor <= 30) return BIOMES.VOLCANO;
-  if (floor <= 40) return BIOMES.ICE_RUINS;
+  // Alineado con zonas de floors.json
+  if (floor <= 5) return BIOMES.FOREST;
+  if (floor <= 10) return BIOMES.CAVE;
+  if (floor <= 20) return BIOMES.VOLCANO;
+  if (floor <= 35) return BIOMES.ICE_RUINS;
   return BIOMES.CELESTIAL_TOWER;
 }

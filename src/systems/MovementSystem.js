@@ -61,16 +61,11 @@ export class MovementSystem {
 
     // ── 1. Verificar límites del mapa ──
     if (!this._isInBounds(targetX, targetY, tileMap)) {
-      if (game && entityId === game._playerId) eventBus?.emit('message', { text: `Bloqueado por límite del mapa (${targetX}, ${targetY})`, color: '#ffaaaa' });
       return { success: false, type: 'blocked' };
     }
 
     // ── 2. Verificar si el tile es transitable ──
     if (!canWalkOnTile(entityId, targetX, targetY, tileMap, entityManager)) {
-      if (game && entityId === game._playerId) {
-        const tile = tileMap.getTile(targetX, targetY);
-        eventBus?.emit('message', { text: `Bloqueado por tile no transitable: ${tile ? tile.name : 'Desconocido'} en (${targetX}, ${targetY})`, color: '#ffaaaa' });
-      }
       return { success: false, type: 'blocked' };
     }
 
@@ -84,8 +79,27 @@ export class MovementSystem {
 
     // ── 3. Verificar si hay otra entidad (Pokémon) en la posición ──
     const occupant = entityManager.getEntityAt(targetX, targetY, false);
+
+    // Atado: puede atacar por choque, pero no caminar a casilla vacía
+    const boundFighter = entityManager.getComponent(entityId, 'fighter');
+    if ((dx !== 0 || dy !== 0) && boundFighter?.statusEffects?.some(s => s.type === 'bound')) {
+      const canBump = occupant != null && occupant !== entityId
+        && !entityManager.hasComponent(occupant, 'partyMember');
+      if (!canBump) {
+        if (eventBus) {
+          const info = entityManager.getComponent(entityId, 'pokemonInfo');
+          eventBus.emit('message', {
+            text: `¡${info?.name || 'Pokémon'} está atrapado y no puede moverse!`,
+            color: '#ffaa66'
+          });
+        }
+        return { success: true, type: 'bound' }; // gasta turno (evita softlock de daño sin respuesta)
+      }
+    }
+
     if (occupant !== null && occupant !== entityId) {
-      // Prevención de fuego amigo: si ambos son del equipo, no hay ataque por choque (bump_attack)
+      const occFighter = entityManager.getComponent(occupant, 'fighter');
+      // Aliados (vivos o no): intercambiar casilla
       if (entityManager.hasComponent(entityId, 'partyMember') && entityManager.hasComponent(occupant, 'partyMember')) {
         return {
           success: true,
@@ -95,18 +109,19 @@ export class MovementSystem {
           y: targetY
         };
       }
-
-      // Hay un Pokémon en la casilla: atacar por choque (bump-to-attack)
-      if (game && entityId === game._playerId) {
-        eventBus?.emit('message', { text: `Bump attack a entidad ${occupant} en (${targetX}, ${targetY})`, color: '#aaaaaa' });
+      // Enemigos debilitados no bloquean
+      if (occFighter && occFighter.hp <= 0) {
+        // continuar movimiento normal
+      } else {
+        // Hay un Pokémon en la casilla: atacar por choque (bump-to-attack)
+        return {
+          success: true,
+          type: 'bump_attack',
+          targetEntity: occupant,
+          x: targetX,
+          y: targetY
+        };
       }
-      return {
-        success: true,
-        type: 'bump_attack',
-        targetEntity: occupant,
-        x: targetX,
-        y: targetY
-      };
     }
 
     // ── 4. Verificar si hay escaleras ──
@@ -127,7 +142,7 @@ export class MovementSystem {
     // ── 6. Verificar si hay una trampa o baldosa especial ──
     let trapEntity = entityManager.getTrapAt ? entityManager.getTrapAt(targetX, targetY) : null;
     const pokemonInfo = entityManager.getComponent(entityId, 'pokemonInfo');
-    if (pokemonInfo && pokemonInfo.ability === 'levitate') {
+    if (pokemonInfo && getAbility(pokemonInfo) === 'levitate') {
       trapEntity = null; // Inmune a las trampas del suelo
     }
     const tileId = tileMap.getTile(targetX, targetY).id;
@@ -211,11 +226,18 @@ export class MovementSystem {
    * @private
    */
   _updateFacing(position, dx, dy) {
-    if (dy < 0) position.facing = 'up';
+    if (dx === 0 && dy === 0) return;
+    // 8 direcciones: captura/lanzar usan el último vector de movimiento
+    position.facingDx = Math.sign(dx);
+    position.facingDy = Math.sign(dy);
+    if (dy < 0 && dx === 0) position.facing = 'up';
+    else if (dy > 0 && dx === 0) position.facing = 'down';
+    else if (dx < 0 && dy === 0) position.facing = 'left';
+    else if (dx > 0 && dy === 0) position.facing = 'right';
+    else if (dy < 0) position.facing = 'up';
     else if (dy > 0) position.facing = 'down';
     else if (dx < 0) position.facing = 'left';
     else if (dx > 0) position.facing = 'right';
-    // Si dx === 0 y dy === 0, mantener la dirección actual
   }
 
   /**
@@ -284,9 +306,9 @@ export function canWalkOnTile(entityId, x, y, tileMap, entityManager) {
     const info = entityManager.getComponent(entityId, 'pokemonInfo');
     if (!info) return false;
     
-    // Habilidad Levitate
+    // Habilidad Levitate / tipo Volador
     const ability = getAbility(info);
-    if (ability === 'Levitate') return true;
+    if (ability === 'levitate' || ability === 'flying_type') return true;
 
     const types = info.types || [];
     if (tile.id === 4) {

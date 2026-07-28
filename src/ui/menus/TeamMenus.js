@@ -1,7 +1,12 @@
 import { openPauseMenu } from './PauseMenu.js';
+import { checkEvolution } from '../../systems/EvolutionSystem.js';
+import { openEvolutionMenu } from './EvolutionMenu.js';
+import { GAME_STATES, TYPE_NAMES_ES } from '../../constants.js';
 
 /** @param {import('../UIManager.js').UIManager} ui */
 export function openTeamMenu(ui) {
+  ui.currentMenuType = 'team';
+  ui.game.changeState(GAME_STATES.MENU);
   const party = ui.game.party;
 
   let html = `
@@ -19,18 +24,19 @@ export function openTeamMenu(ui) {
 
   party.forEach((poke, idx) => {
     const leaderIndicator = poke.isLeader ? '<span style="color: var(--xp-blue); font-size: 6px; font-weight: bold;">[LÍDER]</span>' : '';
-    const tacticText = !poke.isLeader
+    const faintedTag = poke.hp <= 0 ? '<span style="color: #ff6666; font-size: 5px; font-weight: bold;">[DEBILITADO]</span>' : '';
+    const tacticText = !poke.isLeader && poke.hp > 0
       ? `<span style="color: var(--text-accent); font-size: 5px; font-weight: bold; background: rgba(0,204,255,0.1); padding: 1px 3px; border-radius: 2px;">${tacticasNombres[poke.tactic || 'follow']}</span>`
       : '';
 
     html += `
-      <div class="menu-option" data-index="${idx}" style="flex-direction: column; align-items: flex-start; gap: 2px;">
+      <div class="menu-option" data-index="${idx}" style="flex-direction: column; align-items: flex-start; gap: 2px; opacity: ${poke.hp <= 0 ? '0.7' : '1'};">
         <div style="display: flex; justify-content: space-between; width: 100%;">
           <span><span class="cursor">▶</span> ${poke.name}</span>
-          <span>Nv.${poke.level} ${leaderIndicator}</span>
+          <span>Nv.${poke.level} ${leaderIndicator} ${faintedTag}</span>
         </div>
         <div style="font-size: 6px; color: var(--text-secondary); margin-left: 12px; display: flex; justify-content: space-between; width: calc(100% - 12px); align-items: center;">
-          <span>PS: ${poke.hp}/${poke.maxHp}</span>
+          <span style="color:${poke.hp <= 0 ? '#f66' : (poke.hp / poke.maxHp < 0.25 ? '#fa4' : '#8f8')};">PS: ${poke.hp}/${poke.maxHp}</span>
           ${tacticText}
         </div>
       </div>
@@ -58,111 +64,124 @@ export function openTeamMenu(ui) {
 }
 
 /** @param {import('../UIManager.js').UIManager} ui */
+const ABILITY_ES = {
+  overgrow: 'Espesura', blaze: 'Mar Llamas', torrent: 'Torrente',
+  static: 'Elec. Estática', chlorophyll: 'Clorofila', swarm: 'Enjambre',
+  guts: 'Agallas', intimidate: 'Intimidación', intimidation: 'Intimidación',
+  flashfire: 'Absorbe Fuego',
+  flash_fire: 'Absorbe Fuego', levitate: 'Levitación', pressure: 'Presión',
+  synchronize: 'Sincronía', sturdy: 'Robustez', keeneye: 'Vista Lince',
+  'keen-eye': 'Vista Lince', keen_eye: 'Vista Lince', runaway: 'Fuga',
+  'run-away': 'Fuga', run_away: 'Fuga', pickup: 'Recogida',
+  flying_type: 'Alas (tipo)', wonder_guard: 'Superguarda', none: 'Ninguna',
+  poison_point: 'Punto Tóxico', flame_body: 'Cuerpo Llama',
+  effect_spore: 'Efecto Espora', water_absorb: 'Absorbe Agua',
+  volt_absorb: 'Absorbe Elec.', sand_veil: 'Velo Arena',
+  inner_focus: 'Foco Interno', ice_body: 'Cuerpo Gel',
+  thick_fat: 'Sebo', huge_power: 'Potencia', pure_power: 'Energía Pura',
+  compound_eyes: 'Ojo compuesto', compoundeyes: 'Ojo compuesto',
+  lightning_rod: 'Pararrayos', lightningrod: 'Pararrayos',
+  swift_swim: 'Nado Rápido', rock_head: 'Cabeza Roca', shell_armor: 'Caparazón',
+  battle_armor: 'Armadura Batalla', limber: 'Flexibilidad', insomnia: 'Insomnio',
+  vital_spirit: 'Espíritu Vital', early_bird: 'Madrugar', shed_skin: 'Mudar',
+  clear_body: 'Cuerpo Puro', hyper_cutter: 'Corte Fuerte', cute_charm: 'Gran Encanto',
+  stench: 'Hedor', damp: 'Humedad', natural_cure: 'Cura Natural', shield_dust: 'Polvo Escudo',
+  iron_fist: 'Puño Férreo', soundproof: 'Insonorizar', oblivious: 'Despiste',
+  trace: 'Rastro', flame_body: 'Cuerpo Llama'
+};
+
 export function openPokemonActionsMenu(ui) {
   const info = ui.game.entityManager.getComponent(ui.selectedPokemon, 'pokemonInfo');
   const fighter = ui.game.entityManager.getComponent(ui.selectedPokemon, 'fighter');
   const isLeader = (ui.selectedPokemon === ui.game._playerId);
 
+  // ¿Puede evolucionar por nivel? (incluso si canceló antes)
+  const declined = info.evolutionDeclinedAtLevel;
+  info.evolutionDeclinedAtLevel = null;
+  const evoAvailable = checkEvolution(info, ui.game.evolutionsData);
+  info.evolutionDeclinedAtLevel = declined;
+  const canRetryEvo = !!evoAvailable;
+
+  const rawAbility = (info.ability || '').toLowerCase().replace(/\s+/g, '_');
+  const abilityKey = rawAbility.replace(/-/g, '_');
+  const abilityLabel = ABILITY_ES[abilityKey] || ABILITY_ES[rawAbility] || info.ability || 'Ninguna';
+
+  const options = [];
+  options.push({ label: 'Establecer como Líder', action: () => {
+    const selectedId = ui.selectedPokemon;
+    const oldLeaderId = ui.game._playerId;
+
+    if (!fighter || fighter.hp <= 0) {
+      ui.showDialog('¡Un Pokémon debilitado no puede liderar el equipo!', () => openTeamMenu(ui));
+      return;
+    }
+    if (isLeader) {
+      ui.showDialog('¡Este Pokémon ya es el líder del equipo!', () => openPokemonActionsMenu(ui));
+      return;
+    }
+
+    const oldLeaderMem = ui.game.entityManager.getComponent(oldLeaderId, 'partyMember');
+    const newLeaderMem = ui.game.entityManager.getComponent(selectedId, 'partyMember');
+
+    if (oldLeaderMem && newLeaderMem) {
+      const oldSlot = oldLeaderMem.slot;
+      const newSlot = newLeaderMem.slot;
+      oldLeaderMem.slot = newSlot;
+      oldLeaderMem.isLeader = false;
+      newLeaderMem.slot = oldSlot;
+      newLeaderMem.isLeader = true;
+      ui.game.entityManager.setComponent(oldLeaderId, 'partyMember', oldLeaderMem);
+      ui.game.entityManager.setComponent(selectedId, 'partyMember', newLeaderMem);
+      ui.game.entityManager.setComponent(oldLeaderId, 'aiControlled', {
+        behavior: 'follower', detectRange: 5, alertedTo: null
+      });
+      ui.game.entityManager.removeComponent(selectedId, 'aiControlled');
+      ui.game._playerId = selectedId;
+      ui.game.turnManager.setPlayerEntityId(selectedId);
+      ui.game.playerPathHistory = [];
+      ui.showDialog(`¡${info.name} ahora lidera el equipo!`, () => openTeamMenu(ui));
+    } else {
+      ui.showDialog('Error al cambiar de líder.', () => openTeamMenu(ui));
+    }
+  }});
+
+  if (!isLeader) {
+    options.push({ label: 'Cambiar táctica', action: () => openTacticSelectMenu(ui) });
+  }
+  options.push({ label: 'Ver movimientos', action: () => openMovesViewMenu(ui) });
+
+  if (canRetryEvo) {
+    options.push({
+      label: 'Intentar evolucionar',
+      action: () => {
+        info.evolutionDeclinedAtLevel = null;
+        info.pendingEvolution = null;
+        ui.game.entityManager.setComponent(ui.selectedPokemon, 'pokemonInfo', info);
+        ui.game.changeState(GAME_STATES.MENU);
+        openEvolutionMenu(ui, ui.selectedPokemon, evoAvailable, {});
+      }
+    });
+  }
+
+  options.push({ label: 'Atrás', action: () => openTeamMenu(ui) });
+
   let html = `
     <div class="game-panel" style="width: 300px;">
       <h2 class="game-panel-title" style="text-transform: uppercase;">${info.name}</h2>
       <div style="font-size: 6px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.5;">
-        Nivel: ${info.level} | Tipos: <span style="text-transform: capitalize;">${info.types.join('/')}</span><br/>
-        Habilidad: <span style="color: #ffcc00; text-transform: capitalize;">${info.ability || 'Ninguna'}</span><br/>
+        Nivel: ${info.level} | Tipos: ${(info.types || []).map(t => TYPE_NAMES_ES[t] || t).join('/')}<br/>
+        Habilidad: <span style="color: #ffcc00;">${abilityLabel}</span><br/>
         ATQ: ${fighter.attack} DEF: ${fighter.defense} ESP: ${fighter.spAtk} VEL: ${fighter.speed}
       </div>
       <div id="options-list">
-        <div class="menu-option selected" data-index="0"><span class="cursor">▶</span> Establecer como Líder</div>
   `;
-
-  if (!isLeader) {
-    html += `
-        <div class="menu-option" data-index="1"><span class="cursor">▶</span> Cambiar táctica</div>
-        <div class="menu-option" data-index="2"><span class="cursor">▶</span> Ver movimientos</div>
-        <div class="menu-option" data-index="3"><span class="cursor">▶</span> Atrás</div>
-    `;
-  } else {
-    html += `
-        <div class="menu-option" data-index="1"><span class="cursor">▶</span> Ver movimientos</div>
-        <div class="menu-option" data-index="2"><span class="cursor">▶</span> Atrás</div>
-    `;
-  }
-
-  html += `
-      </div>
-    </div>
-  `;
+  options.forEach((opt, idx) => {
+    html += `<div class="menu-option${idx === 0 ? ' selected' : ''}" data-index="${idx}"><span class="cursor">▶</span> ${opt.label}</div>`;
+  });
+  html += `</div></div>`;
 
   ui.showMenu('pokemon_actions', html);
-
-  if (!isLeader) {
-    ui.menuOptions = [
-      // Establecer como líder
-      () => {
-        const selectedId = ui.selectedPokemon;
-        const oldLeaderId = ui.game._playerId;
-
-        if (fighter.hp <= 0) {
-          ui.showDialog('¡Un Pokémon debilitado no puede liderar el equipo!', () => openTeamMenu(ui));
-          return;
-        }
-
-        const oldLeaderMem = ui.game.entityManager.getComponent(oldLeaderId, 'partyMember');
-        const newLeaderMem = ui.game.entityManager.getComponent(selectedId, 'partyMember');
-
-        if (oldLeaderMem && newLeaderMem) {
-          const oldSlot = oldLeaderMem.slot;
-          const newSlot = newLeaderMem.slot;
-
-          // Intercambiar slots e isLeader
-          oldLeaderMem.slot = newSlot;
-          oldLeaderMem.isLeader = false;
-
-          newLeaderMem.slot = oldSlot; // Que debería ser 0
-          newLeaderMem.isLeader = true;
-
-          ui.game.entityManager.setComponent(oldLeaderId, 'partyMember', oldLeaderMem);
-          ui.game.entityManager.setComponent(selectedId, 'partyMember', newLeaderMem);
-
-          // El líder anterior pasa a ser seguidor controlado por IA
-          ui.game.entityManager.setComponent(oldLeaderId, 'aiControlled', {
-            behavior: 'follower',
-            detectRange: 5,
-            alertedTo: null
-          });
-
-          // El nuevo líder pierde el componente de IA para ser controlado directamente por el teclado
-          ui.game.entityManager.removeComponent(selectedId, 'aiControlled');
-
-          // Actualizar IDs
-          ui.game._playerId = selectedId;
-          ui.game.turnManager.setPlayerEntityId(selectedId);
-
-          // Limpiar el historial de pasos para que los seguidores inicien su seguimiento desde la posición actual
-          ui.game.playerPathHistory = [];
-
-          ui.showDialog(`¡${info.name} ahora lidera el equipo!`, () => openTeamMenu(ui));
-        } else {
-          ui.showDialog('Error al cambiar de líder.', () => openTeamMenu(ui));
-        }
-      },
-      // Cambiar táctica
-      () => openTacticSelectMenu(ui),
-      // Ver movimientos
-      () => openMovesViewMenu(ui),
-      // Atrás
-      () => openTeamMenu(ui)
-    ];
-  } else {
-    ui.menuOptions = [
-      () => {
-        ui.showDialog('¡Este Pokémon ya es el líder del equipo!', () => openPokemonActionsMenu(ui));
-      },
-      () => openMovesViewMenu(ui),
-      () => openTeamMenu(ui)
-    ];
-  }
-
+  ui.menuOptions = options.map(o => o.action);
   ui.selectedIndex = 0;
   ui.updateSelectionVisuals();
 }
@@ -292,7 +311,7 @@ export function openMovesViewMenu(ui) {
           <span><span class="cursor">▶</span> ${moveName}</span>
           <div style="display: flex; gap: 2px; align-items: center;">
             ${usageIndicator}
-            <span class="type-badge ${type}">${type}</span>
+            <span class="type-badge ${type}">${TYPE_NAMES_ES[type] || type}</span>
           </div>
         </div>
         <div style="font-size: 6px; color: var(--text-secondary); margin-left: 12px; display: flex; gap: 16px;">

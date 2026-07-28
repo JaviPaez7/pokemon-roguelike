@@ -2,8 +2,10 @@
  * ItemSystem.js — Sistema de objetos: spawn, pickup, uso
  */
 
+import { RNG } from 'rot-js';
 import { grantExperience, expForLevel, calculateStats } from './ExperienceSystem.js';
 import { checkEvolution, evolve } from './EvolutionSystem.js';
+import { getAbility } from './AbilitySystem.js';
 
 /**
  * Genera items en un piso
@@ -13,13 +15,13 @@ import { checkEvolution, evolve } from './EvolutionSystem.js';
  * @param {Object} entityManager - EntityManager
  * @returns {Array} IDs de entidades item creadas
  */
-export function spawnItems(itemPoints, count, itemsDB, entityManager) {
+export function spawnItems(itemPoints, count, itemsDB, entityManager, floor = 1) {
   const createdItems = [];
   const availablePoints = [...itemPoints];
   
-  // Barajar posiciones
+  // Barajar posiciones (RNG sembrado del piso)
   for (let i = availablePoints.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(RNG.getUniform() * (i + 1));
     [availablePoints[i], availablePoints[j]] = [availablePoints[j], availablePoints[i]];
   }
 
@@ -27,7 +29,7 @@ export function spawnItems(itemPoints, count, itemsDB, entityManager) {
 
   for (let i = 0; i < actualCount; i++) {
     const point = availablePoints[i];
-    const item = selectRandomItem(itemsDB);
+    const item = selectRandomItem(itemsDB, floor);
     if (item) {
       const entityId = entityManager.createItemEntity(item.id, 1, point.x, point.y, item.spriteUrl);
       createdItems.push(entityId);
@@ -42,16 +44,30 @@ export function spawnItems(itemPoints, count, itemsDB, entityManager) {
  * @param {Array} itemsDB - Base de datos de items
  * @returns {Object|null} Item seleccionado
  */
-function selectRandomItem(itemsDB) {
+function selectRandomItem(itemsDB, floor = 1) {
   if (!itemsDB || itemsDB.length === 0) return null;
 
-  // Calcular peso total basado en rareza
-  const totalWeight = itemsDB.reduce((sum, item) => sum + (item.rarity || 0.1), 0);
-  let roll = Math.random() * totalWeight;
+  const earlyBoostIds = new Set([
+    'apple', 'oran_berry', 'potion', 'ether', 'pokeball',
+    'antidote', 'paralyze_heal', 'awakening', 'burn_heal', 'big_apple', 'full_heal'
+  ]);
+  const early = floor <= 5;
 
-  for (const item of itemsDB) {
-    roll -= (item.rarity || 0.1);
-    if (roll <= 0) return item;
+  const weighted = itemsDB.map(item => {
+    let w = item.rarity || 0.1;
+    if (early && earlyBoostIds.has(item.id)) w *= 2.5;
+    if (early && (item.type === 'food' || item.type === 'status_cure' || item.type === 'full_heal')) w *= 1.5;
+    if (floor >= 12 && floor <= 30 && (item.type === 'gummi' || item.id === 'reviver_seed')) w *= 1.4;
+    if (floor >= 20 && (item.type === 'food' || item.id === 'ether' || item.id === 'max_elixir')) w *= 1.35;
+    return { item, w };
+  });
+
+  const totalWeight = weighted.reduce((sum, e) => sum + e.w, 0);
+  let roll = RNG.getUniform() * totalWeight;
+
+  for (const entry of weighted) {
+    roll -= entry.w;
+    if (roll <= 0) return entry.item;
   }
 
   return itemsDB[0]; // Fallback
@@ -66,7 +82,7 @@ function selectRandomItem(itemsDB) {
  * @param {number} maxInventory - Tamaño máximo del inventario
  * @returns {Object} { success, message, item }
  */
-export function pickupItem(playerEntityId, itemEntityId, entityManager, inventory, maxInventory) {
+export function pickupItem(playerEntityId, itemEntityId, entityManager, inventory, maxInventory, itemsDB = null) {
   const itemDrop = entityManager.getComponent(itemEntityId, 'itemDrop');
   if (!itemDrop) {
     return { success: false, message: 'No hay nada que recoger.' };
@@ -76,7 +92,7 @@ export function pickupItem(playerEntityId, itemEntityId, entityManager, inventor
   const existingSlot = inventory.find(slot => slot.itemId === itemDrop.itemId);
 
   if (!existingSlot && inventory.length >= maxInventory) {
-    return { success: false, message: '¡La mochila está llena!' };
+    return { success: false, message: '¡La mochila está llena! Vende en Kecleon o tira algo (X).' };
   }
 
   if (existingSlot) {
@@ -85,10 +101,13 @@ export function pickupItem(playerEntityId, itemEntityId, entityManager, inventor
     inventory.push({ itemId: itemDrop.itemId, quantity: itemDrop.quantity });
   }
 
+  const itemMeta = itemsDB ? itemsDB.find(i => i.id === itemDrop.itemId) : null;
+  const itemName = itemMeta ? itemMeta.name : itemDrop.itemId;
+
   // Destruir la entidad del item en el suelo
   entityManager.destroyEntity(itemEntityId);
 
-  return { success: true, message: `¡Recogiste ${itemDrop.itemId}!`, item: itemDrop };
+  return { success: true, message: `¡Recogiste ${itemName}!`, item: itemDrop };
 }
 
 /**
@@ -112,20 +131,24 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
   // Buscar datos del item
   const itemData = itemsDB.find(i => i.id === itemId);
   if (!itemData) {
-    return { success: false, messages: ['Item no encontrado'], consumed: false };
+    return { success: false, messages: ['Objeto no encontrado'], consumed: false };
   }
 
   const fighter = entityManager.getComponent(targetEntityId, 'fighter');
   const pokemonInfo = entityManager.getComponent(targetEntityId, 'pokemonInfo');
   
   if (!fighter || !pokemonInfo) {
-    return { success: false, messages: ['Objetivo inválido'], consumed: false };
+    return { success: false, messages: ['Objetivo no válido'], consumed: false };
   }
 
   let consumed = false;
 
   switch (itemData.type) {
     case 'heal': {
+      if (fighter.hp <= 0) {
+        messages.push(`¡${pokemonInfo.name} está debilitado! Usa un Revivir.`);
+        break;
+      }
       if (fighter.hp >= fighter.maxHp) {
         messages.push(`¡${pokemonInfo.name} ya tiene los PS al máximo!`);
         break;
@@ -139,6 +162,10 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
     }
 
     case 'heal_percent': {
+      if (fighter.hp <= 0) {
+        messages.push(`¡${pokemonInfo.name} está debilitado! Usa un Revivir.`);
+        break;
+      }
       if (fighter.hp >= fighter.maxHp) {
         messages.push(`¡${pokemonInfo.name} ya tiene los PS al máximo!`);
         break;
@@ -153,8 +180,17 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
     }
 
     case 'full_restore': {
+      if (fighter.hp <= 0) {
+        messages.push(`¡${pokemonInfo.name} está debilitado! Usa un Revivir.`);
+        break;
+      }
       fighter.hp = fighter.maxHp;
       fighter.statusEffects = [];
+      if (pokemonInfo.currentMoves) {
+        pokemonInfo.currentMoves.forEach(m => {
+          if (m) { m.enabled = true; delete m._disableTurns; }
+        });
+      }
       messages.push(`¡${pokemonInfo.name} fue completamente restaurado!`);
       consumed = true;
       break;
@@ -165,29 +201,67 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
         messages.push(`¡${pokemonInfo.name} no está debilitado!`);
         break;
       }
-      fighter.hp = Math.floor(fighter.maxHp * itemData.value / 100);
+      fighter.hp = Math.max(1, Math.floor(fighter.maxHp * itemData.value / 100));
       fighter.statusEffects = [];
+      if (fighter.belly !== undefined) {
+        fighter.belly = Math.max(fighter.belly || 0, Math.floor((fighter.maxBelly || 100) * 0.5));
+      }
       messages.push(`¡${pokemonInfo.name} fue revivido con ${fighter.hp} PS!`);
       consumed = true;
+      // Reincorporar al turno y a la IA de seguidor
+      if (game && game.turnManager) {
+        game.turnManager.addEntity(targetEntityId, fighter.speed || 50, targetEntityId === game._playerId);
+      }
+      if (game && targetEntityId !== game._playerId && entityManager.hasComponent(targetEntityId, 'partyMember')) {
+        if (!entityManager.hasComponent(targetEntityId, 'aiControlled')) {
+          entityManager.setComponent(targetEntityId, 'aiControlled', {
+            behavior: 'follower', detectRange: 5, alertedTo: null
+          });
+        }
+      }
       break;
     }
 
-    case 'pp_restore': {
-      // Restaurar PP del primer movimiento que no esté lleno
-      let restored = false;
+    case 'pp_restore':
+    case 'pp_restore_one_full': {
+      // Elegir el movimiento con peor ratio de PP
+      let best = null;
+      let bestRatio = 2;
       for (const move of pokemonInfo.currentMoves) {
-        if (move.currentPP < move.maxPP) {
-          move.currentPP = Math.min(move.maxPP, move.currentPP + itemData.value);
-          restored = true;
-          messages.push(`¡Se restauraron PP!`);
-          break;
+        if (move.currentPP >= move.maxPP) continue;
+        const ratio = move.maxPP > 0 ? move.currentPP / move.maxPP : 1;
+        if (ratio < bestRatio) {
+          bestRatio = ratio;
+          best = move;
         }
       }
-      if (!restored) {
-        messages.push('¡Todos los PP están al máximo!');
-      } else {
-        consumed = true;
+      if (!best) {
+        const disabled = pokemonInfo.currentMoves.find(m => m && m.enabled === false);
+        if (disabled) {
+          disabled.enabled = true;
+          delete disabled._disableTurns;
+          const moveMeta = (movesDB || []).find(m => m.id === disabled.moveId);
+          messages.push(`¡${moveMeta ? moveMeta.name : 'Un movimiento'} ya no está anulado!`);
+          consumed = true;
+        } else {
+          messages.push('¡Todos los PP están al máximo!');
+        }
+        break;
       }
+      const moveMeta = (movesDB || []).find(m => m.id === best.moveId);
+      const moveName = moveMeta ? moveMeta.name : 'movimiento';
+      const before = best.currentPP;
+      if (itemData.type === 'pp_restore_one_full') {
+        best.currentPP = best.maxPP;
+      } else {
+        best.currentPP = Math.min(best.maxPP, best.currentPP + itemData.value);
+      }
+      if (best.enabled === false) {
+        best.enabled = true;
+        delete best._disableTurns;
+      }
+      messages.push(`¡${moveName}: +${best.currentPP - before} PP!`);
+      consumed = true;
       break;
     }
 
@@ -196,6 +270,11 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
       for (const move of pokemonInfo.currentMoves) {
         if (move.currentPP < move.maxPP) {
           move.currentPP = move.maxPP;
+          anyRestored = true;
+        }
+        if (move.enabled === false) {
+          move.enabled = true;
+          delete move._disableTurns;
           anyRestored = true;
         }
       }
@@ -211,25 +290,30 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
     case 'stat_boost': {
       if (!fighter.statModifiers) fighter.statModifiers = {};
       const stat = itemData.stat;
+      const statNames = {
+        attack: 'Ataque', defense: 'Defensa', spAtk: 'At. Esp.',
+        spDef: 'Def. Esp.', speed: 'Velocidad', maxHp: 'PS'
+      };
+      const statLabel = statNames[stat] || stat;
       const current = fighter.statModifiers[stat] || 0;
       if (current >= 6) {
-        messages.push(`¡${pokemonInfo.name} ya tiene el ${stat} al máximo!`);
+        messages.push(`¡${pokemonInfo.name} ya tiene el ${statLabel} al máximo!`);
         break;
       }
       fighter.statModifiers[stat] = Math.min(6, current + (itemData.stages || 1));
-      messages.push(`¡El ${stat} de ${pokemonInfo.name} subió!`);
+      messages.push(`¡El ${statLabel} de ${pokemonInfo.name} subió!`);
       consumed = true;
       break;
     }
 
     case 'capture': {
       // La captura se maneja en CaptureSystem, no aquí
-      messages.push('Usa la Poké Ball en combate.');
+      messages.push('Lanza la Poké Ball hacia un Pokémon salvaje cercano (mirándolo).');
       break;
     }
 
     case 'evolution_stone': {
-      const evo = checkEvolution(pokemonInfo, game.evolutionData, itemData.id);
+      const evo = checkEvolution(pokemonInfo, game.evolutionsData, itemData.id);
       if (evo) {
         const evoResult = evolve(targetEntityId, evo, entityManager, game.pokemonData, game.movesData);
         if (evoResult.success) {
@@ -243,7 +327,7 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
           messages.push(...evoResult.messages);
         }
       } else {
-        messages.push(`No tiene ningún efecto en ${pokemonInfo.name}.`);
+        messages.push(`¡${itemData.name} no hace evolucionar a ${pokemonInfo.name}!`);
       }
       break;
     }
@@ -334,10 +418,18 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
         
         if (inRange) {
           if (!f.statusEffects) f.statusEffects = [];
+          const eInfo = entityManager.getComponent(eId, 'pokemonInfo');
+          const ab = getAbility(eInfo);
           if (itemData.type === 'slumber_orb') {
-            f.statusEffects.push({ type: 'sleep', turnsLeft: 4 });
+            if (f.statusEffects.some(s => s.type === 'sleep')) continue;
+            if (ab === 'insomnia' || ab === 'vital_spirit') continue;
+            let turns = 4;
+            if (ab === 'early_bird') turns = 2;
+            f.statusEffects.push({ type: 'sleep', turnsLeft: turns });
           } else if (itemData.type === 'petrify_orb') {
-            f.statusEffects.push({ type: 'freeze', turnsLeft: -1 }); // freeze se rompe al recibir daño
+            if (f.statusEffects.some(s => s.type === 'freeze')) continue;
+            if ((eInfo?.types || []).includes('ice')) continue;
+            f.statusEffects.push({ type: 'freeze', turnsLeft: 3 });
           }
           affected++;
         }
@@ -431,7 +523,7 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
 
     case 'level_up': {
       if (!pokemonDB || !movesDB) {
-        messages.push('Error: Base de datos no disponible.');
+        messages.push('No se pudo usar el objeto (datos no disponibles).');
         break;
       }
       if (pokemonInfo.level >= 100) {

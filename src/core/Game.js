@@ -20,7 +20,7 @@
  * - TileMap:         Datos del mapa actual
  */
 
-import { GAME_STATES, TILE_SIZE, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, MAP_WIDTH, MAP_HEIGHT, FOV_RADIUS } from '../constants.js';
+import { MAX_INVENTORY, GAME_STATES, TILE_SIZE, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, MAP_WIDTH, MAP_HEIGHT, FOV_RADIUS } from '../constants.js';
 import { EventBus } from './EventBus.js';
 import { TurnManager } from './TurnManager.js';
 import { WeatherSystem } from '../systems/WeatherSystem.js';
@@ -32,12 +32,15 @@ import { FOVSystem } from '../systems/FOVSystem.js';
 import { Camera } from '../render/Camera.js';
 import { Renderer } from '../render/Renderer.js';
 import { UIManager } from '../ui/UIManager.js';
-import { saveGame } from './SaveManager.js';
+import { saveGame, deleteSave } from './SaveManager.js';
+import { revertTransform } from '../systems/CombatSystem.js';
+import { saveLifetimeStats } from '../ui/menus/StatsMenu.js';
 import { FloorManager } from '../map/FloorManager.js';
 import { CombatHandler } from '../systems/ActionSystem.js';
 import { setupGameEventListeners } from './GameEvents.js';
 import { startNewGame as startNewGameSession, loadSavedGame as loadSavedGameSession } from './GameSession.js';
 import { useInventoryItem as useInventoryItemHandler, throwInventoryItem } from '../systems/InventorySystem.js';
+import { MessageLog } from '../ui/MessageLog.js';
 
 // Importar JSONs estáticos directamente para empaquetarlos con Vite
 import pokemonData from '../data/pokemon.json';
@@ -97,19 +100,34 @@ export class Game {
     // Pokédex de vistos
     this.pokedexSeen = new Set();
 
-    // Inventario del jugador
+    // Inventario base (nueva partida lo sustituye en GameSession)
     this.inventory = [
       { itemId: 'potion', quantity: 3 },
       { itemId: 'pokeball', quantity: 5 },
-      { itemId: 'reviver_seed', quantity: 3 },
-      { itemId: 'max_elixir', quantity: 1 },
-      { itemId: 'slumber_orb', quantity: 1 },
-      { itemId: 'petrify_orb', quantity: 1 },
-      { itemId: 'apple', quantity: 3 },
-      { itemId: 'thunder_stone', quantity: 1 },
-      { itemId: 'red_gummi', quantity: 1 }
+      { itemId: 'apple', quantity: 4 },
+      { itemId: 'ether', quantity: 1 },
+      { itemId: 'oran_berry', quantity: 3 },
+      { itemId: 'antidote', quantity: 1 },
+      { itemId: 'paralyze_heal', quantity: 1 },
+      { itemId: 'awakening', quantity: 1 },
+      { itemId: 'reviver_seed', quantity: 2 },
+      { itemId: 'escape_rope', quantity: 1 },
+      { itemId: 'slumber_orb', quantity: 1 }
     ];
-    this.maxInventorySize = 20;
+    this.maxInventorySize = MAX_INVENTORY;
+    this.coins = 180;
+    this.autoPickup = true;
+    this._autoHealUsedThisFloor = false;
+    this._autoStatusCureUsedThisFloor = false;
+    try {
+      const prefs = JSON.parse(localStorage.getItem('pokerogue_prefs') || 'null');
+      if (prefs && typeof prefs.autoPickup === 'boolean') {
+        this.autoPickup = prefs.autoPickup;
+      }
+      this._prefShowMinimap = prefs && typeof prefs.showMinimap === 'boolean' ? prefs.showMinimap : true;
+    } catch (e) {
+      this._prefShowMinimap = true;
+    }
 
     // Historial de posiciones del jugador para seguidores
     this.playerPathHistory = [];
@@ -126,6 +144,10 @@ export class Game {
 
     /** @type {TurnManager} Sistema de turnos */
     this.turnManager = new TurnManager(this.eventBus);
+    this.turnManager.setCanActCheck((entityId) => {
+      const f = this.entityManager.getComponent(entityId, 'fighter');
+      return !!(f && f.hp > 0);
+    });
 
     /** @type {MovementSystem} Sistema de movimiento */
     this.movementSystem = new MovementSystem();
@@ -147,6 +169,9 @@ export class Game {
     this.renderer = new Renderer(canvas, this.eventBus, () => {
       this.needsRender = true;
     });
+    if (this.renderer.hud) {
+      this.renderer.hud.showMinimap = this._prefShowMinimap !== false;
+    }
 
     /** @type {UIManager} Gestor de overlays HTML */
     this.uiManager = new UIManager(this);
@@ -168,6 +193,12 @@ export class Game {
      * @type {string[]}
      */
     this._messageLog = [];
+    this.messageLog = new MessageLog(80);
+    this._bellyWarned20 = false;
+    this._bellyWarned10 = false;
+    this._deathReason = null;
+    this._lastStarterId = null;
+    this._stairsAnnounced = false;
 
     // Selección de ataque rápido
     this._selectedMoveIndex = 0;
@@ -319,6 +350,11 @@ export class Game {
       case GAME_STATES.VICTORY:
         this.inputHandler.setContext('menu');
         this.inputHandler.enabled = true;
+        if (!this._lifetimeStatsSaved) {
+          this._lifetimeStatsSaved = true;
+          try { saveLifetimeStats(this, true); } catch (e) {}
+        }
+        try { deleteSave(); } catch (e) {}
         break;
     }
   }
@@ -337,21 +373,27 @@ export class Game {
    * Guarda la partida en localStorage
    */
   saveGameData() {
-    saveGame(this);
+    return saveGame(this);
   }
 
   /**
    * Carga la partida guardada
    */
   loadSavedGame() {
-    loadSavedGameSession(this);
+    return loadSavedGameSession(this);
   }
 
   /**
    * Finalizar la partida (derrota).
    */
-  gameOver() {
+  gameOver(reason = 'combate') {
     console.log('[Game] Game Over');
+    this._deathReason = reason;
+    try { deleteSave(); } catch (e) {}
+    if (!this._lifetimeStatsSaved) {
+      this._lifetimeStatsSaved = true;
+      try { saveLifetimeStats(this, false); } catch (e) {}
+    }
     this.changeState(GAME_STATES.GAME_OVER);
   }
 
@@ -402,8 +444,22 @@ export class Game {
   _gameLoop() {
     if (!this._running) return;
 
-    this.update();
-    this.render();
+    try {
+      this.update();
+      this.render();
+    } catch (err) {
+      console.error('[Game] Error en el bucle (recuperado):', err);
+      try {
+        if (this.inputHandler && this._state === GAME_STATES.EXPLORING) {
+          this.inputHandler.setContext('exploration');
+          this.inputHandler.enabled = true;
+        }
+        this.eventBus?.emit?.('message', {
+          text: 'Se recuperó de un error. Prueba otra acción.',
+          color: '#ffaa66'
+        });
+      } catch (_) {}
+    }
 
     this._animFrameId = requestAnimationFrame(() => this._gameLoop());
   }
@@ -413,6 +469,10 @@ export class Game {
    */
   update() {
     if (this._state !== GAME_STATES.EXPLORING) return;
+    // Si el input quedó en "dialog" sin diálogo visible, recuperar exploración
+    if (this.inputHandler && this.inputHandler._context === 'dialog' && !this.uiManager.hasOpenDialog()) {
+      this.inputHandler.setContext('exploration');
+    }
     if (this.uiManager.hasOpenDialog()) return;
 
     // Verificar si hay algún Pokémon con movimientos pendientes por aprender
@@ -423,9 +483,36 @@ export class Game {
 
     if (pendingPoke) {
       const info = this.entityManager.getComponent(pendingPoke, 'pokemonInfo');
-      const pendingMove = info.pendingMovesToLearn.shift();
-      this.ui.openLearnMoveMenu(pendingPoke, pendingMove);
-      this.changeState(GAME_STATES.MENU);
+      const pendingMove = info.pendingMovesToLearn[0];
+      if (pendingMove && this.uiManager && typeof this.uiManager.openLearnMoveMenu === 'function') {
+        // No hacer shift aquí: LearnMoveMenu lo quita al confirmar/cancelar
+        this.uiManager.openLearnMoveMenu(pendingPoke, pendingMove);
+      }
+      return;
+    }
+
+    // Aviso suave si el líder está crítico (una vez por piso)
+    if (!this._critHpWarnedThisFloor) {
+      const lf = this.entityManager.getComponent(this._playerId, 'fighter');
+      if (lf && lf.hp > 0 && lf.hp / Math.max(1, lf.maxHp) <= 0.2) {
+        this._critHpWarnedThisFloor = true;
+        this.eventBus.emit('message', {
+          text: '¡PS críticos! Usa pociones o Esc → Guardar.',
+          color: '#ff6666'
+        });
+      }
+    }
+
+    // Evoluciones pendientes (confirmación del jugador)
+    const evoPoke = this.entityManager.getEntitiesWithComponents('partyMember', 'pokemonInfo').find(pid => {
+      const info = this.entityManager.getComponent(pid, 'pokemonInfo');
+      return info && info.pendingEvolution;
+    });
+    if (evoPoke && this.uiManager && typeof this.uiManager.openEvolutionMenu === 'function') {
+      const info = this.entityManager.getComponent(evoPoke, 'pokemonInfo');
+      const evo = info.pendingEvolution;
+      // Mantener pendingEvolution hasta Sí/No (así un guardado a mitad conserva la oferta)
+      this.uiManager.openEvolutionMenu(evoPoke, evo);
       return;
     }
 
@@ -451,6 +538,7 @@ export class Game {
    * @private
    */
   _processPlayerAction(action) {
+    this._syncAbilitySpeeds();
     const results = this.turnManager.processTurn(
       action,
       (entityId, act) => this.combat.executeEntityAction(entityId, act),
@@ -459,29 +547,161 @@ export class Game {
 
     if (results.playerResult && results.playerResult.success) {
       this.stats.turnsPlayed++;
+      // Alinear con TurnManager (incluye fallos previos de bump)
+      if (typeof this.turnManager.getTurnCount === 'function') {
+        this.stats.turnsPlayed = Math.max(this.stats.turnsPlayed, this.turnManager.getTurnCount());
+      }
 
       const fighter = this.entityManager.getComponent(this._playerId, 'fighter');
       if (fighter && fighter.belly !== undefined) {
         // Consumir tripa (0.2 por turno = 1 tripa cada 5 turnos)
-        fighter.belly = Math.max(0, fighter.belly - 0.2);
+        const fl = this._currentFloor || 1;
+        const bellyDrain = fl <= 3 ? 0.08 : (fl <= 12 ? 0.10 : (fl <= 30 ? 0.12 : 0.13));
+        fighter.belly = Math.max(0, fighter.belly - bellyDrain);
 
+        if (fighter.belly <= 20 && fighter.belly > 10 && !this._bellyWarned20) {
+          this._bellyWarned20 = true;
+          this.eventBus.emit('message', { text: '¡Tu tripa está baja! Come algo pronto.', color: '#ffaa00' });
+          this._tryAutoEat(fighter);
+        }
+        if (fighter.belly <= 10 && fighter.belly > 0 && !this._bellyWarned10) {
+          this._bellyWarned10 = true;
+          this.eventBus.emit('message', { text: '¡Vas a desfallecer de hambre!', color: '#ff4444' });
+          this._tryAutoEat(fighter);
+        }
+        if (fighter.belly > 20) {
+          this._bellyWarned20 = false;
+          this._bellyWarned10 = false;
+        }
+
+        // Auto-cura con bayas si el líder está muy herido
+        if (fighter.hp > 0 && fighter.hp / fighter.maxHp <= 0.25) {
+          this._tryAutoHeal(fighter);
+        }
+
+        // Auto-cura de estados (1 vez por piso)
+        if (fighter.hp > 0 && fighter.statusEffects && fighter.statusEffects.length > 0) {
+          this._tryAutoStatusCure(fighter);
+        }
+
+        // Aviso de PP bajos (una vez por piso)
+        if (!this._lowPpWarnedThisFloor) {
+          const info = this.entityManager.getComponent(this._playerId, 'pokemonInfo');
+          const moves = info?.currentMoves || [];
+          const usable = moves.filter(m => m && m.enabled !== false && m.maxPP > 0);
+          if (usable.length && usable.every(m => m.currentPP <= 1)) {
+            this._lowPpWarnedThisFloor = true;
+            this.eventBus.emit('message', {
+              text: '¡PP muy bajos! Usa un Éter o busca una Baldosa Mágica.',
+              color: '#88aaff'
+            });
+          }
+        }
+
+        // Aliados heridos: auto-cura ocasional (1 vez por piso, compartida)
+        if (!this._autoHealUsedThisFloor) {
+          const allies = this.entityManager.getEntitiesWithComponents('partyMember', 'fighter');
+          for (const aid of allies) {
+            if (aid === this._playerId) continue;
+            const af = this.entityManager.getComponent(aid, 'fighter');
+            if (af && af.hp > 0 && af.hp / af.maxHp <= 0.2) {
+              this._tryAutoHeal(af, aid);
+              break;
+            }
+          }
+        }
+
+        // Aliados: tripa más lenta + auto-comer
+        {
+          const allies = this.entityManager.getEntitiesWithComponents('partyMember', 'fighter');
+          for (const aid of allies) {
+            if (aid === this._playerId) continue;
+            const af = this.entityManager.getComponent(aid, 'fighter');
+            if (!af || af.hp <= 0 || af.belly === undefined) continue;
+            af.belly = Math.max(0, af.belly - 0.06);
+            if (af.belly <= 12) {
+              this._tryAutoEat(af, aid);
+            }
+            if (af.belly <= 0 && this.stats.turnsPlayed % 4 === 0 && af.hp > 1) {
+              af.hp = Math.max(1, af.hp - 1); // no KO por hambre de aliado
+            }
+            this.entityManager.setComponent(aid, 'fighter', af);
+          }
+        }
+
+        const starvingLeaderId = this._playerId;
         if (fighter.belly === 0) {
-          // Daño por inanición
-          fighter.hp = Math.max(0, fighter.hp - 1);
+          // Daño por inanición (cada 2 turnos)
+          if (this.stats.turnsPlayed % 2 === 0) {
+            fighter.hp = Math.max(0, fighter.hp - 1);
+          }
           if (this.stats.turnsPlayed % 10 === 0) {
-            this.eventBus.emit('message', '¡Estás desfalleciendo de hambre!');
+            this.eventBus.emit('message', { text: '¡Estás desfalleciendo de hambre!', color: '#ff4444' });
           }
           if (fighter.hp <= 0) {
-            this.changeState(GAME_STATES.GAME_OVER);
+            // Misma lógica de Semilla Revivir que en combate
+            const invIndex = this.inventory.findIndex(item => item.itemId === 'reviver_seed' && item.quantity > 0);
+            if (invIndex !== -1) {
+              this.inventory[invIndex].quantity--;
+              if (this.inventory[invIndex].quantity <= 0) {
+                this.inventory.splice(invIndex, 1);
+              }
+              fighter.hp = fighter.maxHp;
+              fighter.belly = fighter.maxBelly || 100;
+              fighter.statusEffects = [];
+              this._bellyWarned20 = false;
+              this._bellyWarned10 = false;
+              const info = this.entityManager.getComponent(starvingLeaderId, 'pokemonInfo');
+              this.eventBus.emit('message', `¡${info ? info.name : 'Tu Pokémon'} revivió gracias a la Semilla Revivir!`);
+              this.entityManager.setComponent(starvingLeaderId, 'fighter', fighter);
+            } else {
+              this.entityManager.setComponent(starvingLeaderId, 'fighter', fighter);
+              // Puede cambiar de líder: no reescribir fighter del nuevo líder
+              this.eventBus.emit('pokemon_fainted', {
+                entityId: starvingLeaderId,
+                attackerId: null,
+                reason: 'hambre'
+              });
+            }
+          } else {
+            this.entityManager.setComponent(starvingLeaderId, 'fighter', fighter);
           }
-        } else if (fighter.hp < fighter.maxHp) {
+        } else {
+        // Regeneración lenta de PP (cada 20 turnos) si hay tripa — todo el equipo
+        if (fighter.belly > 30 && this.stats.turnsPlayed % 20 === 0) {
+          let any = false;
+          for (const pid of this.entityManager.getEntitiesWithComponents('partyMember', 'pokemonInfo')) {
+            const pf = this.entityManager.getComponent(pid, 'fighter');
+            if (!pf || pf.hp <= 0 || (pf.belly != null && pf.belly <= 10)) continue;
+            const pinfo = this.entityManager.getComponent(pid, 'pokemonInfo');
+            if (!pinfo?.currentMoves) continue;
+            let restored = false;
+            for (const m of pinfo.currentMoves) {
+              if (m && m.currentPP < m.maxPP) {
+                m.currentPP++;
+                restored = true;
+              }
+            }
+            if (restored) {
+              this.entityManager.setComponent(pid, 'pokemonInfo', pinfo);
+              any = true;
+            }
+          }
+          if (any) {
+            this.eventBus.emit('message', { text: 'El equipo recupera un poco de PP...', color: '#aaddff' });
+          }
+        }
+        if (fighter.hp < fighter.maxHp) {
           // Regeneración natural solo si hay tripa
           if (this.stats.turnsPlayed % 4 === 0) {
             fighter.hp = Math.min(fighter.maxHp, fighter.hp + 1);
           }
+          this.entityManager.setComponent(starvingLeaderId, 'fighter', fighter);
+        } else {
+          this.entityManager.setComponent(starvingLeaderId, 'fighter', fighter);
         }
-        this.entityManager.setComponent(this._playerId, 'fighter', fighter);
-      }
+        } // fin belly > 0
+      } // fin fighter.belly
 
       // Clima ahora se maneja en CombatHandler por eventos
 
@@ -500,13 +720,30 @@ export class Game {
             pos.y >= r.y && pos.y < r.y + r.h
           );
 
-          if (currentRoom && currentRoom.type === 'monster_house' && !currentRoom.triggered) {
-            this._triggerMonsterHouse(currentRoom);
-          } else if (currentRoom && currentRoom.type === 'rest' && !currentRoom.triggered) {
+          // Monster house se gestiona en ActionSystem (flag monsterHouseTriggered)
+          if (currentRoom && currentRoom.type === 'rest' && !currentRoom.triggered) {
             currentRoom.triggered = true;
             this._triggerRestRoom(currentRoom);
           }
+          if (currentRoom && currentRoom.type === 'treasure' && !currentRoom.triggered) {
+            currentRoom.triggered = true;
+            this.eventBus.emit('message', {
+              text: '¡Esta sala brilla con tesoros escondidos!',
+              color: '#ffd700'
+            });
+          }
         }
+      }
+
+      const invLen = (this.inventory || []).length;
+      const invMax = this.maxInventorySize || 24;
+      if (invLen < invMax - 2) this._bagAlmostFullWarned = false;
+      if (!this._bagAlmostFullWarned && invLen >= invMax - 2) {
+        this._bagAlmostFullWarned = true;
+        this.eventBus.emit('message', {
+          text: 'Bolsa casi llena: vende en Kecleon o tira objetos (X).',
+          color: '#ffaa66'
+        });
       }
 
       if (this.stats.turnsPlayed % 5 === 0) {
@@ -524,65 +761,12 @@ export class Game {
    * @param {Object} room - Habitación del nido
    */
   _triggerMonsterHouse(room) {
-    room.triggered = true;
-    
-    // Diálogo y evento para UI
-    this.eventBus.emit('show_dialog', { text: '¡ES UN NIDO DE MONSTRUOS!' });
+    // Delegar al path canónico (pool de zona + balance)
+    if (this.floorManager && typeof this.floorManager.spawnMonsterHouse === 'function') {
+      this.floorManager.spawnMonsterHouse(room);
+      return;
+    }
     this.eventBus.emit('message', '¡ES UN NIDO DE MONSTRUOS!');
-    
-    // Si tenemos renderizador, podemos añadir un efecto de destello rojo
-    if (this.renderer && this.renderer.screenFlash) {
-      this.renderer.screenFlash('rgba(255, 0, 0, 0.5)', 300);
-    }
-    
-    // Spawnear 6 a 10 enemigos
-    const numEnemies = 6 + Math.floor(Math.random() * 5);
-    let spawned = 0;
-    
-    // Crear lista de posiciones válidas en la habitación
-    const validPositions = [];
-    for (let y = room.y + 1; y < room.y + room.h - 1; y++) {
-      for (let x = room.x + 1; x < room.x + room.w - 1; x++) {
-        // Asegurarse de que es caminable y está vacío
-        if (this.tileMap.getTile(x, y).id === 1) { // 1 = FLOOR
-          if (!this.entityManager.getEntityAt(x, y)) {
-            validPositions.push({ x, y });
-          }
-        }
-      }
-    }
-    
-    // Barajar posiciones
-    for (let i = validPositions.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [validPositions[i], validPositions[j]] = [validPositions[j], validPositions[i]];
-    }
-    
-    // Instanciar enemigos
-    for (let i = 0; i < Math.min(numEnemies, validPositions.length); i++) {
-      const pos = validPositions[i];
-      // Elegir un pokemon aleatorio que no sea legendario (id < 144)
-      const validPokemon = this.pokemonData.filter(p => p.id < 144);
-      const randMon = validPokemon[Math.floor(Math.random() * validPokemon.length)];
-      
-      const level = Math.max(1, Math.min(100, Math.floor(this._currentFloor * 1.5) + Math.floor(Math.random() * 3)));
-      const enemyId = this.entityManager.createPokemon(randMon.id, level, pos.x, pos.y, true);
-      
-      // Despertarlos y alertarlos instantáneamente hacia el jugador
-      const aiComponent = this.entityManager.getComponent(enemyId, 'aiControlled');
-      if (aiComponent) {
-        aiComponent.behavior = 'chase';
-        aiComponent.alertedTo = this._playerId;
-        this.entityManager.setComponent(enemyId, 'aiControlled', aiComponent);
-      }
-      
-      const fighter = this.entityManager.getComponent(enemyId, 'fighter');
-      this.turnManager.addEntity(enemyId, fighter ? fighter.speed : 50, false);
-
-      spawned++;
-    }
-    
-    console.log(`[Game] Nido de monstruos activado: ${spawned} enemigos generados.`);
     this.needsRender = true;
   }
 
@@ -597,16 +781,39 @@ export class Game {
       const fighter = this.entityManager.getComponent(pid, 'fighter');
       const pokemonInfo = this.entityManager.getComponent(pid, 'pokemonInfo');
       if (fighter && pokemonInfo) {
-        const oldHp = fighter.hp;
-        fighter.hp = Math.min(fighter.maxHp, fighter.hp + Math.floor(fighter.maxHp * 0.5));
-        const healed = fighter.hp - oldHp;
+        fighter.hp = Math.min(fighter.maxHp, fighter.hp + Math.floor(fighter.maxHp * 0.55));
+        if (fighter.belly !== undefined) {
+          fighter.belly = Math.min(fighter.maxBelly || 100, fighter.belly + 35);
+        }
+        fighter.statusEffects = [];
+        if (pokemonInfo.currentMoves) {
+          pokemonInfo.currentMoves.forEach(m => {
+            m.currentPP = m.maxPP;
+            m.enabled = true;
+            delete m._disableTurns;
+          });
+          this.entityManager.setComponent(pid, 'pokemonInfo', pokemonInfo);
+        }
+        fighter.charging = null;
+        fighter.biding = null;
+        fighter.mustRecharge = false;
+        fighter.rage = false;
+        fighter.focusEnergy = false;
+        fighter.protectStats = 0;
+        const _spr = this.entityManager.getComponent(pid, 'sprite');
+        if (revertTransform(fighter, pokemonInfo, _spr)) {
+          if (_spr) this.entityManager.setComponent(pid, 'sprite', _spr);
+          this.entityManager.setComponent(pid, 'pokemonInfo', pokemonInfo);
+        }
         this.entityManager.setComponent(pid, 'fighter', fighter);
-        console.log(`[Game] ${pokemonInfo.name} recuperó ${healed} PS en la habitación de descanso.`);
       }
     });
 
+    try {
+      if (this.uiManager?.sfx?.playHealSound) this.uiManager.sfx.playHealSound();
+    } catch (e) {}
     this.eventBus.emit('show_dialog', {
-      text: '¡Habitación de Descanso!\n\nTu equipo descansa unos momentos y recupera el 50% de sus PS.'
+      text: '¡Habitación de Descanso!\n\nTu equipo recupera PS, PP, tripa y se cura de estados.'
     });
 
     this.needsRender = true;
@@ -667,8 +874,27 @@ export class Game {
     if (this.fovSystem && this._playerId && this.tileMap) {
       const pos = this.entityManager.getComponent(this._playerId, 'position');
       if (pos) {
-        const fovRad = FOV_RADIUS + (this.fovRadiusModifier || 0);
+        let fovRad = FOV_RADIUS + (this.fovRadiusModifier || 0);
+        const zone = this._getZoneConfig();
+        if (zone && zone.theme === 'dark' && fovRad > 6) {
+          fovRad -= 1;
+        }
         this.fovSystem.update(pos.x, pos.y, this.tileMap, fovRad);
+
+        // Anunciar escaleras la primera vez que entran en el FOV del piso
+        if (!this._stairsAnnounced && this._stairsPos && this.tileMap.getVisibility) {
+          const vis = this.tileMap.getVisibility(this._stairsPos.x, this._stairsPos.y);
+          if (vis > 0) {
+            this._stairsAnnounced = true;
+            this.eventBus.emit('message', {
+              text: '¡Escaleras encontradas! Camina encima o pulsa Z para bajar.',
+              color: '#ffd700'
+            });
+            if (this.renderer && this.renderer.hud && this._prefShowMinimap !== false) {
+              this.renderer.hud.showMinimap = true;
+            }
+          }
+        }
       }
     }
   }
@@ -690,15 +916,42 @@ export class Game {
       const info = this.entityManager.getComponent(id, 'pokemonInfo');
       const fighter = this.entityManager.getComponent(id, 'fighter');
       const member = this.entityManager.getComponent(id, 'partyMember');
-      return {
+      const pos = this.entityManager.getComponent(id, 'position');
+      const sprite = this.entityManager.getComponent(id, 'sprite');
+        return {
         id,
+        facing: pos?.facing || 'down',
+        facingDx: pos?.facingDx ?? 0,
+        facingDy: pos?.facingDy ?? 0,
+        charging: !!(fighter.charging),
+        biding: !!(fighter.biding),
+        chargingState: fighter.charging || null,
+        bidingState: fighter.biding || null,
+        mustRecharge: !!fighter.mustRecharge,
+        reflect: fighter.reflect || 0,
+        lightScreen: fighter.lightScreen || 0,
+        substitute: fighter.substitute || 0,
+        rage: !!fighter.rage,
+        focusEnergy: !!fighter.focusEnergy,
+        _preTransform: fighter._preTransform || null,
+        spriteUrl: sprite?.url || null,
+        lastPhysicalDamageTaken: fighter.lastPhysicalDamageTaken || 0,
+        _intimidatedBy: fighter._intimidatedBy || [],
+        protectStats: fighter.protectStats || 0,
+        _rageTurns: fighter._rageTurns,
+        _focusTurns: fighter._focusTurns,
+        _traced: !!(info._traced),
         speciesId: info.speciesId,
         name: info.name,
         level: info.level,
         xp: info.xp,
+        ability: info.ability || null,
         currentLevelXp: Math.floor(Math.pow(info.level, 3)),
         nextLevelXp: Math.floor(Math.pow(info.level + 1, 3)),
         currentMoves: info.currentMoves,
+        pendingMovesToLearn: info.pendingMovesToLearn || [],
+        pendingEvolution: info.pendingEvolution || null,
+        evolutionDeclinedAtLevel: info.evolutionDeclinedAtLevel ?? null,
         types: info.types,
         hp: fighter.hp,
         maxHp: fighter.maxHp,
@@ -710,6 +963,9 @@ export class Game {
         spDef: fighter.spDef,
         speed: fighter.speed,
         statusEffects: fighter.statusEffects,
+        statModifiers: fighter.statModifiers || {},
+        bonusStats: fighter.bonusStats || null,
+        _statusTick: fighter._statusTick || 0,
         isLeader: member.isLeader,
         tactic: member.tactic || 'follow'
       };
@@ -766,12 +1022,144 @@ export class Game {
   }
 
   /**
+   * Usa automáticamente una baya/poción si el líder tiene PS críticos.
+   * @param {Object} fighter
+   */
+  _tryAutoHeal(fighter, entityId = null) {
+    if (this._autoHealUsedThisFloor) return;
+    const healOrder = ['oran_berry', 'sitrus_berry', 'potion', 'super_potion'];
+    let slotIdx = -1;
+    let itemData = null;
+    for (const id of healOrder) {
+      slotIdx = this.inventory.findIndex(s => s.itemId === id && s.quantity > 0);
+      if (slotIdx !== -1) {
+        itemData = this.itemsData.find(i => i.id === id);
+        break;
+      }
+    }
+    if (slotIdx === -1 || !itemData) return;
+
+    const slot = this.inventory[slotIdx];
+    let healed = 0;
+    if (itemData.type === 'heal_percent') {
+      healed = Math.floor(fighter.maxHp * ((itemData.value || 25) / 100));
+    } else {
+      healed = itemData.value || 10;
+    }
+    const before = fighter.hp;
+    fighter.hp = Math.min(fighter.maxHp, fighter.hp + healed);
+    const targetId = entityId != null ? entityId : this._playerId;
+    if (targetId != null) {
+      this.entityManager.setComponent(targetId, 'fighter', fighter);
+    }
+    slot.quantity--;
+    if (slot.quantity <= 0) this.inventory.splice(slotIdx, 1);
+    this._autoHealUsedThisFloor = true;
+    const info = targetId != null ? this.entityManager.getComponent(targetId, 'pokemonInfo') : null;
+    const who = info ? info.name : 'Tu Pokémon';
+    this.eventBus.emit('message', {
+      text: `¡${who} usó ${itemData.name} automáticamente! (+${fighter.hp - before} PS)`,
+      color: '#66ff99'
+    });
+  }
+
+  /**
+   * Come automáticamente manzana si la tripa está baja.
+   * @param {Object} fighter
+   */
+  _tryAutoStatusCure(fighter) {
+    if (this._autoStatusCureUsedThisFloor) return;
+    const statuses = fighter.statusEffects || [];
+    if (!statuses.length) return;
+
+    const cureMap = {
+      poison: ['antidote', 'full_heal'],
+      burn: ['burn_heal', 'full_heal'],
+      paralyze: ['paralyze_heal', 'full_heal'],
+      sleep: ['awakening', 'full_heal'],
+      freeze: ['full_heal'],
+      confuse: ['full_heal']
+    };
+
+    for (const st of statuses) {
+      const candidates = cureMap[st.type] || ['full_heal'];
+      for (const itemId of candidates) {
+        const slotIdx = this.inventory.findIndex(s => s.itemId === itemId && s.quantity > 0);
+        if (slotIdx === -1) continue;
+        const itemData = this.itemsData.find(i => i.id === itemId);
+        if (!itemData) continue;
+
+        if (itemData.cures === 'all') {
+          fighter.statusEffects = [];
+        } else {
+          fighter.statusEffects = statuses.filter(s => s.type !== (itemData.cures || st.type));
+        }
+        this.entityManager.setComponent(this._playerId, 'fighter', fighter);
+        const slot = this.inventory[slotIdx];
+        slot.quantity--;
+        if (slot.quantity <= 0) this.inventory.splice(slotIdx, 1);
+        this._autoStatusCureUsedThisFloor = true;
+        this.eventBus.emit('message', {
+          text: `¡Usaste ${itemData.name} automáticamente para curar estados!`,
+          color: '#aaddff'
+        });
+        return;
+      }
+    }
+  }
+
+  _tryAutoEat(fighter, entityId = null) {
+    // Solo comida real (type food). No gastar bayas de curación como Aranja.
+    const foodOrder = ['apple', 'big_apple', 'golden_apple'];
+    let slotIdx = -1;
+    for (const id of foodOrder) {
+      slotIdx = this.inventory.findIndex(s => s.itemId === id && s.quantity > 0);
+      if (slotIdx !== -1) break;
+    }
+    if (slotIdx === -1) {
+      slotIdx = this.inventory.findIndex(s => {
+        const d = this.itemsData.find(i => i.id === s.itemId);
+        return d && d.type === 'food' && s.quantity > 0;
+      });
+    }
+    if (slotIdx === -1) return;
+
+    const slot = this.inventory[slotIdx];
+    const itemData = this.itemsData.find(i => i.id === slot.itemId);
+    if (!itemData || itemData.type !== 'food') return;
+
+    const value = itemData.value || 20;
+    if (itemData.maxBellyBonus) {
+      fighter.maxBelly = (fighter.maxBelly || 100) + itemData.maxBellyBonus;
+    }
+    const before = fighter.belly;
+    fighter.belly = Math.min(fighter.maxBelly || 100, fighter.belly + value);
+    slot.quantity--;
+    if (slot.quantity <= 0) this.inventory.splice(slotIdx, 1);
+
+    const eid = entityId != null ? entityId : this._playerId;
+    const pname = this.entityManager.getComponent(eid, 'pokemonInfo')?.name;
+    const who = (eid === this._playerId || !pname) ? 'Comiste' : `${pname} comió`;
+    this.eventBus.emit('message', {
+      text: `¡${who} ${itemData.name} automáticamente! (+${Math.floor(fighter.belly - before)} tripa)`,
+      color: '#88cc66'
+    });
+    if (eid === this._playerId) {
+      this._bellyWarned20 = fighter.belly <= 20;
+      this._bellyWarned10 = fighter.belly <= 10;
+    }
+  }
+
+  /**
    * Intercambia el líder actual del equipo por el siguiente miembro del equipo.
    */
   swapLeader() {
     const partyEntities = this.entityManager.getEntitiesWithComponents('partyMember', 'fighter');
     if (partyEntities.length <= 1) {
-      this.eventBus.emit('message', '¡No tienes otros Pokémon en el equipo para cambiar de líder!');
+      this.eventBus.emit('message', {
+        text: '¡Necesitas más Pokémon en el equipo para cambiar de líder!',
+        color: '#ffcc88'
+      });
       return;
     }
 
@@ -787,11 +1175,22 @@ export class Game {
     
     if (oldLeaderIdx === -1) return;
 
-    // El siguiente en slot
-    const newLeaderIdx = (oldLeaderIdx + 1) % partyEntities.length;
-    const newLeaderId = partyEntities[newLeaderIdx];
+    // Siguiente aliado vivo (saltar debilitados)
+    let newLeaderId = null;
+    for (let step = 1; step <= partyEntities.length; step++) {
+      const cand = partyEntities[(oldLeaderIdx + step) % partyEntities.length];
+      const f = this.entityManager.getComponent(cand, 'fighter');
+      if (f && f.hp > 0) {
+        newLeaderId = cand;
+        break;
+      }
+    }
+    if (newLeaderId == null || newLeaderId === oldLeaderId) {
+      this.eventBus.emit('message', '¡No hay otro Pokémon en condiciones de liderar!');
+      return;
+    }
 
-    // Intercambiar isLeader en partyMember
+    // Intercambiar isLeader y reasignar slots: líder = 0, seguidores = 1..n
     const oldMem = this.entityManager.getComponent(oldLeaderId, 'partyMember');
     const newMem = this.entityManager.getComponent(newLeaderId, 'partyMember');
     
@@ -799,6 +1198,17 @@ export class Game {
     newMem.isLeader = true;
     this.entityManager.setComponent(oldLeaderId, 'partyMember', oldMem);
     this.entityManager.setComponent(newLeaderId, 'partyMember', newMem);
+
+    // Reordenar: nuevo líder en slot 0, resto en orden relativo
+    const reordered = [newLeaderId, ...partyEntities.filter(id => id !== newLeaderId)];
+    reordered.forEach((id, idx) => {
+      const mem = this.entityManager.getComponent(id, 'partyMember');
+      if (mem) {
+        mem.slot = idx;
+        mem.isLeader = idx === 0;
+        this.entityManager.setComponent(id, 'partyMember', mem);
+      }
+    });
 
     // Intercambiar posiciones físicas en el mapa
     const oldPos = this.entityManager.getComponent(oldLeaderId, 'position');
@@ -820,18 +1230,22 @@ export class Game {
       this.entityManager.setComponent(newLeaderId, 'position', newPos);
     }
 
-    // Cambiar roles de control (IA vs Jugador)
-    // El viejo líder ahora es seguidor controlado por IA
-    const oldAi = this.entityManager.getComponent(oldLeaderId, 'aiControlled') || {};
-    oldAi.behavior = 'follower';
-    this.entityManager.setComponent(oldLeaderId, 'aiControlled', oldAi);
+    // Roles: solo el viejo líder vivo actúa como seguidor
+    const oldFighter = this.entityManager.getComponent(oldLeaderId, 'fighter');
+    if (oldFighter && oldFighter.hp > 0) {
+      const oldAi = this.entityManager.getComponent(oldLeaderId, 'aiControlled') || {};
+      oldAi.behavior = 'follower';
+      this.entityManager.setComponent(oldLeaderId, 'aiControlled', oldAi);
+    } else if (this.entityManager.hasComponent(oldLeaderId, 'aiControlled')) {
+      this.entityManager.removeComponent(oldLeaderId, 'aiControlled');
+    }
 
     // El nuevo líder deja de estar controlado por IA
     this.entityManager.removeComponent(newLeaderId, 'aiControlled');
 
     // Actualizar IDs en Game y TurnManager
     this._playerId = newLeaderId;
-    this.turnManager._playerId = newLeaderId;
+    this.turnManager.setPlayerEntityId(newLeaderId);
 
     // Limpiar historial de posiciones para evitar saltos en los seguidores
     this.playerPathHistory = [];
@@ -840,6 +1254,29 @@ export class Game {
     this.eventBus.emit('message', `¡${newLeaderInfo.name} es ahora el líder del equipo!`);
     
     this.needsRender = true;
+  }
+
+  /**
+   * Ajusta velocidad efectiva por clima + habilidades (Clorofila, Velo Arena).
+   * @private
+   */
+  _syncAbilitySpeeds() {
+    const weather = this.currentWeather || 'normal';
+    const entities = this.entityManager.getEntitiesWithComponents('fighter', 'pokemonInfo');
+    for (const id of entities) {
+      const fighter = this.entityManager.getComponent(id, 'fighter');
+      const info = this.entityManager.getComponent(id, 'pokemonInfo');
+      if (!fighter || !info) continue;
+      const ability = info.ability ? String(info.ability).toLowerCase().replace(/-/g, '_') : '';
+      let speed = fighter.speed || 50;
+      // Etapas de Velocidad (X Attack/Speed, trampas, orbes…)
+      const stage = Math.max(-6, Math.min(6, fighter.statModifiers?.speed || 0));
+      if (stage >= 0) speed = Math.floor(speed * (2 + stage) / 2);
+      else speed = Math.floor(speed * 2 / (2 - stage));
+      if (ability === 'chlorophyll' && weather === 'sol') speed = Math.floor(speed * 2);
+      if (ability === 'swift_swim' && weather === 'lluvia') speed = Math.floor(speed * 2);
+      this.turnManager.updateSpeed(id, Math.max(1, speed));
+    }
   }
 
   destroy() {

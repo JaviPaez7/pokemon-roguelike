@@ -54,7 +54,7 @@
       }
     ],
     "baseExp": 64,
-    "captureRate": 45,
+    "captureRate": 60,
     "ability": "overgrow"
   },
   {
@@ -112,7 +112,7 @@
       }
     ],
     "baseExp": 142,
-    "captureRate": 45,
+    "captureRate": 60,
     "ability": "overgrow"
   },
   {
@@ -170,7 +170,7 @@
       }
     ],
     "baseExp": 236,
-    "captureRate": 45,
+    "captureRate": 60,
     "ability": "overgrow"
   },
   {
@@ -223,7 +223,7 @@
       }
     ],
     "baseExp": 62,
-    "captureRate": 45,
+    "captureRate": 60,
     "ability": "blaze"
   },
   {
@@ -276,7 +276,7 @@
       }
     ],
     "baseExp": 142,
-    "captureRate": 45,
+    "captureRate": 60,
     "ability": "blaze"
   },
   {
@@ -330,7 +330,7 @@
       }
     ],
     "baseExp": 240,
-    "captureRate": 45,
+    "captureRate": 60,
     "ability": "blaze"
   },
   {
@@ -383,7 +383,7 @@
       }
     ],
     "baseExp": 63,
-    "captureRate": 45,
+    "captureRate": 60,
     "ability": "torrent"
   },
   {
@@ -436,7 +436,7 @@
       }
     ],
     "baseExp": 142,
-    "captureRate": 45,
+    "captureRate": 60,
     "ability": "torrent"
   },
   {
@@ -489,7 +489,7 @@
       }
     ],
     "baseExp": 239,
-    "captureRate": 45,
+    "captureRate": 60,
     "ability": "torrent"
   },
   {
@@ -593,8 +593,8 @@
       }
     ],
     "baseExp": 178,
-    "captureRate": 45,
-    "ability": "swarm"
+    "captureRate": 60,
+    "ability": "compound_eyes"
   },
   {
     "id": 13,
@@ -695,7 +695,7 @@
       }
     ],
     "baseExp": 178,
-    "captureRate": 45,
+    "captureRate": 60,
     "ability": "swarm"
   },
   {
@@ -746,7 +746,7 @@
     ],
     "baseExp": 50,
     "captureRate": 255,
-    "ability": "run_away"
+    "ability": "keen_eye"
   },
   {
     "id": 17,
@@ -796,7 +796,7 @@
     ],
     "baseExp": 122,
     "captureRate": 120,
-    "ability": "run_away"
+    "ability": "keen_eye"
   },
   {
     "id": 18,
@@ -845,8 +845,8 @@
       }
     ],
     "baseExp": 216,
-    "captureRate": 45,
-    "ability": "run_away"
+    "captureRate": 60,
+    "ability": "keen_eye"
   },
   {
     "id": 19,
@@ -1223,7 +1223,7 @@
       }
     ],
     "baseExp": 218,
-    "captureRate": 75,
+    "captureRate": 90,
     "ability": "static"
   },
   {
@@ -1461,7 +1461,7 @@
       }
     ],
     "baseExp": 227,
-    "captureRate": 45,
+    "captureRate": 60,
     "ability": "poison_point"
   },
   {
@@ -1609,7 +1609,7 @@
       }
     ],
     "baseExp": 227,
-    "captureRate": 45,
+    "captureRate": 60,
     "ability": "poison_point"
   },
   {
@@ -1699,7 +1699,7 @@
       }
     ],
     "baseExp": 217,
-    "captureRate": 25,
+    "captureRate": 40,
     "ability": "run_away"
   },
   {
@@ -1789,7 +1789,7 @@
       }
     ],
     "baseExp": 177,
-    "captureRate": 75,
+    "captureRate": 90,
     "ability": "blaze"
   },
   {
@@ -1887,7 +1887,7 @@
       }
     ],
     "baseExp": 196,
-    "captureRate": 50,
+    "captureRate": 65,
     "ability": "run_away"
   },
   {
@@ -2080,7 +2080,7 @@
     ],
     "baseExp": 138,
     "captureRate": 120,
-    "ability": "overgrow"
+    "ability": "chlorophyll"
   },
   {
     "id": 45,
@@ -2121,8 +2121,8 @@
       }
     ],
     "baseExp": 221,
-    "captureRate": 45,
-    "ability": "overgrow"
+    "captureRate": 60,
+    "ability": "chlorophyll"
   },
   {
     "id": 46,
@@ -2213,7 +2213,7 @@
       }
     ],
     "baseExp": 142,
-    "captureRate": 75,
+    "captureRate": 90,
     "ability": "effect_spore"
   },
   {
@@ -2313,7 +2313,7 @@
       }
     ],
     "baseExp": 158,
-    "captureRate": 75,
+    "captureRate": 90,
     "ability": "swarm"
   },
   {
@@ -2453,7 +2453,7 @@
     ],
     "baseExp": 58,
     "captureRate": 255,
-    "ability": "run_away"
+    "ability": "pickup"
   },
   {
     "id": 53,
@@ -2502,7 +2502,7 @@
     ],
     "baseExp": 154,
     "captureRate": 90,
-    "ability": "run_away"
+    "ability": "pickup"
   },
   {
     "id": 54,
@@ -2833,7 +2833,7 @@
     ],
     "baseExp": 60,
     "captureRate": 255,
-    "ability": "torrent"
+    "ability": "water_absorb"
   },
   {
     "id": 61,
@@ -2882,7 +2882,7 @@
     ],
     "baseExp": 135,
     "captureRate": 120,
-    "ability": "torrent"
+    "ability": "water_absorb"
   },
   {
     "id": 62,
@@ -2928,7 +2928,7 @@
     ],
     "baseExp": 230,
     "captureRate": 45,
-    "ability": "torrent"
+    "ability": "water_absorb"
   },
   {
     "id": 63,
@@ -3244,7 +3244,7 @@
     ],
     "baseExp": 60,
     "captureRate": 255,
-    "ability": "overgrow"
+    "ability": "chlorophyll"
   },
   {
     "id": 70,
@@ -3302,7 +3302,7 @@
     ],
     "baseExp": 137,
     "captureRate": 120,
-    "ability": "overgrow"
+    "ability": "chlorophyll"
   },
   {
     "id": 71,
@@ -3344,7 +3344,7 @@
     ],
     "baseExp": 221,
     "captureRate": 45,
-    "ability": "overgrow"
+    "ability": "chlorophyll"
   },
   {
     "id": 72,
@@ -3853,7 +3853,7 @@
     ],
     "baseExp": 65,
     "captureRate": 190,
-    "ability": "static"
+    "ability": "lightning_rod"
   },
   {
     "id": 82,
@@ -3902,7 +3902,7 @@
     ],
     "baseExp": 163,
     "captureRate": 60,
-    "ability": "static"
+    "ability": "lightning_rod"
   },
   {
     "id": 83,
@@ -6168,7 +6168,7 @@
     ],
     "baseExp": 172,
     "captureRate": 45,
-    "ability": "run_away"
+    "ability": "intimidate"
   },
   {
     "id": 129,
@@ -6243,7 +6243,7 @@
     ],
     "baseExp": 189,
     "captureRate": 45,
-    "ability": "torrent"
+    "ability": "intimidate"
   },
   {
     "id": 131,
@@ -6297,7 +6297,7 @@
     ],
     "baseExp": 187,
     "captureRate": 45,
-    "ability": "torrent"
+    "ability": "water_absorb"
   },
   {
     "id": 132,
@@ -6322,7 +6322,7 @@
     ],
     "baseExp": 101,
     "captureRate": 35,
-    "ability": "run_away"
+    "ability": "limber"
   },
   {
     "id": 133,
@@ -6599,7 +6599,7 @@
     ],
     "baseExp": 79,
     "captureRate": 45,
-    "ability": "run_away"
+    "ability": "trace"
   },
   {
     "id": 138,
@@ -6878,7 +6878,7 @@
     ],
     "baseExp": 189,
     "captureRate": 25,
-    "ability": "run_away"
+    "ability": "thick_fat"
   },
   {
     "id": 144,
@@ -7209,7 +7209,7 @@
     ],
     "baseExp": 306,
     "captureRate": 3,
-    "ability": "synchronize"
+    "ability": "pressure"
   },
   {
     "id": 151,

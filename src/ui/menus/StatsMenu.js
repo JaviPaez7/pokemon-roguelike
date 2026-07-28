@@ -83,6 +83,7 @@ export function openStatsMenu(ui, parentMenuType = 'title') {
   const showCurrentRun = parentMenuType === 'pause' && ui.game && ui.game.stats;
   const current = showCurrentRun ? ui.game.stats : null;
   const runFloor = showCurrentRun ? (typeof ui.game.getCurrentFloor === 'function' ? ui.game.getCurrentFloor() : ui.game._currentFloor) : 1;
+  const pokedexSeen = showCurrentRun && ui.game.pokedexSeen ? ui.game.pokedexSeen.size : 0;
 
   let html = `
     <div class="game-panel" style="width: 440px; font-size: 8px;">
@@ -97,11 +98,12 @@ export function openStatsMenu(ui, parentMenuType = 'title') {
         <div style="flex: 1; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); padding: 8px; border-radius: 4px;">
           <h3 style="color: var(--text-accent); text-align: center; margin-bottom: 8px; font-size: 8px; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;">RUN ACTUAL</h3>
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Piso Alcanzado:</span> <span style="color: #fff;">Piso ${runFloor}</span></div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Derrotas:</span> <span style="color: #fff;">${current.pokemonDefeated}</span></div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Pokémon derrotados:</span> <span style="color: #fff;">${current.pokemonDefeated}</span></div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Capturas:</span> <span style="color: #fff;">${current.pokemonCaptured}</span></div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Daño Causado:</span> <span style="color: #fff;">${current.totalDamageDealt}</span></div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Daño Recibido:</span> <span style="color: #fff;">${current.totalDamageTaken}</span></div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Objetos Usados:</span> <span style="color: #fff;">${current.itemsUsed}</span></div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Pokédex vista:</span> <span style="color: #fff;">${pokedexSeen}</span></div>
           <div style="display: flex; justify-content: space-between;"><span>Turnos Jugados:</span> <span style="color: #fff;">${current.turnsPlayed}</span></div>
         </div>
     `;

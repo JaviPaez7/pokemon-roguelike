@@ -12,14 +12,17 @@ import { calculateStats } from './ExperienceSystem.js';
  * @returns {Object|null} Datos de evolución disponible o null
  */
 export function checkEvolution(pokemonInfo, evolutionData, itemUsed = null) {
-  if (!evolutionData || !Array.isArray(evolutionData)) return null;
+  if (!evolutionData || !Array.isArray(evolutionData) || !pokemonInfo) return null;
 
   for (const evo of evolutionData) {
     if (evo.from !== pokemonInfo.speciesId) continue;
 
-    // Evolución por nivel
+    // Evolución por nivel (respetar cancelación en este nivel)
     if (evo.trigger === 'level' && !itemUsed) {
       if (pokemonInfo.level >= evo.level) {
+        if (pokemonInfo.evolutionDeclinedAtLevel === pokemonInfo.level) {
+          continue;
+        }
         return evo;
       }
     }
@@ -48,12 +51,12 @@ export function evolve(entityId, evolution, entityManager, pokemonDB, movesDB) {
   const sprite = entityManager.getComponent(entityId, 'sprite');
   
   if (!pokemonInfo || !fighter) {
-    return { success: false, messages: ['Error: entidad inválida'] };
+    return { success: false, messages: ['No se pudo evolucionar (entidad no válida).'] };
   }
 
   const newSpecies = pokemonDB.find(p => p.id === evolution.to);
   if (!newSpecies) {
-    return { success: false, messages: ['Error: especie de evolución no encontrada'] };
+    return { success: false, messages: ['No se encontró la especie de evolución.'] };
   }
 
   const oldName = pokemonInfo.name;
@@ -63,6 +66,11 @@ export function evolve(entityId, evolution, entityManager, pokemonDB, movesDB) {
   pokemonInfo.speciesId = newSpecies.id;
   pokemonInfo.name = newSpecies.name;
   pokemonInfo.types = newSpecies.types;
+  if (newSpecies.ability) {
+    pokemonInfo.ability = newSpecies.ability;
+  }
+  pokemonInfo.pendingEvolution = null;
+  pokemonInfo.evolutionDeclinedAtLevel = null;
 
   // Recalcular stats con la nueva especie
   const newStats = calculateStats(newSpecies.stats, pokemonInfo.level, fighter.bonusStats);
@@ -88,16 +96,27 @@ export function evolve(entityId, evolution, entityManager, pokemonDB, movesDB) {
     for (const moveEntry of newSpecies.moves) {
       if (moveEntry.level <= pokemonInfo.level) {
         const alreadyKnown = pokemonInfo.currentMoves.some(m => m.moveId === moveEntry.moveId);
-        if (!alreadyKnown && pokemonInfo.currentMoves.length < 4) {
+        if (!alreadyKnown) {
           const moveData = movesDB.find(m => m.id === moveEntry.moveId);
           if (moveData) {
-            pokemonInfo.currentMoves.push({
-              moveId: moveEntry.moveId,
-              currentPP: moveData.pp,
-              maxPP: moveData.pp,
-              enabled: true
-            });
-            messages.push(`¡${pokemonInfo.name} aprendió ${moveData.name}!`);
+            if (pokemonInfo.currentMoves.length < 4) {
+              pokemonInfo.currentMoves.push({
+                moveId: moveEntry.moveId,
+                currentPP: moveData.pp,
+                maxPP: moveData.pp,
+                enabled: true
+              });
+              messages.push(`¡${pokemonInfo.name} aprendió ${moveData.name}!`);
+            } else {
+              if (!pokemonInfo.pendingMovesToLearn) pokemonInfo.pendingMovesToLearn = [];
+              if (!pokemonInfo.pendingMovesToLearn.some(pm => pm.moveId === moveEntry.moveId)) {
+                pokemonInfo.pendingMovesToLearn.push({
+                  moveId: moveEntry.moveId,
+                  name: moveData.name
+                });
+                messages.push(`¡${pokemonInfo.name} quiere aprender ${moveData.name}!`);
+              }
+            }
           }
         }
       }

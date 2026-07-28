@@ -17,7 +17,7 @@ export function attemptCapture(targetFighter, targetInfo, ball, pokemonDB) {
   // Obtener capture rate de la especie
   const speciesData = pokemonDB.find(p => p.id === targetInfo.speciesId);
   if (!speciesData) {
-    return { success: false, shakes: 0, messages: ['Error: especie no encontrada'] };
+    return { success: false, shakes: 0, messages: ['No se encontró la especie del Pokémon.'] };
   }
 
   const captureRate = speciesData.captureRate || 45;
@@ -41,7 +41,14 @@ export function attemptCapture(targetFighter, targetInfo, ball, pokemonDB) {
     }
   }
 
-  const finalRate = Math.min(rate * statusBonus, 255);
+  // Bonus early-game / niveles bajos (Mystery Dungeon–friendly)
+  let levelBonus = 1;
+  const lvl = targetInfo.level || 1;
+  if (lvl <= 5) levelBonus = 1.35;
+  else if (lvl <= 10) levelBonus = 1.2;
+  else if (lvl <= 15) levelBonus = 1.1;
+
+  const finalRate = Math.min(rate * statusBonus * levelBonus, 255);
 
   // Simular 3 shakes
   let shakes = 0;
@@ -63,7 +70,7 @@ export function attemptCapture(targetFighter, targetInfo, ball, pokemonDB) {
   messages.push(`¡Lanzaste una ${ball.name}!`);
   
   if (success) {
-    messages.push(`¡Gotcha! ¡${targetInfo.name} fue capturado!`);
+    messages.push(`¡Capturado! ¡${targetInfo.name} ahora es tuyo!`);
   } else {
     const failMessages = [
       '¡Oh no! ¡El Pokémon se liberó!',
@@ -106,8 +113,13 @@ export function getCaptureChance(targetFighter, targetInfo, ball, pokemonDB) {
     }
   }
 
-  const finalRate = Math.min(rate * statusBonus, 255);
-  // Probabilidad aproximada de pasar los 3 shakes
-  const shakeProb = Math.pow(finalRate / 255, 0.75);
-  return Math.round(shakeProb * 100);
+  let levelBonus = 1;
+  const lvl = targetInfo.level || 1;
+  if (lvl <= 5) levelBonus = 1.35;
+  else if (lvl <= 10) levelBonus = 1.2;
+  else if (lvl <= 15) levelBonus = 1.1;
+  const finalRate = Math.min(rate * statusBonus * levelBonus, 255);
+  // Misma fórmula que attemptCapture: P(shake) = (finalRate/255)^0.1875 → 3 shakes
+  const shakeProb = Math.pow(finalRate / 255, 0.1875);
+  return Math.round(Math.pow(shakeProb, 3) * 100);
 }

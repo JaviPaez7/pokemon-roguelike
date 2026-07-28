@@ -1,9 +1,101 @@
 import { openPauseMenu } from './PauseMenu.js';
+import { getCaptureChance } from '../../systems/CaptureSystem.js';
+import { GAME_STATES, MAX_PARTY_SIZE } from '../../constants.js';
+
+/** Confirmación Sí/No (no usa diálogo, para poder cancelar). */
+function openYesNoConfirm(ui, title, body, onYes, onNo) {
+  const html = `
+    <div class="game-panel" style="width: 300px; margin: auto;">
+      <h2 class="game-panel-title">${title}</h2>
+      <p style="font-size: 7px; color: var(--text-secondary); margin: 0 10px 12px; line-height: 1.5; text-align: center; white-space: pre-wrap;">${body}</p>
+      <div id="options-list">
+        <div class="menu-option selected" data-index="0"><span class="cursor">▶</span> Sí</div>
+        <div class="menu-option" data-index="1"><span class="cursor">▶</span> No</div>
+      </div>
+    </div>
+  `;
+  ui.showMenu('confirm_yn', html);
+  ui.menuOptions = [
+    () => { ui.closeMenu(); onYes(); },
+    () => { ui.closeMenu(); if (onNo) onNo(); else openInventoryMenu(ui); }
+  ];
+  ui.selectedIndex = 0;
+  ui.updateSelectionVisuals();
+  ui.game.changeState(GAME_STATES.MENU);
+}
+
+
+/** Busca un salvaje en la dirección de mirada (8 dirs) o adyacente. */
+function findWildCaptureTarget(game) {
+  const playerId = game.getPlayerId();
+  const pPos = game.entityManager.getComponent(playerId, 'position');
+  if (!pPos) return null;
+
+  let dx = pPos.facingDx ?? 0;
+  let dy = pPos.facingDy ?? 0;
+  if (dx === 0 && dy === 0) {
+    if (pPos.facing === 'up') dy = -1;
+    else if (pPos.facing === 'down') dy = 1;
+    else if (pPos.facing === 'left') dx = -1;
+    else if (pPos.facing === 'right') dx = 1;
+  }
+
+  const isWild = (entId) => {
+    if (!entId) return false;
+    const hasFighter = game.entityManager.hasComponent(entId, 'fighter');
+    const isParty = game.entityManager.hasComponent(entId, 'partyMember');
+    const isMerchant = game.entityManager.hasComponent(entId, 'npcMerchant');
+    const isFriendly = game.entityManager.hasComponent(entId, 'npcFriendly');
+    return hasFighter && !isParty && !isMerchant && !isFriendly;
+  };
+
+  if (dx !== 0 || dy !== 0) {
+    for (let dist = 1; dist <= 5; dist++) {
+      const tx = pPos.x + dx * dist;
+      const ty = pPos.y + dy * dist;
+      if (!game.tileMap.isInBounds(tx, ty) || !game.tileMap.isWalkable(tx, ty)) break;
+      const entId = game.entityManager.getEntityAt(tx, ty, false);
+      if (isWild(entId)) return entId;
+      if (entId) break;
+    }
+  }
+
+  // Fallback: adyacentes (incluye diagonal) — tras acercarse en diagonal
+  for (let oy = -1; oy <= 1; oy++) {
+    for (let ox = -1; ox <= 1; ox++) {
+      if (ox === 0 && oy === 0) continue;
+      const entId = game.entityManager.getEntityAt(pPos.x + ox, pPos.y + oy, false);
+      if (isWild(entId)) return entId;
+    }
+  }
+  return null;
+}
 
 /** @param {import('../UIManager.js').UIManager} ui */
-export function openInventoryMenu(ui) {
+const INV_TYPE_ORDER = {
+  food: 0, heal: 1, heal_percent: 1, pp_restore: 2, pp_restore_full: 2,
+  capture: 3, seed: 4, revive: 4, status_cure: 5, full_heal: 5,
+  evolution_stone: 6, stat_boost: 7, gummi: 8, escape: 9
+};
+
+function sortInventory(ui) {
   const inv = ui.game.inventory || [];
-  const maxInv = 20;
+  inv.sort((a, b) => {
+    const da = ui.game.itemsData.find(i => i.id === a.itemId);
+    const db = ui.game.itemsData.find(i => i.id === b.itemId);
+    const oa = INV_TYPE_ORDER[da?.type] ?? 50;
+    const ob = INV_TYPE_ORDER[db?.type] ?? 50;
+    if (oa !== ob) return oa - ob;
+    return (da?.name || a.itemId).localeCompare(db?.name || b.itemId, 'es');
+  });
+}
+
+export function openInventoryMenu(ui) {
+  ui.currentMenuType = 'inventory'; // evita que MENU abra la pausa por carrera
+  ui.game.changeState(GAME_STATES.MENU);
+  sortInventory(ui);
+  const inv = ui.game.inventory || [];
+  const maxInv = ui.game.maxInventorySize || 24;
 
   let html = `
     <div class="game-panel" style="width: 380px;">
@@ -17,7 +109,7 @@ export function openInventoryMenu(ui) {
     inv.forEach((slot, idx) => {
       const item = ui.game.itemsData.find(i => i.id === slot.itemId);
       const name = item ? item.name : slot.itemId;
-      const iconText = item ? item.sprite || '📦' : '📦';
+      const iconText = item ? (item.sprite || '·') : '·';
       const iconHtml = (item && item.spriteUrl) 
         ? `<img src="${item.spriteUrl}" style="width: 16px; height: 16px; vertical-align: middle; image-rendering: pixelated;" alt="${name}"/>` 
         : iconText;
@@ -65,7 +157,28 @@ export function updateItemDetails(ui, itemId) {
   const descPanel = document.getElementById('item-desc-panel');
   if (descPanel) {
     const item = ui.game.itemsData.find(i => i.id === itemId);
-    descPanel.innerHTML = item ? item.description : 'Sin descripción.';
+    if (!item) {
+      descPanel.innerHTML = 'Sin descripción.';
+      return;
+    }
+    const typeHints = {
+      food: 'Comida (restaura Tripa)',
+      heal: 'Curación',
+      heal_percent: 'Curación',
+      capture: 'Captura — mira a un salvaje (o adyacente) y usa; Lanzar también captura',
+      status_cure: 'Cura estados',
+      evolution_stone: 'Evolución',
+      escape: 'Guarda y vuelve al menú (mapa regenerado al continuar)',
+      pp_restore: 'Restaura PP',
+      pp_restore_full: 'Restaura PP',
+      revive: 'Resucita debilitados',
+      seed: 'Semilla especial',
+      slumber_orb: 'Usar = sala entera; Lanzar = 1 objetivo',
+      petrify_orb: 'Usar = sala entera; Lanzar = 1 objetivo',
+      throwable: 'Lanzar para dañar a distancia'
+    };
+    const hint = typeHints[item.type] || '';
+    descPanel.innerHTML = `${item.description || 'Sin descripción.'}${hint ? `<div style="margin-top:4px;color:var(--text-accent);">${hint}</div>` : ''}`;
   }
 }
 
@@ -93,62 +206,72 @@ export function openItemActionsMenu(ui) {
       if (item.type === 'capture' || item.type === 'escape') {
         ui.closeMenu();
         if (item.type === 'capture') {
-          const playerId = ui.game.getPlayerId();
-          const pPos = ui.game.entityManager.getComponent(playerId, 'position');
-          let targetId = null;
-          
-          if (pPos) {
-            let dx = 0;
-            let dy = 0;
-            if (pPos.facing === 'up') dy = -1;
-            else if (pPos.facing === 'down') dy = 1;
-            else if (pPos.facing === 'left') dx = -1;
-            else if (pPos.facing === 'right') dx = 1;
-
-            if (dx !== 0 || dy !== 0) {
-              for (let dist = 1; dist <= 5; dist++) {
-                const tx = pPos.x + dx * dist;
-                const ty = pPos.y + dy * dist;
-                
-                if (!ui.game.tileMap.isInBounds(tx, ty) || !ui.game.tileMap.isWalkable(tx, ty)) {
-                  break;
-                }
-                
-                const entId = ui.game.entityManager.getEntityAt(tx, ty, false);
-                if (entId) {
-                  const hasAI = ui.game.entityManager.hasComponent(entId, 'aiControlled');
-                  const isParty = ui.game.entityManager.hasComponent(entId, 'partyMember');
-                  if (hasAI && !isParty) {
-                    targetId = entId;
-                    break;
-                  }
-                }
-              }
-            }
-          }
+          const targetId = findWildCaptureTarget(ui.game);
           
           if (targetId) {
-            ui.game.useInventoryItem(item.id, targetId);
+            const tInfo = ui.game.entityManager.getComponent(targetId, 'pokemonInfo');
+            const tFighter = ui.game.entityManager.getComponent(targetId, 'fighter');
+            const chance = (tInfo && tFighter)
+              ? getCaptureChance(tFighter, tInfo, item, ui.game.pokemonData)
+              : 0;
+            const partyCount = ui.game.entityManager.getEntitiesWithComponents('partyMember').length;
+            const fullHint = partyCount >= MAX_PARTY_SIZE
+              ? `\n\nEquipo lleno (${MAX_PARTY_SIZE}): si capturas, se liberará (+Poké).`
+              : '';
+            openYesNoConfirm(
+              ui,
+              '¿Capturar?',
+              `¿Lanzar ${item.name} a ${tInfo ? tInfo.name : 'el Pokémon'}?\nProbabilidad aprox.: ${chance}%${fullHint}`,
+              () => ui.game.useInventoryItem(item.id, targetId),
+              () => openInventoryMenu(ui)
+            );
           } else {
             ui.showDialog('No hay ningún Pokémon salvaje en esa dirección para capturar.', () => openInventoryMenu(ui));
           }
         } else if (item.type === 'escape') {
-          ui.game.useInventoryItem(item.id, ui.game.getPlayerId());
+          openYesNoConfirm(
+            ui,
+            '¿Escapar?',
+            '¿Usar Cuerda Huida?\nSaldrás al menú. Se guarda equipo, mochila y piso (el mapa se regenera al continuar).',
+            () => ui.game.useInventoryItem(item.id, ui.game.getPlayerId()),
+            () => openInventoryMenu(ui)
+          );
         }
+      } else if (item.type === 'slumber_orb' || item.type === 'petrify_orb'
+          || item.id === 'slumber_orb' || item.id === 'petrify_orb') {
+        // Efecto de sala: se usa desde el líder, sin elegir aliado
+        ui.closeMenu();
+        ui.game.useInventoryItem(item.id, ui.game.getPlayerId());
       } else {
         openItemTargetMenu(ui);
       }
     },
     () => {
-      ui.closeMenu();
-      ui.game.throwInventoryItem(item.id);
+      openYesNoConfirm(
+        ui,
+        '¿Lanzar?',
+        `¿Lanzar ${name} en la dirección que miras?`,
+        () => {
+          ui.closeMenu();
+          ui.game.throwInventoryItem(item.id);
+        },
+        () => openItemActionsMenu(ui)
+      );
     },
     () => {
-      const slotIdx = ui.game.inventory.findIndex(s => s.itemId === ui.selectedItem);
-      if (slotIdx > -1) {
-        ui.game.inventory.splice(slotIdx, 1);
-      }
-      ui.showDialog('Objeto descartado.', () => openInventoryMenu(ui));
+      openYesNoConfirm(
+        ui,
+        '¿Descartar?',
+        `¿Descartar ${name}? No podrás recuperarlo.`,
+        () => {
+          const slotIdx = ui.game.inventory.findIndex(s => s.itemId === ui.selectedItem);
+          if (slotIdx > -1) {
+            ui.game.inventory.splice(slotIdx, 1);
+          }
+          ui.showDialog('Objeto descartado.', () => openInventoryMenu(ui));
+        },
+        () => openItemActionsMenu(ui)
+      );
     },
     () => openInventoryMenu(ui)
   ];

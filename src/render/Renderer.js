@@ -84,16 +84,29 @@ export class Renderer {
       this.entityRenderer.spawnFloatingDamage(
         data.defenderId,
         data.damage,
-        data.isCritical
+        data.isCritical,
+        data.effectiveness
       );
       this.entityRenderer.spawnDamageFlash(data.defenderId);
+
+      // Flash de pantalla según efectividad / crítico
+      if (data.isCritical) {
+        this.screenFlash('rgba(255, 140, 0, 0.35)', 180);
+      } else if (data.effectiveness > 1) {
+        this.screenFlash('rgba(255, 220, 60, 0.28)', 160);
+      } else if (data.effectiveness > 0 && data.effectiveness < 1) {
+        this.screenFlash('rgba(120, 120, 140, 0.22)', 140);
+      }
 
       // Partículas
       const game = typeof window !== 'undefined' ? window.game : null;
       if (game && game.entityManager) {
         const pos = game.entityManager.getComponent(data.defenderId, 'position');
         if (pos) {
-          const color = data.isCritical ? '#ffcc00' : '#ff4444';
+          let color = '#ff4444';
+          if (data.isCritical) color = '#ffcc00';
+          else if (data.effectiveness > 1) color = '#ffee66';
+          else if (data.effectiveness > 0 && data.effectiveness < 1) color = '#8899aa';
           this.particleSystem.spawn(pos.x, pos.y, 'hit', color, data.isCritical ? 15 : 8);
         }
       }
@@ -311,7 +324,7 @@ export class Renderer {
 
     this.particleSystem.render(ctx, game.camera);
 
-    this._renderWeather(ctx, game.weather, canvas.width, canvas.height);
+    this._renderWeather(ctx, game.currentWeather || game.weather, canvas.width, canvas.height);
 
     ctx.restore();
 
@@ -337,6 +350,14 @@ export class Renderer {
 
     // === CAPA 5: HUD (sin shake, legible, encima del fade) ===
     this.hud.render(ctx, game, canvas.width, canvas.height);
+
+    // Log compacto abajo-izquierda (no tapa el centro del mapa)
+    if (game.messageLog) {
+      const logW = Math.min(280, Math.max(160, canvas.width - 360));
+      const logX = 8;
+      const logY = canvas.height - 78;
+      game.messageLog.render(ctx, logX, logY, logW);
+    }
   }
 
   /**
@@ -344,17 +365,24 @@ export class Renderer {
    * @private
    */
   _renderWeather(ctx, weather, width, height) {
-    if (!weather || weather === 'none') return;
+    if (!weather || weather === 'none' || weather === 'normal') return;
+
+    // Aceptar IDs en español (canónicos) e inglés (legacy)
+    const w = weather === 'lluvia' ? 'rain'
+      : weather === 'sol' ? 'sun'
+      : weather === 'tormenta_arena' ? 'sandstorm'
+      : weather === 'granizo' ? 'hail'
+      : weather;
     
     ctx.save();
     const time = performance.now();
 
-    if (weather === 'rain') {
-      ctx.strokeStyle = 'rgba(150, 200, 255, 0.4)';
+    if (w === 'rain') {
+      ctx.strokeStyle = 'rgba(150, 200, 255, 0.18)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      // Dibujar 50 gotas
-      for (let i = 0; i < 50; i++) {
+      // Lluvia discreta (no tapa el suelo)
+      for (let i = 0; i < 22; i++) {
         // Pseudoaleatorio basado en el índice y el tiempo
         const x = (i * 47 + time * 0.5) % width;
         const y = (i * 31 + time * 1.5) % height;
@@ -362,11 +390,11 @@ export class Renderer {
         ctx.lineTo(x - 5, y + 15);
       }
       ctx.stroke();
-    } else if (weather === 'sun') {
-      ctx.fillStyle = 'rgba(255, 200, 50, 0.15)';
+    } else if (w === 'sun') {
+      ctx.fillStyle = 'rgba(255, 200, 50, 0.08)';
       ctx.fillRect(0, 0, width, height);
-    } else if (weather === 'sandstorm') {
-      ctx.fillStyle = 'rgba(210, 180, 140, 0.3)';
+    } else if (w === 'sandstorm') {
+      ctx.fillStyle = 'rgba(210, 180, 140, 0.12)';
       ctx.fillRect(0, 0, width, height);
       ctx.fillStyle = 'rgba(210, 150, 80, 0.6)';
       for (let i = 0; i < 40; i++) {
@@ -376,7 +404,7 @@ export class Renderer {
         const drawY = y < 0 ? y + height : y;
         ctx.fillRect(drawX, drawY, 3, 1);
       }
-    } else if (weather === 'hail') {
+    } else if (w === 'hail') {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
       for (let i = 0; i < 30; i++) {
         const x = (i * 61 + time * 0.2) % width;

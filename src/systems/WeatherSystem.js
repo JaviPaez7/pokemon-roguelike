@@ -1,3 +1,4 @@
+import { RNG } from 'rot-js';
 /**
  * WeatherSystem.js
  * Sistema de clima y efectos ambientales para PokéRogue.
@@ -22,29 +23,34 @@ export class WeatherSystem {
    * @param {Object} game - Instancia del juego
    */
   generateFloorWeather(game) {
-    if (game._currentFloor === 1) {
+    const floor = game._currentFloor || 1;
+    // Early game: sin clima dañino
+    if (floor <= 3) {
       game.currentWeather = 'normal';
       return;
     }
 
     // 20% de probabilidad de tener clima
-    if (Math.random() < 0.2) {
-      const activeWeathers = ['lluvia', 'sol', 'tormenta_arena', 'granizo'];
-      game.currentWeather = activeWeathers[Math.floor(Math.random() * activeWeathers.length)];
+    if (RNG.getUniform() < 0.2) {
+      // Pisos 4–7: solo lluvia/sol; arena/granizo desde piso 8
+      const activeWeathers = floor < 8
+        ? ['lluvia', 'sol']
+        : ['lluvia', 'sol', 'tormenta_arena', 'granizo'];
+      game.currentWeather = activeWeathers[Math.floor(RNG.getUniform() * activeWeathers.length)];
       
       let message = '';
       switch (game.currentWeather) {
         case 'lluvia':
-          message = '¡Está empezando a llover! 🌧️';
+          message = '¡Está empezando a llover!';
           break;
         case 'sol':
-          message = '¡El sol brilla intensamente! ☀️';
+          message = '¡El sol brilla intensamente!';
           break;
         case 'tormenta_arena':
-          message = '¡Una tormenta de arena se levanta! 🌪️';
+          message = '¡Una tormenta de arena se levanta!';
           break;
         case 'granizo':
-          message = '¡Empieza a caer granizo! 🌨️';
+          message = '¡Empieza a caer granizo!';
           break;
       }
       game.eventBus.emit('message', message);

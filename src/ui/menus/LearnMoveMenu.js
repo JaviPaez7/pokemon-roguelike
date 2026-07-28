@@ -1,4 +1,4 @@
-import { GAME_STATES } from '../../constants.js';
+import { GAME_STATES, TYPE_NAMES_ES } from '../../constants.js';
 
 /**
  * Abre el menú para aprender un nuevo movimiento cuando se tienen 4 movimientos aprendidos.
@@ -8,8 +8,19 @@ import { GAME_STATES } from '../../constants.js';
  * @param {Object} pendingMove - Movimiento a aprender { moveId, moveName }
  */
 export function openLearnMoveMenu(ui, pokemonId, pendingMove) {
+  ui.currentMenuType = 'learn_move';
+  ui.game.changeState(GAME_STATES.MENU);
   const info = ui.game.entityManager.getComponent(pokemonId, 'pokemonInfo');
+  if (!info || !pendingMove) {
+    ui.showDialog('No hay movimiento pendiente.', () => {
+      ui.closeMenu();
+      ui.game.changeState(GAME_STATES.EXPLORING);
+    });
+    return;
+  }
   const moves = info.currentMoves || [];
+  const pokeName = (info.name || 'Pokémon').toUpperCase();
+  const newMoveName = (pendingMove.moveName || pendingMove.name) || 'movimiento';
   
   const moveData = ui.game.movesData.find(m => m.id === pendingMove.moveId);
   const newType = moveData ? moveData.type : 'normal';
@@ -18,7 +29,7 @@ export function openLearnMoveMenu(ui, pokemonId, pendingMove) {
     <div class="game-panel" style="width: 360px;">
       <h2 class="game-panel-title">¡NUEVO MOVIMIENTO!</h2>
       <div style="font-size: 8px; line-height: 1.5; color: var(--text-primary); margin-bottom: 12px; text-align: center;">
-        ¿Qué movimiento debe olvidar <strong>${info.name.toUpperCase()}</strong> para aprender <span class="type-badge ${newType}">${pendingMove.moveName}</span>?
+        ¿Qué movimiento debe olvidar <strong>${pokeName}</strong> para aprender <span class="type-badge ${newType}">${newMoveName}</span>?
       </div>
       <div id="options-list">
   `;
@@ -33,7 +44,7 @@ export function openLearnMoveMenu(ui, pokemonId, pendingMove) {
       <div class="menu-option" data-index="${idx}" style="flex-direction: column; align-items: flex-start; gap: 2px;">
         <div style="display: flex; justify-content: space-between; width: 100%;">
           <span><span class="cursor">▶</span> Olvidar <strong>${mName}</strong></span>
-          <span class="type-badge ${type}">${type}</span>
+          <span class="type-badge ${type}">${TYPE_NAMES_ES[type] || type}</span>
         </div>
         <div style="font-size: 6px; color: var(--text-secondary); margin-left: 12px; display: flex; gap: 16px;">
           <span>PP: ${slot.currentPP}/${slot.maxPP}</span>
@@ -47,39 +58,64 @@ export function openLearnMoveMenu(ui, pokemonId, pendingMove) {
   // Opción de cancelar
   html += `
         <div class="menu-option" data-index="${moves.length}">
-          <span class="cursor">▶</span> No aprender ${pendingMove.moveName}
+          <span class="cursor">▶</span> No aprender ${newMoveName}
         </div>
       </div>
     </div>
   `;
 
+  ui.game.changeState(GAME_STATES.MENU);
   ui.showMenu('learn_move', html);
+  ui._learnMovePokemonId = pokemonId;
+  ui._learnMovePending = pendingMove;
+
+  const dequeuePending = () => {
+    const fresh = ui.game.entityManager.getComponent(pokemonId, 'pokemonInfo');
+    if (!fresh || !fresh.pendingMovesToLearn) return;
+    const idx = fresh.pendingMovesToLearn.findIndex(pm => pm.moveId === pendingMove.moveId);
+    if (idx >= 0) fresh.pendingMovesToLearn.splice(idx, 1);
+    else if (fresh.pendingMovesToLearn[0]?.moveId === pendingMove.moveId) {
+      fresh.pendingMovesToLearn.shift();
+    }
+    ui.game.entityManager.setComponent(pokemonId, 'pokemonInfo', fresh);
+  };
 
   // Mapear opciones
   ui.menuOptions = moves.map((slot, idx) => {
     const mData = ui.game.movesData.find(m => m.id === slot.moveId);
     const mName = mData ? mData.name : slot.moveId;
     return () => {
-      // Reemplazar el movimiento
+      const fresh = ui.game.entityManager.getComponent(pokemonId, 'pokemonInfo');
       const newMoveData = ui.game.movesData.find(m => m.id === pendingMove.moveId);
-      info.currentMoves[idx] = {
+      if (!fresh || !newMoveData) {
+        dequeuePending();
+        ui.showDialog('No se pudo aprender ese movimiento.', () => {
+          ui.closeMenu();
+          ui.game.changeState(GAME_STATES.EXPLORING);
+        });
+        return;
+      }
+      const pp = newMoveData.pp || 20;
+      fresh.currentMoves[idx] = {
         moveId: pendingMove.moveId,
-        currentPP: newMoveData.pp,
-        maxPP: newMoveData.pp
+        currentPP: pp,
+        maxPP: pp,
+        enabled: true
       };
-      ui.game.entityManager.setComponent(pokemonId, 'pokemonInfo', info);
+      ui.game.entityManager.setComponent(pokemonId, 'pokemonInfo', fresh);
+      dequeuePending();
 
-      // Mostrar diálogo confirmación
-      ui.showDialog(`¡${info.name} olvidó ${mName}...\n\n...y aprendió ${pendingMove.moveName}!`, () => {
+      ui.showDialog(`¡${fresh.name} olvidó ${mName}...\n\n...y aprendió ${(pendingMove.moveName || pendingMove.name)}!`, () => {
         ui.closeMenu();
         ui.game.changeState(GAME_STATES.EXPLORING);
       });
     };
   });
 
-  // Opción de cancelar
+  // Opción de cancelar (sí descarta este movimiento pendiente)
   ui.menuOptions.push(() => {
-    ui.showDialog(`¡${info.name} no aprendió ${pendingMove.moveName}!`, () => {
+    dequeuePending();
+    ui.showDialog(`¡${info.name} no aprendió ${(pendingMove.moveName || pendingMove.name)}!`, () => {
       ui.closeMenu();
       ui.game.changeState(GAME_STATES.EXPLORING);
     });

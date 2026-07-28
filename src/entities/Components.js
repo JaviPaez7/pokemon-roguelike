@@ -126,6 +126,9 @@ export function createComponentStore() {
     /** @type {Map<number, {active: boolean}>} */
     boss: new Map(),
     /** @type {Map<number, boolean>} */
-    isBoss: new Map()
+    isBoss: new Map(),
+
+    /** @type {Map<number, {shopInventory: Array, gold: number}>} */
+    npcMerchant: new Map()
   };
 }

@@ -15,7 +15,7 @@ export function openStarterSelectScreen(ui) {
       <div class="menu-option" data-index="${idx}" style="flex: 1; flex-direction: column; padding: 12px; border: 2px solid var(--border-color); text-align: center; cursor: pointer; align-items: center; gap: 4px;">
         <img src="${spriteUrl}" style="image-rendering: pixelated; width: 80px; height: 80px; margin-bottom: 4px;">
         <div style="font-size: 10px; color: ${s.color}; font-weight: bold;">${s.name}</div>
-        <div style="font-size: 6px; color: #88a; margin-top: 4px;">PS:${s.hp}  Atk:${s.attack}</div>
+        <div style="font-size: 6px; color: #88a; margin-top: 4px;">PS:${s.hp}  Ata:${s.attack}</div>
         <div style="font-size: 6px; color: #88a;">Def:${s.defense} Vel:${s.speed}</div>
       </div>
     `;
@@ -45,7 +45,7 @@ export function updateStarterDetails(starter) {
   const descPanel = document.getElementById('starter-desc-panel');
   if (descPanel) {
     descPanel.innerHTML = `
-      <div style="color: var(--text-accent); margin-bottom: 4px; text-transform: uppercase;">${starter.name} — Tipo ${starter.type}</div>
+      <div style="color: var(--text-accent); margin-bottom: 4px; text-transform: uppercase;">${starter.name} — Tipo ${String(starter.type || '').split('/').map(t => ({ grass: 'Planta', fire: 'Fuego', water: 'Agua', poison: 'Veneno' })[t] || t).join('/')}</div>
       <div style="color: var(--text-primary);">${starter.desc}</div>
     `;
   }

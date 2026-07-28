@@ -27,13 +27,16 @@ export const MAP_HEIGHT = 40;
 export const MAX_PARTY_SIZE = 4;
 
 /** Máximo de objetos en el inventario */
-export const MAX_INVENTORY = 20;
+export const MAX_INVENTORY = 24;
 
 /** Radio de visión (Field of View) en tiles */
-export const FOV_RADIUS = 7;
+export const FOV_RADIUS = 10;
 
 /** Rango de detección de enemigos en tiles */
 export const ENEMY_DETECT_RANGE = 5;
+
+/** Rango de detección en pisos tempranos (más permisivo) */
+export const ENEMY_DETECT_RANGE_EARLY = 3;
 
 // ─── Estados del juego (máquina de estados) ─────────────────────────────────
 /**
@@ -69,6 +72,8 @@ export const ACTIONS = {
   MOVE: 'move',
   /** Atacar a una entidad adyacente */
   ATTACK: 'attack',
+  /** Usar un movimiento concreto (teclas 1-4); consume PP */
+  USE_MOVE: 'use_move',
   /** Usar un objeto del inventario */
   USE_ITEM: 'use_item',
   /** Lanzar un objeto (ej. Poké Ball) */
@@ -86,6 +91,15 @@ export const ACTIONS = {
  * Colores utilizados por el renderizador y la interfaz.
  * Diseñados para un estilo oscuro con acentos vibrantes.
  */
+/** Nombres de tipos en español (claves = IDs internos en inglés) */
+export const TYPE_NAMES_ES = {
+  normal: 'Normal', fire: 'Fuego', water: 'Agua', electric: 'Eléctrico',
+  grass: 'Planta', ice: 'Hielo', fighting: 'Lucha', poison: 'Veneno',
+  ground: 'Tierra', flying: 'Volador', psychic: 'Psíquico', bug: 'Bicho',
+  rock: 'Roca', ghost: 'Fantasma', dragon: 'Dragón', steel: 'Acero',
+  dark: 'Siniestro', fairy: 'Hada'
+};
+
 export const COLORS = {
   /** Fondo general del juego */
   BG: '#0f0f1a',

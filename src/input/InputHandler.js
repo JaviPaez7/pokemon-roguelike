@@ -8,7 +8,7 @@
  * - X                    → Cancelar / Abrir inventario
  * - C                    → Abrir equipo
  * - Espacio              → Esperar turno
- * - 1-4                  → Selección rápida de movimiento
+ * - 1-4                  → Usar movimiento (consume PP)
  * - M                    → Alternar minimapa
  * - Escape               → Menú de pausa
  *
@@ -52,9 +52,106 @@ export class InputHandler {
 
     this._onKeyDown = this._handleKeyDown.bind(this);
     this._onKeyUp = this._handleKeyUp.bind(this);
+    this._onTouch = this._handleTouchControls.bind(this);
 
     document.addEventListener('keydown', this._onKeyDown);
     document.addEventListener('keyup', this._onKeyUp);
+
+    const touchRoot = document.getElementById('touch-controls');
+    if (touchRoot) {
+      touchRoot.addEventListener('pointerdown', this._onTouch);
+    }
+  }
+
+  /**
+   * Controles táctiles del D-pad / botones Z X 1-4
+   * @param {PointerEvent} event
+   */
+  _handleTouchControls(event) {
+    const btn = event.target.closest('.touch-btn');
+    if (!btn || !this.enabled) return;
+    event.preventDefault();
+
+    const action = btn.dataset.action;
+    if (action === 'confirm') {
+      if (this._context === 'menu') {
+        this._eventBus.emit('menu_input', { action: 'confirm' });
+      } else if (this._context === 'dialog') {
+        this._eventBus.emit('dialog_input', { action: 'advance' });
+      } else {
+        this._actionQueue = { type: 'confirm' };
+      }
+      return;
+    }
+    if (action === 'inventory') {
+      if (this._context === 'menu') {
+        this._eventBus.emit('menu_input', { action: 'cancel' });
+      } else if (this._context === 'exploration') {
+        this._eventBus.emit('ui_action', { action: 'open_inventory' });
+      }
+      return;
+    }
+    if (action === 'team') {
+      if (this._context === 'exploration') {
+        this._eventBus.emit('ui_action', { action: 'open_team' });
+      }
+      return;
+    }
+    if (action === 'swap') {
+      if (this._context === 'exploration') {
+        this._actionQueue = { type: 'swap_leader' };
+      }
+      return;
+    }
+    if (action === 'map') {
+      if (this._context === 'exploration') {
+        this._eventBus.emit('ui_action', { action: 'toggle_minimap' });
+      }
+      return;
+    }
+    if (action === 'pause') {
+      if (this._context === 'exploration') {
+        this._eventBus.emit('ui_action', { action: 'open_pause' });
+      } else if (this._context === 'menu') {
+        this._eventBus.emit('menu_input', { action: 'cancel' });
+      }
+      return;
+    }
+    if (action === 'wait') {
+      if (this._context === 'exploration') {
+        this._actionQueue = { type: ACTIONS.WAIT };
+      }
+      return;
+    }
+    if (action && action.startsWith('move')) {
+      const idx = parseInt(action.replace('move', ''), 10) - 1;
+      if (this._context === 'exploration') {
+        this._actionQueue = { type: ACTIONS.USE_MOVE, index: idx };
+      }
+      return;
+    }
+
+    if (btn.dataset.dx !== undefined) {
+      const dx = parseInt(btn.dataset.dx, 10);
+      const dy = parseInt(btn.dataset.dy, 10);
+      if (this._context === 'exploration') {
+        this._actionQueue = { type: ACTIONS.MOVE, dx, dy };
+      } else if (this._context === 'menu') {
+        // Navegación de menús con el D-pad táctil
+        let direction = null;
+        if (dy < 0 && dx === 0) direction = 'up';
+        else if (dy > 0 && dx === 0) direction = 'down';
+        else if (dx < 0 && dy === 0) direction = 'left';
+        else if (dx > 0 && dy === 0) direction = 'right';
+        else if (dy < 0) direction = 'up';
+        else if (dy > 0) direction = 'down';
+        if (direction) {
+          this._eventBus.emit('menu_input', { direction });
+        }
+      } else if (this._context === 'dialog') {
+        this._eventBus.emit('dialog_input', { action: 'advance' });
+      }
+    }
   }
 
   setContext(context) {
@@ -271,18 +368,18 @@ export class InputHandler {
         this._eventBus.emit('ui_action', { action: 'pause_menu' });
         break;
 
-      // ── Selección rápida de movimientos (1-4) ──
+      // ── Usar movimiento (1-4): consume PP, requiere enemigo adyacente ──
       case 'Digit1':
-        this._eventBus.emit('ui_action', { action: 'select_move', index: 0 });
+        this._actionQueue = { type: ACTIONS.USE_MOVE, index: 0 };
         break;
       case 'Digit2':
-        this._eventBus.emit('ui_action', { action: 'select_move', index: 1 });
+        this._actionQueue = { type: ACTIONS.USE_MOVE, index: 1 };
         break;
       case 'Digit3':
-        this._eventBus.emit('ui_action', { action: 'select_move', index: 2 });
+        this._actionQueue = { type: ACTIONS.USE_MOVE, index: 2 };
         break;
       case 'Digit4':
-        this._eventBus.emit('ui_action', { action: 'select_move', index: 3 });
+        this._actionQueue = { type: ACTIONS.USE_MOVE, index: 3 };
         break;
     }
   }
@@ -311,6 +408,7 @@ export class InputHandler {
       case 'KeyD':
         this._eventBus.emit('menu_input', { direction: 'right' });
         break;
+      case 'Enter':
       case 'KeyZ':
         this._eventBus.emit('menu_input', { action: 'confirm' });
         break;
@@ -329,6 +427,7 @@ export class InputHandler {
    */
   _handleDialogInput(code) {
     switch (code) {
+      case 'Enter':
       case 'KeyZ':
       case 'Space':
         this._eventBus.emit('dialog_input', { action: 'advance' });
@@ -347,6 +446,10 @@ export class InputHandler {
   destroy() {
     document.removeEventListener('keydown', this._onKeyDown);
     document.removeEventListener('keyup', this._onKeyUp);
+    const touchRoot = document.getElementById('touch-controls');
+    if (touchRoot && this._onTouch) {
+      touchRoot.removeEventListener('pointerdown', this._onTouch);
+    }
     this._keysDown.clear();
     this._actionQueue = null;
   }

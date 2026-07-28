@@ -91,10 +91,13 @@ export class DungeonGenerator {
 
       const playerStart = { x: Math.floor(width / 2), y: room.y + room.h - 2 };
       const stairsPos = { x: Math.floor(width / 2), y: room.y + 2 };
+      // Escaleras presentes pero bloqueadas hasta derrotar al jefe (ActionSystem / GameEvents)
+      tileMap.setTile(stairsPos.x, stairsPos.y, TILES.STAIRS_DOWN.id);
       // El punto del boss estará justo delante de las escaleras
       const spawnPoints = [{ x: stairsPos.x, y: stairsPos.y + 3 }];
       const itemPoints = [];
 
+      room.isStart = true;
       tileMap.rooms = [room];
       tileMap.theme = theme;
       return {
@@ -127,12 +130,17 @@ export class DungeonGenerator {
 
     // === PASO 6: Posición inicial del jugador ===
     const playerStart = this._calcularInicioJugador(rooms);
+    if (rooms[0]) rooms[0].isStart = true;
 
     // === PASO 7: Colocación de escaleras ===
     const stairsPos = this._colocarEscaleras(rooms, playerStart, tileMap);
 
     // === PASO 7.5: Añadir terrenos especiales (Agua, Lava) ===
-    this._addSpecialTerrain(rooms, stairsPos, tileMap, theme);
+    this._addSpecialTerrain(rooms, playerStart, stairsPos, tileMap, theme);
+
+    // Revalidar tras agua/lava: pueden cortar caminos
+    this._validarConectividad(rooms, tileMap, celdas);
+    this._asegurarCaminoEscaleras(playerStart, stairsPos, tileMap);
 
     // === PASO 8: Puntos de aparición ===
     const spawnPoints = this._generarPuntosAparicion(rooms, playerStart, stairsPos, tileMap);
@@ -285,14 +293,6 @@ export class DungeonGenerator {
       }
     }
 
-    // Elegir una Monster House (10% de probabilidad si hay más de 3 habitaciones)
-    if (rooms.length >= 3 && RNG.getUniform() < 0.10) {
-      // Elegir aleatoriamente, excluyendo la primera habitación (usualmente la del jugador o cerca)
-      const index = 1 + Math.floor(RNG.getUniform() * (rooms.length - 1));
-      rooms[index].type = 'monster_house';
-      rooms[index].monsterHouseTriggered = false;
-    }
-
     return rooms;
   }
 
@@ -321,9 +321,10 @@ export class DungeonGenerator {
     if (rooms.length <= 2) return;
     
     // 15% de probabilidad de tener una monster house
-    if (RNG.getUniform() < 0.20) {
+    if (RNG.getUniform() < 0.15) {
       const idx = 1 + Math.floor(RNG.getUniform() * (rooms.length - 1));
       rooms[idx].type = 'monster_house';
+      rooms[idx].monsterHouseTriggered = false;
     }
 
     // 15% de probabilidad de tener una habitación del tesoro
@@ -334,8 +335,8 @@ export class DungeonGenerator {
       }
     }
 
-    // 20% de probabilidad de tener una habitación de descanso
-    if (RNG.getUniform() < 0.20) {
+    // 28% de probabilidad de tener una habitación de descanso
+    if (RNG.getUniform() < 0.28) {
       const idx = 1 + Math.floor(RNG.getUniform() * (rooms.length - 1));
       if (rooms[idx].type === 'normal') {
         rooms[idx].type = 'rest';
@@ -717,7 +718,7 @@ export class DungeonGenerator {
   /**
    * Genera charcos de agua o lava aleatorios dentro de algunas habitaciones según el tema de la zona.
    */
-  _addSpecialTerrain(rooms, stairsPos, tileMap, theme) {
+  _addSpecialTerrain(rooms, playerStart, stairsPos, tileMap, theme) {
     const specialRooms = RNG.shuffle([...rooms]).slice(0, Math.max(1, Math.floor(rooms.length * 0.3))); // 30% of rooms
 
     for (const room of specialRooms) {
@@ -747,12 +748,46 @@ export class DungeonGenerator {
         cx = Math.max(room.x + 1, Math.min(room.x + room.w - 2, cx));
         cy = Math.max(room.y + 1, Math.min(room.y + room.h - 2, cy));
         
-        // No sobreescribir escaleras
+        // No sobreescribir escaleras ni spawn del jugador
         if (cx === stairsPos.x && cy === stairsPos.y) continue;
+        if (cx === playerStart.x && cy === playerStart.y) continue;
         
         tileMap.setTile(cx, cy, terrainType);
       }
     }
+  }
+
+  /**
+   * Si las escaleras quedaron inalcanzables tras agua/lava, limpia un camino mínimo.
+   */
+  _asegurarCaminoEscaleras(playerStart, stairsPos, tileMap) {
+    const visitados = this._floodFill(playerStart.x, playerStart.y, tileMap);
+    const stairsKey = `${stairsPos.x},${stairsPos.y}`;
+    if (visitados.has(stairsKey)) return;
+
+    // Limpiar terreno especial en un pasillo recto + L hacia las escaleras
+    let x = playerStart.x;
+    let y = playerStart.y;
+    while (x !== stairsPos.x) {
+      x += x < stairsPos.x ? 1 : -1;
+      if (tileMap.isInBounds(x, y) && !tileMap.isWalkable(x, y)) {
+        const id = tileMap.getTile(x, y).id;
+        if (id === TILES.WATER.id || id === TILES.LAVA.id || id === TILES.WALL.id) {
+          tileMap.setTile(x, y, TILES.FLOOR.id);
+        }
+      }
+    }
+    while (y !== stairsPos.y) {
+      y += y < stairsPos.y ? 1 : -1;
+      if (tileMap.isInBounds(x, y) && !tileMap.isWalkable(x, y)) {
+        const id = tileMap.getTile(x, y).id;
+        if (id === TILES.WATER.id || id === TILES.LAVA.id || id === TILES.WALL.id) {
+          tileMap.setTile(x, y, TILES.FLOOR.id);
+        }
+      }
+    }
+    // Asegurar tile de escaleras
+    tileMap.setTile(stairsPos.x, stairsPos.y, TILES.STAIRS_DOWN.id);
   }
 
   /**

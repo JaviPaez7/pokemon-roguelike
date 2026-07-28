@@ -9,8 +9,11 @@
  * @returns {number} XP ganada
  */
 export function calculateExpGained(baseExp, enemyLevel) {
-  // Fórmula simplificada: (baseExp * enemyLevel) / 5
-  return Math.max(1, Math.floor((baseExp * enemyLevel) / 5));
+  // Fórmula simplificada: (baseExp * enemyLevel) / 5, con un pequeño bonus
+  // para que el early game no se sienta tan lento
+  const raw = Math.floor((baseExp * enemyLevel) / 5);
+  const bonus = enemyLevel <= 12 ? Math.ceil(raw * 0.35) : (enemyLevel <= 22 ? Math.ceil(raw * 0.15) : 0);
+  return Math.max(1, raw + bonus);
 }
 
 /**
@@ -52,7 +55,7 @@ export function grantExperience(pokemonInfo, fighter, xpGained, pokemonDB, moves
   };
 
   pokemonInfo.xp = (pokemonInfo.xp || 0) + xpGained;
-  result.messages.push(`${pokemonInfo.name} ganó ${xpGained} puntos de experiencia.`);
+  result.messages.push(`¡${pokemonInfo.name} ganó ${xpGained} puntos de experiencia!`);
 
   // Verificar subidas de nivel (puede subir varios niveles a la vez)
   let maxLevel = 100;

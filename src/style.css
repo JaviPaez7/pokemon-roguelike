@@ -159,6 +159,7 @@ html, body {
    Overlay UI
    ============================================ */
 #ui-overlay {
+  /* Por encima del D-pad táctil */
   position: absolute;
   top: 16px;
   left: 20px;
@@ -167,7 +168,7 @@ html, body {
   width: auto;
   height: auto;
   pointer-events: none;
-  z-index: 20;
+  z-index: 40;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -510,4 +511,102 @@ html, body {
   .loading-bar-container {
     width: 150px;
   }
+}
+
+/* Controles táctiles */
+#touch-controls {
+  display: none;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+}
+
+#touch-controls .touch-pad,
+#touch-controls .touch-actions {
+  pointer-events: auto;
+}
+
+.touch-pad {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, 48px);
+  grid-template-rows: repeat(3, 48px);
+  gap: 5px;
+}
+
+.touch-actions {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  max-width: 140px;
+}
+
+.touch-actions > .touch-btn {
+  width: 44px;
+  height: 40px;
+  font-size: 9px;
+}
+
+.touch-moves {
+  display: grid;
+  grid-template-columns: repeat(2, 44px);
+  gap: 4px;
+}
+
+.touch-btn {
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--border-glow);
+  border-radius: 8px;
+  background: rgba(18, 18, 30, 0.75);
+  color: var(--text-primary);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.touch-btn:active {
+  background: rgba(74, 74, 138, 0.85);
+}
+
+.touch-z { background: rgba(74, 140, 80, 0.7); }
+.touch-x { background: rgba(140, 80, 74, 0.7); }
+
+@media (hover: none), (pointer: coarse) {
+  #touch-controls {
+    display: block;
+  }
+}
+
+
+/* overlay over touch */
+#ui-overlay:not(.hidden) {
+  z-index: 40;
+  pointer-events: auto;
+}
+#touch-controls {
+  z-index: 15;
+}
+
+body.menu-open #touch-controls .touch-btn {
+  pointer-events: none !important;
+}
+
+
+.menu-option {
+  min-height: 28px;
+}
+
+@keyframes victoryBlink {
+  from { opacity: 0.85; }
+  to { opacity: 1; filter: drop-shadow(0 0 6px #4ade80); }
 }

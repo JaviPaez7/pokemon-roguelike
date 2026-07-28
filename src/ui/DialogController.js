@@ -120,7 +120,9 @@ export class DialogController {
     const state = ui.game.getState();
     if (state === GAME_STATES.EXPLORING) {
       ui.game.inputHandler.setContext('exploration');
-    } else if (state === GAME_STATES.MENU) {
+    } else if (state === GAME_STATES.MENU || state === GAME_STATES.TITLE
+        || state === GAME_STATES.STARTER_SELECT || state === GAME_STATES.GAME_OVER
+        || state === GAME_STATES.VICTORY) {
       ui.game.inputHandler.setContext('menu');
     }
   }

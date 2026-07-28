@@ -206,11 +206,24 @@ export class EntityManager {
   getEntityAt(x, y, includeItems = false) {
     for (const [entityId, pos] of this._components.position) {
       if (pos.x === x && pos.y === y && this._activeEntities.has(entityId)) {
-        // Saltar objetos si no se solicitan
-        if (!includeItems && this._components.itemDrop.has(entityId)) {
+        // Saltar objetos del suelo
+        if (this._components.itemDrop.has(entityId)) {
+          if (!includeItems) continue;
+          return entityId;
+        }
+        // Las trampas no son ocupantes de combate (se pisan, no se atacan)
+        if (this._components.trap.has(entityId)) {
           continue;
         }
-        return entityId;
+        // Pokémon debilitados no bloquean casillas
+        const fighter = this._components.fighter.get(entityId);
+        if (fighter && fighter.hp <= 0) {
+          continue;
+        }
+        // Solo Pokémon / NPCs con presencia física
+        if (this._components.pokemonInfo.has(entityId) || this._components.npcMerchant.has(entityId)) {
+          return entityId;
+        }
       }
     }
     return null;

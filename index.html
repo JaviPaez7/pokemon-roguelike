@@ -21,6 +21,34 @@
       <div id="ui-overlay" class="hidden">
         <div id="menu-container"></div>
       </div>
+      <!-- Controles táctiles (solo móvil / touch) -->
+      <div id="touch-controls" aria-hidden="true">
+        <div class="touch-pad">
+          <button type="button" class="touch-btn" data-dx="-1" data-dy="-1">↖</button>
+          <button type="button" class="touch-btn" data-dx="0" data-dy="-1">↑</button>
+          <button type="button" class="touch-btn" data-dx="1" data-dy="-1">↗</button>
+          <button type="button" class="touch-btn" data-dx="-1" data-dy="0">←</button>
+          <button type="button" class="touch-btn touch-wait" data-action="wait">·</button>
+          <button type="button" class="touch-btn" data-dx="1" data-dy="0">→</button>
+          <button type="button" class="touch-btn" data-dx="-1" data-dy="1">↙</button>
+          <button type="button" class="touch-btn" data-dx="0" data-dy="1">↓</button>
+          <button type="button" class="touch-btn" data-dx="1" data-dy="1">↘</button>
+        </div>
+        <div class="touch-actions">
+          <button type="button" class="touch-btn touch-z" data-action="confirm">Z</button>
+          <button type="button" class="touch-btn touch-x" data-action="inventory">X</button>
+          <button type="button" class="touch-btn" data-action="team">C</button>
+          <button type="button" class="touch-btn" data-action="swap">Tab</button>
+          <button type="button" class="touch-btn" data-action="map">M</button>
+          <button type="button" class="touch-btn" data-action="pause">☰</button>
+          <div class="touch-moves">
+            <button type="button" class="touch-btn" data-action="move1">1</button>
+            <button type="button" class="touch-btn" data-action="move2">2</button>
+            <button type="button" class="touch-btn" data-action="move3">3</button>
+            <button type="button" class="touch-btn" data-action="move4">4</button>
+          </div>
+        </div>
+      </div>
     </div>
     <!-- Pantalla de carga -->
     <div id="loading-screen">

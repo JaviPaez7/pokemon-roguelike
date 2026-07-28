@@ -37,6 +37,20 @@ export class TurnManager {
      * @type {number}
      */
     this._turnCount = 0;
+
+    /**
+     * Predicado opcional: si retorna false, la entidad no actúa (p. ej. PS <= 0).
+     * @type {((entityId: number) => boolean)|null}
+     */
+    this._canAct = null;
+  }
+
+  /**
+   * Registrar un filtro de entidades que pueden actuar.
+   * @param {(entityId: number) => boolean} fn
+   */
+  setCanActCheck(fn) {
+    this._canAct = typeof fn === 'function' ? fn : null;
   }
 
   /**
@@ -101,6 +115,7 @@ export class TurnManager {
     let bestEnergy = 99; // Solo consideramos energía >= 100
 
     for (const [entityId, data] of this._entities) {
+      if (this._canAct && !this._canAct(entityId)) continue;
       if (data.energy > bestEnergy) {
         bestEnergy = data.energy;
         bestId = entityId;
@@ -157,6 +172,19 @@ export class TurnManager {
       }
     }
 
+    // Acciones fallidas (muro, vacío) no gastan turno ni dejan actuar a enemigos
+    const playerSucceeded = results.playerResult && results.playerResult.success;
+    if (!playerSucceeded) {
+      this._turnCount++;
+      this._eventBus.emit('turn_end', {
+        turnCount: this._turnCount,
+        playerResult: results.playerResult,
+        enemyResults: results.enemyResults,
+        skippedEnemies: true
+      });
+      return results;
+    }
+
     // ── 2. Turnos enemigos ──
     // Acumular energía hasta que algún enemigo pueda actuar (máx. ~2 turnos de espera)
     let preTickSafety = 0;
@@ -180,6 +208,13 @@ export class TurnManager {
         if (pd && pd.energy >= 100) {
           pd.energy -= 100;
         }
+        nextActor = this.getNextActor();
+        continue;
+      }
+
+      // Entidades debilitadas: expulsar del turno (evita fantasma actuando)
+      if (this._canAct && !this._canAct(nextActor)) {
+        this.removeEntity(nextActor);
         nextActor = this.getNextActor();
         continue;
       }
@@ -246,6 +281,14 @@ export class TurnManager {
    */
   getTurnCount() {
     return this._turnCount;
+  }
+
+  /**
+   * Restaurar contador de turnos (carga de partida).
+   * @param {number} n
+   */
+  setTurnCount(n) {
+    this._turnCount = Math.max(0, Math.floor(Number(n) || 0));
   }
 
   /**

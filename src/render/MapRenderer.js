@@ -125,7 +125,16 @@ export class MapRenderer {
       } else if (tile.id === 4) { // WATER
         colorSuelo = tileMap.biome.water;
         colorBorde = tileMap.biome.wall;
-      } else { // FLOOR (1), CORRIDOR (2), STAIRS, TRAPS
+      } else if (tile.id === 6) { // LAVA
+        colorSuelo = tileMap.biome.lava || '#ff4400';
+        colorBorde = tileMap.biome.wall;
+      } else if (tile.id === 3) { // STAIRS
+        colorSuelo = tileMap.biome.stairs || tileMap.biome.floor;
+        colorBorde = tileMap.biome.wall;
+      } else if (tile.id === 8) { // WONDER_TILE
+        colorSuelo = '#c9a0ff';
+        colorBorde = tileMap.biome.wall;
+      } else { // FLOOR (1), CORRIDOR (2), TRAPS
         colorSuelo = tileMap.biome.floor;
         colorBorde = tileMap.biome.wall;
       }

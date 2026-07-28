@@ -1,5 +1,12 @@
 import { openPauseMenu } from './PauseMenu.js';
 
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 /**
  * Abre el menú de historial de mensajes en pantalla.
  * @param {import('../UIManager.js').UIManager} ui - Gestor de UI
@@ -17,9 +24,8 @@ export function openLogMenu(ui) {
     html += `<div style="text-align: center; color: var(--text-secondary); padding: 20px;">No hay mensajes registrados.</div>`;
   } else {
     logs.forEach(log => {
-      // Si el log es un objeto con texto
       const text = typeof log === 'object' ? log.text : log;
-      html += `<div style="margin-bottom: 6px; border-bottom: 1px dashed rgba(255,255,255,0.05); padding-bottom: 4px; color: var(--text-primary);">${text}</div>`;
+      html += `<div style="margin-bottom: 6px; border-bottom: 1px dashed rgba(255,255,255,0.05); padding-bottom: 4px; color: var(--text-primary);">${escapeHtml(text)}</div>`;
     });
   }
 
@@ -41,11 +47,8 @@ export function openLogMenu(ui) {
   ui.selectedIndex = 0;
   ui.updateSelectionVisuals();
 
-  // Desplazar automáticamente al fondo para ver los mensajes más recientes
   setTimeout(() => {
     const el = document.getElementById('message-log-container');
-    if (el) {
-      el.scrollTop = el.scrollHeight;
-    }
+    if (el) el.scrollTop = el.scrollHeight;
   }, 50);
 }

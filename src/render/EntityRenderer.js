@@ -122,9 +122,19 @@ export class EntityRenderer {
    * @param {number} damage
    * @param {boolean} isCritical
    */
-  spawnFloatingDamage(entityId, damage, isCritical) {
-    const text = isCritical ? `CRIT! -${damage}` : `-${damage}`;
-    const color = isCritical ? '#ff8800' : '#ff4444';
+  spawnFloatingDamage(entityId, damage, isCritical, effectiveness = 1) {
+    let text = isCritical ? `¡Crít! -${damage}` : `-${damage}`;
+    let color = isCritical ? '#ff8800' : '#ff4444';
+    if (!isCritical && effectiveness > 1) {
+      color = '#4ade80';
+      text = `¡Eficaz! -${damage}`;
+    } else if (!isCritical && effectiveness > 0 && effectiveness < 1) {
+      color = '#94a3b8';
+      text = `Poco... -${damage}`;
+    } else if (effectiveness === 0) {
+      color = '#64748b';
+      text = 'Nulo';
+    }
     this._danosFlotantes.push({
       entityId,
       text,
@@ -340,11 +350,17 @@ export class EntityRenderer {
     const fighter = entityManager.getComponent(entityId, 'fighter');
     const partyMember = entityManager.getComponent(entityId, 'partyMember');
     const isEnemy = entityManager.hasComponent(entityId, 'aiControlled');
+    const isFainted = fighter && fighter.hp <= 0;
+
+    ctx.save();
+    if (isFainted) {
+      ctx.globalAlpha = 0.4;
+    }
 
     // Indicador de aliado/enemigo (borde coloreado detrás del sprite)
-    if (partyMember) {
+    if (partyMember && !isFainted) {
       this._dibujarIndicadorEquipo(ctx, sx, sy, tileSize, INDICADOR_ALIADO);
-    } else if (isEnemy) {
+    } else if (isEnemy && !isFainted) {
       this._dibujarIndicadorEquipo(ctx, sx, sy, tileSize, INDICADOR_ENEMIGO);
     }
 
@@ -377,7 +393,8 @@ export class EntityRenderer {
           'paralyze': 'rgba(255, 255, 0, 0.3)',
           'sleep': 'rgba(100, 149, 237, 0.3)',
           'freeze': 'rgba(0, 255, 255, 0.3)',
-          'confusion': 'rgba(255, 105, 180, 0.3)'
+          'confusion': 'rgba(255, 105, 180, 0.3)',
+          'confuse': 'rgba(255, 105, 180, 0.3)'
       };
       const effectObj = fighter.statusEffects[0];
       const effectType = typeof effectObj === 'string' ? effectObj : effectObj.type;
@@ -388,12 +405,16 @@ export class EntityRenderer {
     }
 
     // Indicadores de alerta y estado
-    this._dibujarIndicadoresEstado(ctx, entityId, entityManager, sx, sy, tileSize);
+    if (!isFainted) {
+      this._dibujarIndicadoresEstado(ctx, entityId, entityManager, sx, sy, tileSize);
+    }
 
     // Dibujar barra de HP si el Pokémon tiene datos de vida
-    if (fighter && fighter.hp !== undefined && fighter.maxHp !== undefined) {
+    if (fighter && fighter.hp !== undefined && fighter.maxHp !== undefined && !isFainted) {
       this._dibujarBarraHP(ctx, sx, sy, tileSize, fighter.hp, fighter.maxHp);
     }
+
+    ctx.restore();
   }
 
   /**
@@ -428,11 +449,17 @@ export class EntityRenderer {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // Alerta de persecución
-    if (ai && ai.behavior === 'chase' && ai.alertedTo !== null) {
-      const pulse = 0.7 + Math.sin(this._tiempo * 0.012) * 0.3;
-      ctx.fillStyle = `rgba(255, 204, 68, ${pulse})`;
-      ctx.fillText('!', sx + tileSize / 2, sy - 4);
+    // Alerta de persecución / huida
+    if (ai && ai.alertedTo !== null) {
+      if (ai.behavior === 'chase') {
+        const pulse = 0.7 + Math.sin(this._tiempo * 0.012) * 0.3;
+        ctx.fillStyle = `rgba(255, 204, 68, ${pulse})`;
+        ctx.fillText('!', sx + tileSize / 2, sy - 4);
+      } else if (ai.behavior === 'flee') {
+        const pulse = 0.6 + Math.sin(this._tiempo * 0.015) * 0.4;
+        ctx.fillStyle = `rgba(100, 200, 255, ${pulse})`;
+        ctx.fillText('?', sx + tileSize / 2, sy - 4);
+      }
     }
 
     // Estados alterados (todos apilados hacia arriba)

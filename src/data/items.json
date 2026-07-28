@@ -22,10 +22,10 @@
   {
     "id": "hyper_potion",
     "name": "Hiper Poción",
-    "type": "heal",
-    "value": 200,
-    "rarity": 0.05,
-    "description": "Restaura 200 PS",
+    "type": "heal_percent",
+    "value": 50,
+    "rarity": 0.04,
+    "description": "Restaura el 50% de los PS máximos",
     "sprite": "💊",
     "spriteUrl": "/sprites/items/hyper_potion.png"
   },
@@ -69,7 +69,7 @@
     "id": "pokeball",
     "name": "Poké Ball",
     "type": "capture",
-    "captureBonus": 1,
+    "captureBonus": 1.15,
     "rarity": 0.25,
     "description": "Atrapa Pokémon debilitados",
     "sprite": "🔴",
@@ -77,9 +77,9 @@
   },
   {
     "id": "great_ball",
-    "name": "Great Ball",
+    "name": "Super Ball",
     "type": "capture",
-    "captureBonus": 1.5,
+    "captureBonus": 1.6,
     "rarity": 0.1,
     "description": "Mejor ratio de captura",
     "sprite": "🔵",
@@ -148,7 +148,7 @@
   {
     "id": "max_ether",
     "name": "Max Éter",
-    "type": "pp_restore_full",
+    "type": "pp_restore_one_full",
     "value": 999,
     "rarity": 0.03,
     "description": "Restaura todos los PP de un movimiento",
@@ -160,7 +160,7 @@
     "name": "Cuerda Huida",
     "type": "escape",
     "rarity": 0.05,
-    "description": "Escapa de la mazmorra",
+    "description": "Te saca de la mazmorra al menú (guarda la partida).",
     "sprite": "🪢",
     "spriteUrl": "/sprites/items/escape_rope.png"
   },
@@ -279,7 +279,7 @@
   },
   {
     "id": "paralyze_heal",
-    "name": "Antiparaliz",
+    "name": "Antiparálisis",
     "type": "status_cure",
     "cures": "paralyze",
     "rarity": 0.2,

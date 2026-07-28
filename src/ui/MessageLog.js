@@ -12,7 +12,7 @@ export class MessageLog {
   constructor(maxMessages = 100) {
     this.messages = [];
     this.maxMessages = maxMessages;
-    this.displayCount = 4; // Mensajes visibles en pantalla
+    this.displayCount = 2; // Pocos mensajes: no tapar el mapa
     this.fadeTimer = 0;
   }
 
@@ -23,7 +23,7 @@ export class MessageLog {
    */
   add(text, color = COLORS.UI_TEXT) {
     this.messages.push({
-      text,
+      text: String(text),
       color,
       timestamp: Date.now(),
       age: 0
@@ -99,7 +99,10 @@ export class MessageLog {
    * @returns {Array} Mensajes recientes
    */
   getRecent(count = this.displayCount) {
-    return this.messages.slice(-count);
+    const now = Date.now();
+    // Solo mensajes recientes (desaparecen solos ~3.5s)
+    const fresh = this.messages.filter(m => (now - (m.timestamp || 0)) < 3500);
+    return fresh.slice(-count);
   }
 
   /**
@@ -113,43 +116,38 @@ export class MessageLog {
     const recent = this.getRecent();
     if (recent.length === 0) return;
 
-    const lineHeight = 14;
-    const padding = 6;
+    const lineHeight = 12;
+    const padding = 4;
     const bgHeight = recent.length * lineHeight + padding * 2;
+    const now = Date.now();
 
-    // Fondo semitransparente
     ctx.save();
-    ctx.fillStyle = 'rgba(10, 10, 20, 0.85)';
+    // Fondo suave: no tapa el mapa
+    ctx.fillStyle = 'rgba(8, 10, 18, 0.45)';
     ctx.fillRect(x, y - bgHeight, width, bgHeight);
 
-    // Borde superior sutil
-    ctx.strokeStyle = 'rgba(74, 74, 106, 0.5)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(x, y - bgHeight);
-    ctx.lineTo(x + width, y - bgHeight);
-    ctx.stroke();
-
-    // Dibujar mensajes
-    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.font = '7px "Press Start 2P", monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
+    const maxTextW = Math.max(40, width - padding * 2);
     for (let i = 0; i < recent.length; i++) {
       const msg = recent[i];
+      const age = now - (msg.timestamp || now);
+      const fade = Math.max(0.25, 1 - age / 3500);
       const msgY = y - bgHeight + padding + i * lineHeight;
-      
-      // Fade basado en posición (más antiguo = más transparente)
-      const alpha = 0.5 + (i / recent.length) * 0.5;
-      
-      // Sombra del texto
-      ctx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
-      ctx.fillText(msg.text, x + padding + 1, msgY + 1);
-      
-      // Texto
-      ctx.fillStyle = msg.color;
-      ctx.globalAlpha = alpha;
-      ctx.fillText(msg.text, x + padding, msgY);
+      let drawText = msg.text;
+      if (ctx.measureText(drawText).width > maxTextW) {
+        while (drawText.length > 1 && ctx.measureText(drawText + '…').width > maxTextW) {
+          drawText = drawText.slice(0, -1);
+        }
+        drawText += '…';
+      }
+      ctx.globalAlpha = fade;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+      ctx.fillText(drawText, x + padding + 1, msgY + 1);
+      ctx.fillStyle = msg.color || '#c8c8e8';
+      ctx.fillText(drawText, x + padding, msgY);
     }
 
     ctx.restore();

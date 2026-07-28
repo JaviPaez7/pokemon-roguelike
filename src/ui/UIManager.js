@@ -17,6 +17,8 @@ import { handleMenuInput, updateSelectionVisuals } from './menus/MenuInput.js';
 import { openStairsMenu } from './menus/StairsMenu.js';
 import { openRecruitMenu } from './menus/RecruitMenu.js';
 import { openLearnMoveMenu } from './menus/LearnMoveMenu.js';
+import { openEvolutionMenu } from './menus/EvolutionMenu.js';
+import { openMerchantMenu } from './menus/MerchantMenu.js';
 
 export class UIManager {
   /**
@@ -41,6 +43,13 @@ export class UIManager {
     
     /** @type {MusicManager} */
     this.music = new MusicManager();
+    try {
+      const savedVol = JSON.parse(localStorage.getItem('pokerogue_volumes') || 'null');
+      if (savedVol) {
+        if (typeof savedVol.sfx === 'number') this.sfx.setVolume(savedVol.sfx);
+        if (typeof savedVol.music === 'number') this.music.setVolume(savedVol.music);
+      }
+    } catch (e) {}
     this.dialog = new DialogController(this);
 
     if (this.loadingScreen) {
@@ -115,6 +124,10 @@ export class UIManager {
           this.game.changeState(GAME_STATES.MENU);
           this.openTeamMenu();
           break;
+        case 'open_pause':
+          this.game.changeState(GAME_STATES.MENU);
+          this.openPauseMenu();
+          break;
         case 'toggle_minimap':
           if (this.game.renderer && this.game.renderer.hud) {
             this.game.renderer.hud.toggleMinimap();
@@ -151,11 +164,21 @@ export class UIManager {
   }
 
   closeMenu() {
+    // Si había un diálogo a medias, vaciar cola para no dejar input pillado
+    if (this.dialog) {
+      this.dialog.dialogQueue = [];
+      this.dialog.currentDialogCallback = null;
+      if (this.dialog.dialogTimer) {
+        clearInterval(this.dialog.dialogTimer);
+        this.dialog.dialogTimer = null;
+      }
+    }
     this.currentMenuType = null;
     this.selectedIndex = 0;
     this.menuOptions = [];
     this.selectedItem = null;
     this.selectedPokemon = null;
+    try { document.body.classList.remove('menu-open'); } catch (e) {}
 
     this.overlay.classList.remove('dialog-mode');
     this.overlay.classList.add('hidden');
@@ -163,6 +186,9 @@ export class UIManager {
 
     if (this.game.getState() === GAME_STATES.MENU) {
       this.game.changeState(GAME_STATES.EXPLORING);
+    } else if (this.game.getState() === GAME_STATES.EXPLORING) {
+      // Recuperar control si closeMenu cerró un diálogo sin closeDialog()
+      this.game.inputHandler?.setContext?.('exploration');
     }
   }
 
@@ -170,6 +196,7 @@ export class UIManager {
     this.currentMenuType = type;
     this.overlay.classList.remove('hidden', 'dialog-mode');
     this.menuContainer.innerHTML = htmlContent;
+    try { document.body.classList.add('menu-open'); } catch (e) {}
     this.updateSelectionVisuals();
   }
 
@@ -212,6 +239,8 @@ export class UIManager {
   openStairsMenu() { openStairsMenu(this); }
   openRecruitMenu(targetId, defenderInfo) { openRecruitMenu(this, targetId, defenderInfo); }
   openLearnMoveMenu(entityId, moveId) { openLearnMoveMenu(this, entityId, moveId); }
+  openEvolutionMenu(entityId, evolution, opts) { openEvolutionMenu(this, entityId, evolution, opts); }
+  openMerchantMenu(merchantId) { openMerchantMenu(this, merchantId); }
 
   handleMenuInput(data) { handleMenuInput(this, data); }
   updateSelectionVisuals() { updateSelectionVisuals(this); }
