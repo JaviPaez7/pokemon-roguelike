@@ -103,7 +103,7 @@ export function openStairsMenu(ui) {
     },
     () => {
       ui.closeMenu();
-      ui.game.changeState(GAME_STATES.EXPLORING);
+      ui.game.changeState(ui.game.homeState);
     }
   ];
 

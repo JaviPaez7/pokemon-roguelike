@@ -129,6 +129,9 @@ export function createComponentStore() {
     isBoss: new Map(),
 
     /** @type {Map<number, {shopInventory: Array, gold: number}>} */
-    npcMerchant: new Map()
+    npcMerchant: new Map(),
+
+    /** @type {Map<number, {id: string, role: string}>} Habitante del pueblo */
+    npcTown: new Map()
   };
 }

@@ -1,7 +1,7 @@
-// Regresión del bug de 75eebf4: abrir un menú desde exploración entraba en un
-// ciclo openPauseMenu → changeState(MENU) → state_changed → openPauseMenu… que
+// Regresión del bug de 75eebf4: abrir un menú entraba en un ciclo
+// openPauseMenu → changeState(MENU) → state_changed → openPauseMenu… que
 // acababa en «Maximum call stack size exceeded». Cada apertura debe provocar
-// exactamente un cambio de estado.
+// exactamente un cambio de estado, en la mazmorra y en el pueblo.
 import {
   test,
   expect,
@@ -9,7 +9,9 @@ import {
   panelTitle,
   openTitleScreen,
   startNewGame,
+  startInDungeon,
   expectExploring,
+  expectInTown,
   recordStateChanges,
   stateChanges,
 } from './fixtures.js';
@@ -21,8 +23,8 @@ const OPENERS = [
 ];
 
 for (const { key, title, menu } of OPENERS) {
-  test(`${key} abre «${menu}» desde exploración con un solo cambio de estado`, async ({ page }) => {
-    await startNewGame(page);
+  test(`${key} abre «${menu}» desde la mazmorra con un solo cambio de estado`, async ({ page }) => {
+    await startInDungeon(page);
     await recordStateChanges(page);
 
     await page.keyboard.press(key);
@@ -33,8 +35,20 @@ for (const { key, title, menu } of OPENERS) {
   });
 }
 
-test('el botón táctil de pausa abre la pausa con un solo cambio de estado', async ({ page }) => {
+test('en el pueblo, Escape abre la pausa y al cerrarla se vuelve al pueblo', async ({ page }) => {
   await startNewGame(page);
+  await recordStateChanges(page);
+
+  await page.keyboard.press('Escape');
+  await expect(panelTitle(page)).toHaveText('PAUSA');
+  await page.keyboard.press('Escape');
+  await expectInTown(page);
+
+  expect(await stateChanges(page)).toEqual(['MENU', 'TOWN']);
+});
+
+test('el botón táctil de pausa abre la pausa con un solo cambio de estado', async ({ page }) => {
+  await startInDungeon(page);
   await recordStateChanges(page);
 
   await page.locator('.touch-btn[data-action="pause"]').dispatchEvent('pointerdown');
@@ -44,7 +58,7 @@ test('el botón táctil de pausa abre la pausa con un solo cambio de estado', as
 });
 
 test('Escape y «Continuar» cierran la pausa y devuelven el control', async ({ page }) => {
-  await startNewGame(page);
+  await startInDungeon(page);
   await recordStateChanges(page);
 
   await page.keyboard.press('Escape');
@@ -61,7 +75,7 @@ test('Escape y «Continuar» cierran la pausa y devuelven el control', async ({ 
 });
 
 test('changeState es idempotente: pedir el estado actual no emite nada', async ({ page }) => {
-  await startNewGame(page);
+  await startInDungeon(page);
   await recordStateChanges(page);
 
   await page.evaluate(() => window.game.changeState('EXPLORING'));
@@ -70,17 +84,19 @@ test('changeState es idempotente: pedir el estado actual no emite nada', async (
   await expectExploring(page);
 });
 
-test('Escape en la selección de inicial vuelve al título y se puede volver a entrar', async ({ page }) => {
+test('Escape en el test de personalidad vuelve al título y se puede volver a entrar', async ({ page }) => {
   await openTitleScreen(page);
   await page.keyboard.press('z');
-  await expect(panelTitle(page)).toHaveText('ELIGE TU COMPAÑERO INICIAL');
+  await expect(panelTitle(page)).toHaveText('UNA NUEVA AVENTURA');
+  await page.keyboard.press('z');
+  await expect(panelTitle(page)).toHaveText('PREGUNTA 1 DE 8');
 
   await page.keyboard.press('Escape');
   await expect(page.locator('.menu-option', { hasText: 'Nueva Partida' })).toBeVisible();
   expect((await gameStatus(page)).state).toBe('TITLE');
 
   await page.keyboard.press('z');
-  await expect(panelTitle(page)).toHaveText('ELIGE TU COMPAÑERO INICIAL');
+  await expect(panelTitle(page)).toHaveText('UNA NUEVA AVENTURA');
 });
 
 test('changeState rechaza que quien reacciona a state_changed vuelva a cambiar el estado', async ({ page, pageErrors }) => {
@@ -98,7 +114,7 @@ test('changeState rechaza que quien reacciona a state_changed vuelva a cambiar e
   });
 
   expect(finalState).toBe('STARTER_SELECT');
-  await expect(panelTitle(page)).toHaveText('ELIGE TU COMPAÑERO INICIAL');
+  await expect(panelTitle(page)).toHaveText('UNA NUEVA AVENTURA');
   await expect.poll(() => pageErrors.length).toBe(1);
   expect(pageErrors[0]).toContain("changeState('TITLE')");
   pageErrors.length = 0;

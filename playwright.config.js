@@ -11,11 +11,16 @@ export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
   forbidOnly: CI,
-  // La mazmorra es aleatoria hasta que haya RNG con semilla (fase 2): un
-  // reintento en CI evita bloquear el despliegue por un mapa raro, y el
-  // informe marca el test como «flaky» para que no pase desapercibido.
+  // Las partidas son deterministas (semilla fija), pero los tiempos del
+  // navegador no: un reintento en CI evita bloquear el despliegue por un runner
+  // lento, y el informe marca el test como «flaky» para que no pase desapercibido.
   retries: CI ? 1 : 0,
-  workers: CI ? 2 : undefined,
+  // Cada test mueve un juego a 60 fps en su propio Chromium: con más workers que
+  // núcleos rápidos, los primeros en arrancar se quedan sin CPU
+  workers: CI ? 2 : 4,
+  // Una partida nueva pasa por el test de personalidad, el pueblo y la entrada
+  // en la mazmorra
+  timeout: 60_000,
   reporter: CI
     ? [['github'], ['list'], ['html', { open: 'never' }]]
     : [['list'], ['html', { open: 'never' }]],

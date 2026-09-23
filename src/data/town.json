@@ -1,0 +1,109 @@
+{
+  "name": "Pueblo Raíz",
+  "start": {
+    "x": 15,
+    "y": 10
+  },
+  "exitReturn": {
+    "x": 15,
+    "y": 18
+  },
+  "rows": [
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    "TTT.....TT...........TT.....TTT",
+    "TTRRRRR....*.......*....RRRRRTT",
+    "T.BBBBB........P........BBBBB.T",
+    "T.BBDBB.......===.......BBDBB.T",
+    "T...=..........=..........=...T",
+    "T...=...~~~~...=..*.......=...T",
+    "T...=.*.~~~~.*.=..........=...T",
+    "T...=...~~~~...=.....*....=...T",
+    "T...=..........=..........=...T",
+    "T...=======================...T",
+    "T..............=..............T",
+    "T.RRRRR........=........RRRRR.T",
+    "T.BBBBB.*......=........BBBBB.T",
+    "T.BBDBB........=.....*..BBDBB.T",
+    "T...=.......*..=...*......=...T",
+    "T...=..........=..........=...T",
+    "T...=======================...T",
+    "TT.............=.............TT",
+    "TTT....*......===......*....TTT",
+    "TTTTTTTTTTTTTTEEETTTTTTTTTTTTTT"
+  ],
+  "legend": {
+    "T": "TOWN_TREE",
+    ".": "TOWN_GRASS",
+    "*": "TOWN_FLOWERS",
+    "=": "TOWN_PATH",
+    "R": "TOWN_ROOF",
+    "B": "TOWN_WALL",
+    "D": "TOWN_DOOR",
+    "~": "WATER",
+    "P": "TOWN_BOARD",
+    "E": "TOWN_EXIT"
+  },
+  "npcs": [
+    {
+      "id": "kecleon",
+      "role": "shop",
+      "speciesId": 352,
+      "name": "Kecleon",
+      "x": 4,
+      "y": 15,
+      "facing": "down"
+    },
+    {
+      "id": "kangaskhan",
+      "role": "storage",
+      "speciesId": 115,
+      "name": "Kangaskhan",
+      "x": 26,
+      "y": 15,
+      "facing": "down"
+    },
+    {
+      "id": "persian",
+      "role": "bank",
+      "speciesId": 53,
+      "name": "Persian",
+      "x": 26,
+      "y": 5,
+      "facing": "down"
+    },
+    {
+      "id": "slowpoke",
+      "role": "talk",
+      "speciesId": 79,
+      "name": "Slowpoke",
+      "x": 12,
+      "y": 9,
+      "facing": "down"
+    },
+    {
+      "id": "pidgey",
+      "role": "talk",
+      "speciesId": 16,
+      "name": "Pidgey",
+      "x": 19,
+      "y": 5,
+      "facing": "left"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "base",
+      "role": "base",
+      "x": 4,
+      "y": 4,
+      "name": "Base del equipo"
+    },
+    {
+      "id": "board",
+      "role": "board",
+      "x": 15,
+      "y": 3,
+      "name": "Tablón de misiones"
+    }
+  ]
+}

@@ -109,6 +109,71 @@ export const TILES = {
     char: '*',
     colors: { floor: '#00ccff', wall: '#0099cc' }
   },
+
+  // ── Pueblo (ids 20+: MapRenderer los pinta con sus propios colores) ──
+  TOWN_GRASS: {
+    id: 20,
+    walkable: true,
+    transparent: true,
+    char: '.',
+    colors: { floor: '#3f7a3a', wall: '#37703a' }
+  },
+  TOWN_PATH: {
+    id: 21,
+    walkable: true,
+    transparent: true,
+    char: '=',
+    colors: { floor: '#b99b69', wall: '#a88a5a' }
+  },
+  TOWN_TREE: {
+    id: 22,
+    walkable: false,
+    transparent: false,
+    char: 'T',
+    colors: { floor: '#2f6a2b', wall: '#1d4a1b' }
+  },
+  TOWN_WALL: {
+    id: 23,
+    walkable: false,
+    transparent: false,
+    char: 'B',
+    colors: { floor: '#d8c7a3', wall: '#9b8a69' }
+  },
+  TOWN_ROOF: {
+    id: 24,
+    walkable: false,
+    transparent: false,
+    char: 'R',
+    colors: { floor: '#b8553c', wall: '#7c3524' }
+  },
+  TOWN_DOOR: {
+    id: 25,
+    walkable: false,
+    transparent: false,
+    char: 'D',
+    colors: { floor: '#6e4b2a', wall: '#4a311a' }
+  },
+  TOWN_EXIT: {
+    id: 26,
+    walkable: true,
+    transparent: true,
+    char: 'E',
+    colors: { floor: '#cdb685', wall: '#b39d6e' }
+  },
+  TOWN_BOARD: {
+    id: 27,
+    walkable: false,
+    transparent: true,
+    char: 'P',
+    colors: { floor: '#3f7a3a', wall: '#5e3c1c' }
+  },
+  TOWN_FLOWERS: {
+    id: 28,
+    walkable: true,
+    transparent: true,
+    char: '*',
+    colors: { floor: '#3f7a3a', wall: '#37703a' }
+  },
 };
 
 /**

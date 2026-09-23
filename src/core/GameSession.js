@@ -1,105 +1,27 @@
 import { GAME_STATES } from '../constants.js';
 import { loadGame } from './SaveManager.js';
-import { newRunSeed } from './Random.js';
 import { spawnFromSnapshot } from './PokemonSnapshot.js';
+import { enterTown } from './TownSession.js';
+import { TOWN } from '../map/Town.js';
 
-/**
- * Inicia una nueva partida con el Pokémon inicial seleccionado.
- * @param {import('../Game.js').Game} game
- * @param {number|string} starterPokemonId
- */
-export function startNewGame(game, starterPokemonId) {
-  console.log(`[Game] Iniciando nueva partida con: ${starterPokemonId}`);
-
-  game.entityManager.clear();
-  game.turnManager.reset();
-  game.runSeed = newRunSeed();
-  game._messageLog = [];
-  if (game.messageLog) game.messageLog.clear();
-  game.dungeonId = 'torre_desafio';
-  game._currentFloor = game.dungeon.floors[0];
-  game._lastStarterId = starterPokemonId;
-  game._deathReason = null;
-  game._bellyWarned20 = false;
-  game._bellyWarned10 = false;
-  game._stairsAnnounced = false;
-  game._seenMonsterHouseDialog = false;
-  game._bagAlmostFullWarned = false;
-  game._lifetimeStatsSaved = false;
-  game._lowPpWarnedThisFloor = false;
-  game._restoredItemCount = 0;
-  game.fovRadiusModifier = 0;
-  game.inventory = [
-    { itemId: 'potion', quantity: 2 },
-    { itemId: 'pokeball', quantity: 4 },
-    { itemId: 'apple', quantity: 3 },
-    { itemId: 'oran_berry', quantity: 2 },
-    { itemId: 'ether', quantity: 1 },
-    { itemId: 'antidote', quantity: 1 },
-    { itemId: 'paralyze_heal', quantity: 1 },
-    { itemId: 'awakening', quantity: 1 },
-    { itemId: 'reviver_seed', quantity: 1 },
-    { itemId: 'escape_rope', quantity: 1 }
-  ];
-  game.coins = 140;
-  game.stats = {
-    pokemonDefeated: 0,
-    pokemonCaptured: 0,
-    floorsExplored: 1,
-    itemsUsed: 0,
-    totalDamageDealt: 0,
-    totalDamageTaken: 0,
-    turnsPlayed: 0
-  };
-  game.pokedexSeen = new Set([starterPokemonId]);
-
-  game.floorManager.generateFloor();
-
-  const startPos = game._playerStart;
-
-  game._playerId = game.entityManager.createPokemon(
-    starterPokemonId,
-    5,
-    startPos.x,
-    startPos.y,
-    false
-  );
-
-  game.entityManager.setComponent(game._playerId, 'partyMember', {
-    slot: 0,
-    isLeader: true,
-    tactic: 'follow'
-  });
-
-  const fighterData = game.entityManager.getComponent(game._playerId, 'fighter');
-  game.turnManager.addEntity(
-    game._playerId,
-    fighterData ? fighterData.speed : 50,
-    true
-  );
-
-  game.floorManager.spawnEnemies();
-  game._updateCamera();
-  game._updateFOV();
-  game.floorManager.preloadVisibleSprites();
-
-  game.changeState(GAME_STATES.EXPLORING);
-  game.eventBus.emit('show_dialog', {
-    text: `¡Bienvenido a PokéRogue!\n\nPiso 1: ${game.zoneName}.\n\n• Choca = ataque básico (sin PP)\n• 1-4 = movimientos (gastan PP)\n• Z = recoger / escaleras / examinar\n• Tab = cambiar de líder\n• X = mochila (Cuerda Huida te saca al menú)\n• Come manzanas si baja la tripa\n• Captura: mira al salvaje (también diagonal) y usa Poké Ball\n• ¡Busca las escaleras!`,
-    instant: true,
-    callback: () => {}
-  });
-
-  game.needsRender = true;
-}
+/** Estadísticas de un perfil nuevo; las que falten en una partida guardada se rellenan con estas. */
+const EMPTY_STATS = {
+  pokemonDefeated: 0,
+  pokemonCaptured: 0,
+  floorsExplored: 0,
+  itemsUsed: 0,
+  totalDamageDealt: 0,
+  totalDamageTaken: 0,
+  turnsPlayed: 0,
+};
 
 /**
  * Carga la partida guardada.
  * @param {import('../Game.js').Game} game
  */
 export async function loadSavedGame(game) {
-  const data = loadGame();
-  if (!data) {
+  const save = loadGame();
+  if (!save) {
     game.uiManager?.showDialog?.(
       'No se pudo cargar la partida (corrupta o de otra versión).',
       () => game.uiManager.openTitleScreen()
@@ -107,17 +29,39 @@ export async function loadSavedGame(game) {
     return;
   }
 
+  const { pokedexSeen, stats, ...profile } = save.profile;
+  game.profile = profile;
+  game.pokedexSeen = new Set(pokedexSeen || []);
+  game.stats = { ...EMPTY_STATS, ...stats };
+  game.inventory = save.bag;
+  game.coins = save.wallet ?? 0;
+  game._messageLog = [];
+  game.messageLog?.clear?.();
+
+  if (!save.run) {
+    enterTown(game);
+    const migrated = profile.flags?.migratedFromRun && !profile.flags.migrationNoticeShown;
+    if (migrated) profile.flags.migrationNoticeShown = true;
+    game.eventBus.emit('show_dialog', {
+      text: migrated
+        ? `¡El juego ha cambiado!\n\nAhora tu equipo, ${profile.teamName}, tiene una base en ${TOWN.name}. ` +
+          'Tus Pokémon, tu mochila y tu dinero te esperan aquí, y las mazmorras que ya habías atravesado ' +
+          'cuentan como completadas.\n\nMira el tablón y sal por el camino del sur para seguir explorando.'
+        : `Partida cargada.\n\n${profile.teamName} está en ${TOWN.name}.`,
+      instant: true,
+    });
+    if (migrated) game.saveGameData();
+    return;
+  }
+
+  const data = save.run;
   game.runSeed = data.runSeed;
-  game.dungeonId = data.dungeonId ?? 'torre_desafio';
+  game.dungeonId = data.dungeonId;
+  game.expedition = data.expedition ?? null;
   game._currentFloor = data.currentFloor;
   game.currentWeather = data.currentWeather || data.weather || 'normal';
-  game.inventory = data.inventory;
-  game.stats = data.stats;
-  game.coins = data.coins ?? 0;
-  game.pokedexSeen = data.pokedexSeen;
   game._safeSpawnOnLoad = true;
   game._bagAlmostFullWarned = false;
-  game._lifetimeStatsSaved = false;
   game._seenMonsterHouseDialog = true; // no repetir tutorial MH al cargar
   game._skipFloorHealOnLoad = true;
   game._preserveWeatherOnLoad = true;

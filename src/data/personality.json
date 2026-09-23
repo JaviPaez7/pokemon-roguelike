@@ -1,0 +1,132 @@
+{
+  "natures": [
+    { "id": "valiente", "name": "Valiente", "speciesId": 4, "description": "Das la cara aunque tiemblen las piernas. Los demás se sienten más seguros contigo cerca." },
+    { "id": "tranquilo", "name": "Tranquilo", "speciesId": 1, "description": "Nada te altera. Piensas antes de actuar y sabes escuchar." },
+    { "id": "alegre", "name": "Alegre", "speciesId": 7, "description": "Contagias las ganas de reír. Donde vas, se anima la fiesta." },
+    { "id": "travieso", "name": "Travieso", "speciesId": 25, "description": "Siempre tienes una broma preparada, pero nunca con mala intención." },
+    { "id": "astuto", "name": "Astuto", "speciesId": 52, "description": "Ves la trampa antes que nadie y encuentras atajos donde otros ven muros." },
+    { "id": "despistado", "name": "Despistado", "speciesId": 54, "description": "Vas a tu ritmo y a veces te pierdes, pero siempre llegas… a algún sitio." },
+    { "id": "tenaz", "name": "Tenaz", "speciesId": 66, "description": "No te rindes nunca. Si algo sale mal, lo intentas otra vez, y otra." },
+    { "id": "timido", "name": "Tímido", "speciesId": 104, "description": "Te cuesta abrirte, pero quien gana tu confianza tiene un amigo para siempre." },
+    { "id": "curioso", "name": "Curioso", "speciesId": 133, "description": "Quieres saberlo todo. Cada rincón esconde algo que te llama." }
+  ],
+  "questions": [
+    {
+      "text": "Encuentras un cofre cerrado en mitad del camino. ¿Qué haces?",
+      "answers": [
+        { "text": "Lo abro sin pensarlo.", "scores": { "valiente": 2, "curioso": 1 } },
+        { "text": "Busco a su dueño.", "scores": { "tranquilo": 2 } },
+        { "text": "Espero a ver si alguien lo reclama… y luego lo abro.", "scores": { "astuto": 2 } },
+        { "text": "Me alejo, puede ser una trampa.", "scores": { "timido": 2 } }
+      ]
+    },
+    {
+      "text": "Tu mejor amigo está triste. ¿Cómo lo animas?",
+      "answers": [
+        { "text": "Le cuento un chiste malísimo.", "scores": { "travieso": 2, "alegre": 1 } },
+        { "text": "Me siento a su lado sin decir nada.", "scores": { "tranquilo": 2, "timido": 1 } },
+        { "text": "Le propongo una aventura.", "scores": { "valiente": 1, "curioso": 2 } }
+      ]
+    },
+    {
+      "text": "¿Qué prefieres para desayunar?",
+      "answers": [
+        { "text": "Lo que haya, no me fijo.", "scores": { "despistado": 2 } },
+        { "text": "Mucho, que hoy toca entrenar.", "scores": { "tenaz": 2 } },
+        { "text": "Algo dulce.", "scores": { "alegre": 2 } }
+      ]
+    },
+    {
+      "text": "Te pierdes en un bosque. ¿Qué haces?",
+      "answers": [
+        { "text": "Sigo adelante, alguna salida habrá.", "scores": { "tenaz": 2, "valiente": 1 } },
+        { "text": "Trepo a un árbol para orientarme.", "scores": { "astuto": 2, "curioso": 1 } },
+        { "text": "Me siento a esperar a que me encuentren.", "scores": { "tranquilo": 1, "timido": 2 } },
+        { "text": "¿Perdido? Yo creía que era por aquí.", "scores": { "despistado": 2 } }
+      ]
+    },
+    {
+      "text": "Alguien se cuela delante de ti en una fila.",
+      "answers": [
+        { "text": "Le pido que respete su turno.", "scores": { "valiente": 2 } },
+        { "text": "No pasa nada, hay tiempo.", "scores": { "tranquilo": 2 } },
+        { "text": "Me cuelo yo delante de él.", "scores": { "travieso": 2, "astuto": 1 } }
+      ]
+    },
+    {
+      "text": "¿Qué te llama más la atención de un sitio nuevo?",
+      "answers": [
+        { "text": "Sus rincones secretos.", "scores": { "curioso": 2 } },
+        { "text": "La comida.", "scores": { "alegre": 1, "despistado": 1 } },
+        { "text": "Si hay alguien fuerte con quien medirme.", "scores": { "tenaz": 2 } },
+        { "text": "Dónde está la salida.", "scores": { "timido": 2 } }
+      ]
+    },
+    {
+      "text": "Te ofrecen un trato que parece demasiado bueno.",
+      "answers": [
+        { "text": "¡Acepto!", "scores": { "despistado": 2, "alegre": 1 } },
+        { "text": "Leo la letra pequeña.", "scores": { "astuto": 2 } },
+        { "text": "Pregunto a alguien de confianza.", "scores": { "tranquilo": 1, "timido": 1 } }
+      ]
+    },
+    {
+      "text": "Entrenas y algo te sale mal una y otra vez.",
+      "answers": [
+        { "text": "Lo repito hasta que salga.", "scores": { "tenaz": 3 } },
+        { "text": "Pruebo de otra forma.", "scores": { "astuto": 1, "curioso": 2 } },
+        { "text": "Me río y lo dejo para mañana.", "scores": { "alegre": 2, "despistado": 1 } }
+      ]
+    },
+    {
+      "text": "Un amigo te gasta una broma pesada.",
+      "answers": [
+        { "text": "Me enfado un momento y se me pasa.", "scores": { "valiente": 1, "alegre": 1 } },
+        { "text": "Preparo una venganza de las buenas.", "scores": { "travieso": 3 } },
+        { "text": "Hago como si nada.", "scores": { "tranquilo": 2 } }
+      ]
+    },
+    {
+      "text": "¿Qué harías con un día libre?",
+      "answers": [
+        { "text": "Explorar un lugar que no conozco.", "scores": { "curioso": 2, "valiente": 1 } },
+        { "text": "Dormir hasta tarde.", "scores": { "despistado": 1, "tranquilo": 1 } },
+        { "text": "Quedar con mis amigos.", "scores": { "alegre": 2 } },
+        { "text": "Leer en un rincón tranquilo.", "scores": { "timido": 2 } }
+      ]
+    },
+    {
+      "text": "Ves a un Pokémon grande molestando a uno pequeño.",
+      "answers": [
+        { "text": "Me meto a defenderlo.", "scores": { "valiente": 3 } },
+        { "text": "Voy a buscar ayuda.", "scores": { "timido": 1, "tranquilo": 1 } },
+        { "text": "Lo distraigo con alguna treta.", "scores": { "travieso": 1, "astuto": 2 } }
+      ]
+    },
+    {
+      "text": "Cuando algo te da miedo…",
+      "answers": [
+        { "text": "Lo miro de frente.", "scores": { "valiente": 2, "tenaz": 1 } },
+        { "text": "Me escondo detrás de alguien.", "scores": { "timido": 3 } },
+        { "text": "Intento averiguar qué es.", "scores": { "curioso": 2 } }
+      ]
+    },
+    {
+      "text": "¿Cómo guardas tus cosas?",
+      "answers": [
+        { "text": "Cada cosa en su sitio.", "scores": { "tranquilo": 1, "astuto": 1 } },
+        { "text": "¿Guardar? Ya aparecerán.", "scores": { "despistado": 3 } },
+        { "text": "En un escondite que solo yo conozco.", "scores": { "travieso": 2 } }
+      ]
+    },
+    {
+      "text": "Si pudieras aprender algo nuevo, sería…",
+      "answers": [
+        { "text": "Un movimiento muy poderoso.", "scores": { "tenaz": 2, "valiente": 1 } },
+        { "text": "A leer los mapas de las estrellas.", "scores": { "curioso": 2 } },
+        { "text": "A cocinar para mis amigos.", "scores": { "alegre": 2, "tranquilo": 1 } },
+        { "text": "Un truco para hacer reír a todos.", "scores": { "travieso": 2 } }
+      ]
+    }
+  ]
+}

@@ -79,19 +79,72 @@ export async function openTitleScreen(page, { seed = SEED } = {}) {
 }
 
 /**
- * Nueva partida con el primer inicial (Bulbasaur), usando solo el teclado,
- * y con el diálogo de bienvenida ya cerrado.
+ * Nueva aventura solo con el teclado: responde siempre la primera opción del
+ * test de personalidad, acepta el Pokémon propuesto y el primer compañero, deja
+ * el nombre de equipo por defecto y cierra la bienvenida. Acaba en el pueblo.
  * @param {import('@playwright/test').Page} page
  * @param {{ seed?: number }} [options]
  */
 export async function startNewGame(page, options) {
   await openTitleScreen(page, options);
   await page.keyboard.press('z');
-  await expect(panelTitle(page)).toHaveText('ELIGE TU COMPAÑERO INICIAL');
+  // Con una partida guardada se pide confirmación: empezar otra
+  if ((await panelTitle(page).textContent()) === '¿EMPEZAR DE CERO?') {
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('z');
+  }
+  await expect(panelTitle(page)).toHaveText('UNA NUEVA AVENTURA');
+  // Las pantallas del test responden al instante: basta con pulsar (las
+  // comprueba una a una exploration.spec.js)
+  for (let i = 0; i < 9; i++) await page.keyboard.press('z');
+  await expect(panelTitle(page)).toContainText('TU NATURALEZA');
   await page.keyboard.press('z');
-  await expect(page.locator('.dialog-panel')).toContainText('¡Bienvenido a PokéRogue!');
+  await expect(panelTitle(page)).toHaveText('¿QUIÉN SERÁ TU COMPAÑERO?');
   await page.keyboard.press('z');
+  await expect(page.locator('#team-name-input')).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.dialog-panel')).toContainText('Bienvenidos');
+  await dismissDialog(page);
+  await expectInTown(page);
+}
+
+/**
+ * Sale del pueblo hacia una mazmorra por el menú de la salida y cierra el
+ * diálogo de entrada. Acaba explorando el piso 1.
+ * @param {import('@playwright/test').Page} page
+ * @param {number} [index=0] - Posición de la mazmorra en la lista de desbloqueadas
+ */
+export async function enterDungeon(page, index = 0) {
+  await page.evaluate(() => window.game.uiManager.openDungeonSelect());
+  await expect(panelTitle(page)).toHaveText('¿A DÓNDE VAMOS?');
+  for (let i = 0; i < index; i++) await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('z');
+  await page.keyboard.press('z'); // ¡En marcha!
+  await expect(page.locator('.dialog-panel')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.game.getState())).toBe('EXPLORING');
+  await dismissDialog(page);
   await expectExploring(page);
+}
+
+/**
+ * Nueva aventura y directo al Bosque Verde.
+ * @param {import('@playwright/test').Page} page
+ * @param {{ seed?: number }} [options]
+ */
+export async function startInDungeon(page, options) {
+  await startNewGame(page, options);
+  await enterDungeon(page);
+}
+
+/**
+ * En el pueblo, sin menús ni diálogos y con el teclado moviendo al líder.
+ * @param {import('@playwright/test').Page} page
+ */
+export async function expectInTown(page) {
+  await expect(page.locator('#ui-overlay')).toBeHidden();
+  await expect
+    .poll(() => gameStatus(page))
+    .toEqual({ state: 'TOWN', menu: null, input: 'exploration' });
 }
 
 /**
@@ -117,6 +170,30 @@ export async function dismissDialog(page) {
     await page.keyboard.press('z');
   }
   await expect(dialog).toBeHidden();
+}
+
+/**
+ * Pulsa una tecla de movimiento `times` veces, esperando a que el juego consuma
+ * cada una (el juego procesa una acción por fotograma y una pulsación más
+ * rápida sustituiría a la anterior en la cola).
+ * @param {import('@playwright/test').Page} page
+ * @param {string} key
+ * @param {number} [times=1]
+ */
+export async function walk(page, key, times = 1) {
+  for (let i = 0; i < times; i++) {
+    await page.keyboard.press(key);
+    await page.waitForFunction(() => window.game.inputHandler.peekAction() === null);
+  }
+}
+
+/**
+ * Texto completo del diálogo abierto (aunque siga escribiéndose letra a letra).
+ * @param {import('@playwright/test').Page} page
+ */
+export async function dialogText(page) {
+  await expect(page.locator('.dialog-panel')).toBeVisible();
+  return page.evaluate(() => window.game.uiManager.dialog.dialogTextRaw);
 }
 
 /**
@@ -185,6 +262,8 @@ export function runSummary(page) {
   return page.evaluate(() => {
     const game = window.game;
     return {
+      state: game.getState(),
+      dungeon: game.dungeonId,
       floor: game.getCurrentFloor(),
       coins: game.coins,
       party: game.party.map((p) => ({ name: p.name, level: p.level, hp: p.hp, maxHp: p.maxHp })),

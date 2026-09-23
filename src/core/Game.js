@@ -32,16 +32,18 @@ import { FOVSystem } from '../systems/FOVSystem.js';
 import { Camera } from '../render/Camera.js';
 import { Renderer } from '../render/Renderer.js';
 import { UIManager } from '../ui/UIManager.js';
-import { saveGame, deleteSave } from './SaveManager.js';
+import { saveGame } from './SaveManager.js';
 import { revertTransform } from '../systems/CombatSystem.js';
-import { saveLifetimeStats } from '../ui/menus/StatsMenu.js';
 import { FloorManager } from '../map/FloorManager.js';
 import { CombatHandler } from '../systems/ActionSystem.js';
 import { setupGameEventListeners } from './GameEvents.js';
-import { startNewGame as startNewGameSession, loadSavedGame as loadSavedGameSession } from './GameSession.js';
+import { loadSavedGame as loadSavedGameSession } from './GameSession.js';
+import { updateTown } from './TownSession.js';
+import { endExpedition } from './Expedition.js';
 import { useInventoryItem as useInventoryItemHandler, throwInventoryItem } from '../systems/InventorySystem.js';
 import { MessageLog } from '../ui/MessageLog.js';
 import { getDungeon, relativeFloor, isLastFloor } from './Dungeons.js';
+import { setSeed, newRunSeed } from './Random.js';
 
 // Importar JSONs estáticos directamente para empaquetarlos con Vite
 import pokemonData from '../data/pokemon.json';
@@ -78,8 +80,21 @@ export class Game {
     /** @type {number} Piso global actual (decide zona, enemigos y dificultad; ver core/Dungeons.js) */
     this._currentFloor = 1;
 
-    /** @type {string|null} Mazmorra en la que está el equipo */
+    /** @type {string|null} Mazmorra en la que está el equipo (null en el pueblo) */
     this.dungeonId = null;
+
+    /** @type {Object|null} Perfil del equipo de exploración (core/Profile.js) */
+    this.profile = null;
+
+    /** @type {Object|null} Datos de la expedición en curso (core/Expedition.js) */
+    this.expedition = null;
+
+    /**
+     * @type {'cleared'|'defeated'|'escaped'|null} Fin de expedición pendiente. Se
+     * procesa al principio del siguiente fotograma para no vaciar las entidades
+     * en mitad de un turno.
+     */
+    this._pendingExpeditionEnd = null;
 
     /** @type {number|null} ID de la entidad del jugador (líder del equipo) */
     this._playerId = null;
@@ -226,6 +241,9 @@ export class Game {
   async init() {
     console.log('[Game] Inicializando PokéRogue...');
 
+    // Semilla de la sesión (?seed=N la fija): hace reproducible también el test de personalidad
+    setSeed(newRunSeed());
+
     this.pokemonData = pokemonData;
     this.movesData = movesData;
     this.typesData = typesData;
@@ -364,6 +382,7 @@ export class Game {
         this.inputHandler.enabled = true;
         break;
       case GAME_STATES.EXPLORING:
+      case GAME_STATES.TOWN:
         this.inputHandler.setContext('exploration');
         this.inputHandler.enabled = true;
         break;
@@ -375,31 +394,18 @@ export class Game {
         this.inputHandler.setContext('dialog');
         this.inputHandler.enabled = true;
         break;
-      case GAME_STATES.GAME_OVER:
-        this.inputHandler.setContext('menu');
-        this.inputHandler.enabled = true;
-        break;
-      case GAME_STATES.VICTORY:
-        this.inputHandler.setContext('menu');
-        this.inputHandler.enabled = true;
-        if (!this._lifetimeStatsSaved) {
-          this._lifetimeStatsSaved = true;
-          try { saveLifetimeStats(this, true); } catch (e) {}
-        }
-        try { deleteSave(); } catch (e) {}
-        break;
     }
   }
 
-  // ─── Gestión de partida ───────────────────────────────────────────────────
-
   /**
-   * Iniciar una nueva partida con el Pokémon inicial seleccionado.
-   * @param {string} starterPokemonId - ID de la especie inicial (ej. 'charmander')
+   * Estado al que se vuelve al cerrar un menú: el pueblo o la mazmorra.
+   * @returns {string}
    */
-  startNewGame(starterPokemonId) {
-    startNewGameSession(this, starterPokemonId);
+  get homeState() {
+    return this.tileMap?.isTown ? GAME_STATES.TOWN : GAME_STATES.EXPLORING;
   }
+
+  // ─── Gestión de partida ───────────────────────────────────────────────────
 
   /**
    * Guarda la partida en localStorage
@@ -416,17 +422,22 @@ export class Game {
   }
 
   /**
-   * Finalizar la partida (derrota).
+   * El equipo ha caído: vuelve al pueblo con las pérdidas de una derrota.
+   * @param {string} [reason='combate']
    */
   gameOver(reason = 'combate') {
-    console.log('[Game] Game Over');
     this._deathReason = reason;
-    try { deleteSave(); } catch (e) {}
-    if (!this._lifetimeStatsSaved) {
-      this._lifetimeStatsSaved = true;
-      try { saveLifetimeStats(this, false); } catch (e) {}
-    }
-    this.changeState(GAME_STATES.GAME_OVER);
+    this.endExpedition('defeated');
+  }
+
+  /**
+   * Termina la expedición al principio del siguiente fotograma.
+   * @param {'cleared'|'defeated'|'escaped'} outcome
+   */
+  endExpedition(outcome) {
+    if (!this.dungeonId || this._pendingExpeditionEnd) return;
+    this._pendingExpeditionEnd = outcome;
+    this.inputHandler.enabled = false;
   }
 
   // ─── Generación de pisos ──────────────────────────────────────────────────
@@ -500,6 +511,17 @@ export class Game {
    * Lógica del juego en EXPLORING
    */
   update() {
+    if (this._pendingExpeditionEnd) {
+      const outcome = this._pendingExpeditionEnd;
+      this._pendingExpeditionEnd = null;
+      this.inputHandler.enabled = true;
+      endExpedition(this, outcome);
+      return;
+    }
+    if (this._state === GAME_STATES.TOWN) {
+      updateTown(this);
+      return;
+    }
     if (this._state !== GAME_STATES.EXPLORING) return;
     // Si el input quedó en "dialog" sin diálogo visible, recuperar exploración
     if (this.inputHandler && this.inputHandler._context === 'dialog' && !this.uiManager.hasOpenDialog()) {
@@ -875,7 +897,7 @@ export class Game {
     }
 
     // Actualizar cámara (lerp) siempre que estemos corriendo
-    if (this.camera && this._state === GAME_STATES.EXPLORING) {
+    if (this.camera && (this._state === GAME_STATES.EXPLORING || this._state === GAME_STATES.TOWN)) {
       this.camera.update(performance.now());
     }
 
@@ -897,7 +919,7 @@ export class Game {
     if (this._playerId) {
       const pos = this.entityManager.getComponent(this._playerId, 'position');
       if (pos) {
-        this.camera.follow(pos.x, pos.y, MAP_WIDTH, MAP_HEIGHT);
+        this.camera.follow(pos.x, pos.y, this.tileMap?.width ?? MAP_WIDTH, this.tileMap?.height ?? MAP_HEIGHT);
       }
     }
   }
@@ -1044,7 +1066,7 @@ export class Game {
 
   /** La mazmorra se ha completado (escaleras del último piso o jefe final). */
   completeDungeon() {
-    this.changeState(GAME_STATES.VICTORY);
+    this.endExpedition('cleared');
   }
 
   // Getter messages adicional para Renderer.js

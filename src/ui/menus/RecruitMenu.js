@@ -33,13 +33,13 @@ export function openRecruitMenu(ui, entityId, info) {
     () => {
       ui.closeMenu();
       ui.game.eventBus.emit('recruit_pokemon', { entityId, accepted: true });
-      ui.game.changeState(GAME_STATES.EXPLORING);
+      ui.game.changeState(ui.game.homeState);
     },
     // NO
     () => {
       ui.closeMenu();
       ui.game.eventBus.emit('recruit_pokemon', { entityId, accepted: false });
-      ui.game.changeState(GAME_STATES.EXPLORING);
+      ui.game.changeState(ui.game.homeState);
     }
   ];
 

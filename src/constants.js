@@ -46,10 +46,12 @@ export const ENEMY_DETECT_RANGE_EARLY = 3;
 export const GAME_STATES = {
   /** Pantalla de título */
   TITLE: 'TITLE',
-  /** Selección del Pokémon inicial */
+  /** Nueva aventura: test de personalidad, compañero y nombre del equipo */
   STARTER_SELECT: 'STARTER_SELECT',
   /** Exploración de la mazmorra (jugabilidad principal) */
   EXPLORING: 'EXPLORING',
+  /** Paseando por el pueblo base (sin turnos ni enemigos) */
+  TOWN: 'TOWN',
   /** Menú de pausa / inventario / equipo */
   MENU: 'MENU',
   /** Animación de combate en curso */
