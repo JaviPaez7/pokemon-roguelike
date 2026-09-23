@@ -5,8 +5,10 @@
  * - `cleared`: mazmorra completada. Se abren las siguientes y se ganan puntos de rango.
  * - `defeated`: el equipo cae. Se pierde el dinero y lo que había en la mochila.
  * - `escaped`: se sale con una Cuerda Huida. Se conserva todo.
- * En todos los casos el equipo vuelve curado, los reclutados pasan a la base
- * y empieza un día nuevo.
+ * - `mission`: se vuelve tras cumplir una misión. Se conserva todo.
+ * Salvo al caer, se cobran las misiones cumplidas; al caer vuelven a quedar
+ * pendientes. En todos los casos el equipo vuelve curado, los reclutados pasan
+ * a la base y empieza un día nuevo.
  *
  * La Torre del Desafío tiene reglas roguelike: se entra con copias de nivel 5
  * del equipo y un kit fijo; la mochila y el dinero de verdad esperan en el
@@ -20,6 +22,7 @@ import { getMember, updateMember, addToRoster, addRankPoints, defeatLosses, mark
 import { toSnapshot, restedSnapshot, spawnFromSnapshot } from './PokemonSnapshot.js';
 import { enterTown } from './TownSession.js';
 import { saveLifetimeStats } from '../ui/menus/StatsMenu.js';
+import { claimRewards, revertDoneMissions, MISSION_TYPE_NAMES } from './Missions.js';
 
 /** Kit con el que se entra en la Torre del Desafío. */
 export const CHALLENGE_KIT = [
@@ -100,8 +103,13 @@ export async function startExpedition(game, dungeonId) {
   const rules = dungeon.challenge
     ? '\n\nReglas del desafío: equipo a nivel 5 y kit básico. Tu mochila y tu dinero esperan en el pueblo.'
     : '';
+  const here = profile.missions.accepted
+    .filter((m) => m.dungeonId === dungeon.id && m.status === 'accepted')
+    .sort((a, b) => a.floor - b.floor)
+    .map((m) => `· Piso ${m.floor}: ${MISSION_TYPE_NAMES[m.type]} (${m.clientName})`);
+  const missions = here.length ? `\n\nMisiones aquí:\n${here.join('\n')}` : '';
   game.eventBus.emit('show_dialog', {
-    text: `${dungeon.name}\n\n${dungeon.description}${rules}`,
+    text: `${dungeon.name}\n\n${dungeon.description}${rules}${missions}`,
     instant: true,
   });
 }
@@ -123,7 +131,7 @@ function challengeCopy(game, member) {
 /**
  * Termina la expedición y vuelve al pueblo con un resumen.
  * @param {import('./Game.js').Game} game
- * @param {'cleared' | 'defeated' | 'escaped'} outcome
+ * @param {'cleared' | 'defeated' | 'escaped' | 'mission'} outcome
  */
 export function endExpedition(game, outcome) {
   const profile = game.profile;
@@ -146,19 +154,39 @@ export function endExpedition(game, outcome) {
     }
   }
 
+  let missionPoints = 0;
+  if (outcome === 'defeated') {
+    const lost = revertDoneMissions(profile);
+    if (lost) lines.push(`${lost === 1 ? 'La misión cumplida queda' : `Las ${lost} misiones cumplidas quedan`} pendiente${lost === 1 ? '' : 's'}: el cliente no llegó al pueblo.`);
+  } else {
+    const itemName = (id) => game.itemsData.find((i) => i.id === id)?.name ?? id;
+    const claimed = claimRewards(profile, {
+      bag: game.inventory,
+      wallet: game.coins,
+      maxSlots: game.maxInventorySize,
+      itemName,
+    });
+    game.coins = claimed.wallet;
+    missionPoints = claimed.rankPoints;
+    lines.push(...claimed.lines);
+  }
+
+  let points = missionPoints;
   if (outcome === 'cleared') {
     const firstTime = !profile.clearedDungeons.includes(dungeon.id);
     const opened = markCleared(profile, dungeon.id);
-    let points = clearRankPoints(dungeon, firstTime);
+    points += clearRankPoints(dungeon, firstTime);
     if (challenge) {
       game.coins += CHALLENGE_PRIZE.money;
       points += CHALLENGE_PRIZE.rankPoints;
       lines.push(`Premio del desafío: ${CHALLENGE_PRIZE.money} Poké.`);
     }
+    for (const id of opened) lines.push(`Nueva mazmorra: ${getDungeon(id).name}.`);
+  }
+  if (points > 0) {
     const newRank = addRankPoints(profile, points);
     lines.push(`+${points} puntos de rango.`);
     if (newRank) lines.push(`¡El equipo sube a rango ${newRank.name}!`);
-    for (const id of opened) lines.push(`Nueva mazmorra: ${getDungeon(id).name}.`);
   }
 
   recordLifetimeStats(game, outcome === 'cleared');
@@ -168,6 +196,7 @@ export function endExpedition(game, outcome) {
     cleared: `¡${dungeon.name} completada!`,
     defeated: '¡El equipo ha caído!',
     escaped: 'Habéis vuelto al pueblo.',
+    mission: '¡Misión cumplida! Volvéis al pueblo.',
   }[outcome];
   const subtitle = outcome === 'defeated' ? 'Os rescataron y os llevaron de vuelta al pueblo.' : '';
 

@@ -181,7 +181,7 @@ function collectFloorItems(gameState) {
   try {
     const em = gameState.entityManager;
     if (!em || typeof em.getEntitiesWithComponents !== 'function') return [];
-    const ids = em.getEntitiesWithComponents('itemDrop', 'position');
+    const ids = em.getEntitiesWithComponents('itemDrop', 'position').filter(id => !em.hasComponent(id, 'missionItem'));
     return ids.map(id => {
       const d = em.getComponent(id, 'itemDrop');
       const pos = em.getComponent(id, 'position');

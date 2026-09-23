@@ -8,6 +8,7 @@ import { getBiomeForFloor } from './Biomes.js';
 import { getAbility } from '../systems/AbilitySystem.js';
 import { floorSeed } from '../core/Random.js';
 import { relativeFloor } from '../core/Dungeons.js';
+import { spawnMissionTargets } from '../systems/MissionSystem.js';
 
 /**
  * Generación de pisos, spawn de enemigos y pre-carga de sprites.
@@ -446,6 +447,7 @@ export class FloorManager {
       }
     }
     triggerFloorEvent(game);
+    spawnMissionTargets(game);
     this.preloadVisibleSprites();
 
     game._updateCamera();

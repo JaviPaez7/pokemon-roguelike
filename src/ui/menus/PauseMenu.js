@@ -48,8 +48,9 @@ export function openPauseMenu(ui) {
         <div class="menu-option" data-index="4"><span class="cursor">▶</span> Historial de Mensajes</div>
         <div class="menu-option" data-index="5"><span class="cursor">▶</span> Estadísticas</div>
         <div class="menu-option" data-index="6"><span class="cursor">▶</span> Opciones</div>
-        <div class="menu-option" data-index="7"><span class="cursor">▶</span> Guardar partida</div>
-        <div class="menu-option" data-index="8"><span class="cursor">▶</span> Guardar y salir</div>
+        <div class="menu-option" data-index="7"><span class="cursor">▶</span> Misiones</div>
+        <div class="menu-option" data-index="8"><span class="cursor">▶</span> Guardar partida</div>
+        <div class="menu-option" data-index="9"><span class="cursor">▶</span> Guardar y salir</div>
       </div>
     </div>
   `;
@@ -64,6 +65,7 @@ export function openPauseMenu(ui) {
     () => openLogMenu(ui),
     () => openStatsMenu(ui, 'pause'),
     () => openOptionsMenu(ui),
+    () => ui.openAcceptedMissions(() => openPauseMenu(ui)),
     () => {
       const ok = ui.game.saveGameData();
       if (!ok) {

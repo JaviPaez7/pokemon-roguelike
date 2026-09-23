@@ -90,7 +90,7 @@ export class Game {
     this.expedition = null;
 
     /**
-     * @type {'cleared'|'defeated'|'escaped'|null} Fin de expedición pendiente. Se
+     * @type {'cleared'|'defeated'|'escaped'|'mission'|null} Fin de expedición pendiente. Se
      * procesa al principio del siguiente fotograma para no vaciar las entidades
      * en mitad de un turno.
      */
@@ -432,7 +432,7 @@ export class Game {
 
   /**
    * Termina la expedición al principio del siguiente fotograma.
-   * @param {'cleared'|'defeated'|'escaped'} outcome
+   * @param {'cleared'|'defeated'|'escaped'|'mission'} outcome
    */
   endExpedition(outcome) {
     if (!this.dungeonId || this._pendingExpeditionEnd) return;

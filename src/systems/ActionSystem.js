@@ -7,6 +7,7 @@ import { triggerTrap } from './TrapSystem.js';
 import { getCaptureChance } from './CaptureSystem.js';
 import { canWalkOnTile } from './MovementSystem.js';
 import { random } from '../core/Random.js';
+import { talkToMissionClient } from './MissionSystem.js';
 
 /**
  * Combate, movimiento de entidades y acciones de IA enemiga.
@@ -153,6 +154,14 @@ export class CombatHandler {
         }
 
         if (result.type === 'bump_attack') {
+          if (game.entityManager.hasComponent(result.targetEntity, 'missionClient')) {
+            // Con un cliente de misión solo se habla; a los demás les estorba
+            if (entityId === game._playerId) {
+              talkToMissionClient(game, result.targetEntity);
+              return { success: false, type: 'interacted' };
+            }
+            return { success: false, type: 'blocked' };
+          }
           if (entityId === game._playerId) {
             const isFriendly = game.entityManager.hasComponent(result.targetEntity, 'npcFriendly');
             const isMerchant = game.entityManager.hasComponent(result.targetEntity, 'npcMerchant');
@@ -522,6 +531,7 @@ export class CombatHandler {
       if (game.entityManager.hasComponent(other, 'partyMember')) continue;
       if (game.entityManager.hasComponent(other, 'npcFriendly')) continue;
       if (game.entityManager.hasComponent(other, 'npcMerchant')) continue;
+      if (game.entityManager.hasComponent(other, 'missionClient')) continue;
       if (game.entityManager.hasComponent(other, 'pokemonInfo')) {
         return other;
       }
@@ -642,6 +652,14 @@ export class CombatHandler {
 
     // Examinar Pokémon / NPC delante (no consume turno)
     const lookId = game.entityManager.getEntityAt(pos.x + dir[0], pos.y + dir[1]);
+    if (lookId != null && game.entityManager.hasComponent(lookId, 'missionClient')) {
+      const clientInfo = game.entityManager.getComponent(lookId, 'pokemonInfo');
+      game.eventBus.emit('message', {
+        text: `${clientInfo?.name ?? 'El cliente'} os está esperando. Choca con él para hablar.`,
+        color: '#ffd166'
+      });
+      return { success: false, type: 'examine' };
+    }
     if (lookId != null) {
       const lookInfo = game.entityManager.getComponent(lookId, 'pokemonInfo');
       const lookFighter = game.entityManager.getComponent(lookId, 'fighter');
@@ -768,7 +786,7 @@ export class CombatHandler {
     if (game.tileMap && typeof game.tileMap.isStairs === 'function' && game.tileMap.isStairs(pos.x + dir[0], pos.y + dir[1])) {
       const hostiles = (game.entityManager.getEntitiesWithComponents('aiControlled', 'fighter') || []).filter(id => {
         if (game.entityManager.hasComponent(id, 'partyMember')) return false;
-        if (game.entityManager.hasComponent(id, 'npcFriendly') || game.entityManager.hasComponent(id, 'npcMerchant')) return false;
+        if (game.entityManager.hasComponent(id, 'npcFriendly') || game.entityManager.hasComponent(id, 'npcMerchant') || game.entityManager.hasComponent(id, 'missionClient')) return false;
         const f = game.entityManager.getComponent(id, 'fighter');
         return f && f.hp > 0;
       }).length;

@@ -26,6 +26,7 @@ import {
   openDungeonSelect,
   openMissionBoard,
 } from './menus/TownMenus.js';
+import { openMissionReturnPrompt, openAcceptedList } from './menus/MissionMenus.js';
 
 export class UIManager {
   /**
@@ -259,6 +260,8 @@ export class UIManager {
   openBaseMenu() { openBaseMenu(this); }
   openDungeonSelect() { openDungeonSelect(this); }
   openMissionBoard() { openMissionBoard(this); }
+  openMissionReturnPrompt() { openMissionReturnPrompt(this); }
+  openAcceptedMissions(back) { openAcceptedList(this, back); }
 
   handleMenuInput(data) { handleMenuInput(this, data); }
   updateSelectionVisuals() { updateSelectionVisuals(this); }
