@@ -999,7 +999,8 @@ export class Game {
         bonusStats: fighter.bonusStats || null,
         _statusTick: fighter._statusTick || 0,
         isLeader: member.isLeader,
-        tactic: member.tactic || 'follow'
+        tactic: member.tactic || 'follow',
+        uid: member.uid ?? null
       };
     });
   }

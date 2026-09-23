@@ -1,6 +1,7 @@
 import { GAME_STATES } from '../constants.js';
 import { loadGame } from './SaveManager.js';
 import { newRunSeed } from './Random.js';
+import { spawnFromSnapshot } from './PokemonSnapshot.js';
 
 /**
  * Inicia una nueva partida con el Pokémon inicial seleccionado.
@@ -136,127 +137,8 @@ export async function loadSavedGame(game) {
 
   game._playerId = null;
   data.party.forEach((p, idx) => {
-    const id = game.entityManager.createEntity();
-
-    game.entityManager.setComponent(id, 'position', {
-      x: 0,
-      y: 0,
-      facing: 'down',
-      prevX: 0,
-      prevY: 0,
-      moveStartTime: 0
-    });
-
-    game.entityManager.setComponent(id, 'pokemonInfo', {
-      speciesId: p.speciesId,
-      name: p.name,
-      level: p.level,
-      xp: p.xp,
-      ability: p.ability || null,
-      _traced: !!p._traced,
-      currentMoves: (p.currentMoves || []).map(m => {
-        const enabled = m.enabled !== undefined ? m.enabled : true;
-        const disableTurns = m._disableTurns;
-        const fixedEnabled = (!enabled && (disableTurns == null || disableTurns <= 0)) ? true : enabled;
-        const slot = {
-          moveId: m.moveId,
-          currentPP: m.currentPP,
-          maxPP: m.maxPP,
-          enabled: fixedEnabled,
-          _mimicOriginal: m._mimicOriginal
-        };
-        if (!fixedEnabled && disableTurns != null && disableTurns > 0) {
-          slot._disableTurns = disableTurns;
-        }
-        return slot;
-      }),
-      pendingMovesToLearn: p.pendingMovesToLearn || [],
-      pendingEvolution: p.pendingEvolution || null,
-      evolutionDeclinedAtLevel: p.evolutionDeclinedAtLevel ?? null,
-      types: p.types
-    });
-
-    // Sueño/congelación al cargar: duración finita (evita softlock con turnsLeft -1)
-    const statuses = (p.statusEffects || []).map(s => {
-      if (typeof s === 'string') {
-        if (s === 'sleep') return { type: 'sleep', turnsLeft: 2 };
-        if (s === 'freeze') return { type: 'freeze', turnsLeft: 2 };
-        return { type: s, turnsLeft: 3 };
-      }
-      if (['sleep', 'freeze', 'paralyze', 'confuse', 'burn', 'poison'].includes(s.type)
-          && (s.turnsLeft === -1 || s.turnsLeft == null || s.turnsLeft <= 0)) {
-        const defaults = { sleep: 2, freeze: 2, paralyze: 3, confuse: 3, burn: 5, poison: 5 };
-        return { ...s, turnsLeft: defaults[s.type] || 3 };
-      }
-      // Drenadoras: IDs de entidad no sobreviven al cargar
-      if (s.type === 'leech_seed') {
-        return { ...s, sourceId: null, sourcePartySlot: s.sourcePartySlot ?? null };
-      }
-      return s;
-    });
-
-    const movesForCharge = (p.currentMoves || []).map(m => m && m.moveId);
-    let charging = p.chargingState || null;
-    let biding = p.bidingState || null;
-    if (charging && !movesForCharge.includes(charging.moveId)) charging = null;
-    if (biding && !movesForCharge.includes(biding.moveId)) biding = null;
-
-    game.entityManager.setComponent(id, 'fighter', {
-      hp: p.hp,
-      maxHp: p.maxHp,
-      belly: p.belly !== undefined ? p.belly : 100,
-      maxBelly: p.maxBelly || 100,
-      attack: p.attack,
-      defense: p.defense,
-      spAtk: p.spAtk,
-      spDef: p.spDef,
-      speed: p.speed,
-      statusEffects: statuses,
-      statModifiers: p.statModifiers || {},
-      bonusStats: p.bonusStats || { maxHp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
-      _statusTick: p._statusTick || 0,
-      charging,
-      biding,
-      mustRecharge: !!p.mustRecharge,
-      reflect: p.reflect || 0,
-      lightScreen: p.lightScreen || 0,
-      substitute: p.substitute || 0,
-      rage: !!p.rage,
-      focusEnergy: !!p.focusEnergy,
-      _preTransform: p._preTransform || null,
-      _intimidatedBy: p._intimidatedBy || [],
-      protectStats: p.protectStats || 0,
-      _rageTurns: p._rageTurns,
-      _focusTurns: p._focusTurns,
-      lastPhysicalDamageTaken: p.lastPhysicalDamageTaken || 0
-    });
-
-    const pokeRef = game.pokemonData.find(poke => poke.id === p.speciesId || poke.name.toLowerCase() === p.speciesId);
-    const defaultSprite = pokeRef ? pokeRef.sprite : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.speciesId}.png`;
-    // Si hay transformación activa, conservar el sprite copiado
-    const spriteUrl = (p._preTransform && p.spriteUrl) ? p.spriteUrl : defaultSprite;
-    game.entityManager.setComponent(id, 'sprite', {
-      url: spriteUrl,
-      image: null,
-      loaded: false
-    });
-
-    game.entityManager.setComponent(id, 'partyMember', {
-      slot: idx,
-      isLeader: p.isLeader,
-      tactic: p.tactic || 'follow'
-    });
-
-    if (p.isLeader) {
-      game._playerId = id;
-    } else {
-      game.entityManager.setComponent(id, 'aiControlled', {
-        behavior: 'follower',
-        detectRange: 5,
-        alertedTo: null
-      });
-    }
-
+    const id = spawnFromSnapshot(game, p, { slot: idx, isLeader: !!p.isLeader });
+    if (p.isLeader) game._playerId = id;
     // Solo vivos en el sistema de turnos (changeFloor también lo filtrará)
     if (p.hp > 0) {
       game.turnManager.addEntity(id, p.speed, p.isLeader);

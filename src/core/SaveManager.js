@@ -9,6 +9,8 @@
  * La partida sí se borra al perder o ganar (muerte permanente).
  */
 
+import { toSnapshot } from './PokemonSnapshot.js';
+
 const SAVE_KEY = 'pokerogue_save';
 const BACKUP_PREFIX = 'pokerogue_save_backup_';
 export const SAVE_VERSION = 2;
@@ -156,49 +158,7 @@ export function saveGame(gameState) {
       // Piso global: el relativo se calcula con la mazmorra
       currentFloor: gameState._currentFloor,
       turnCount: (typeof gameState.turnManager?.getTurnCount === 'function' ? gameState.turnManager.getTurnCount() : 0),
-      party: gameState.party.map(p => ({
-        speciesId: p.speciesId,
-        name: p.name,
-        level: p.level,
-        xp: p.xp,
-        types: p.types,
-        ability: p.ability || null,
-        currentMoves: p.currentMoves,
-        pendingMovesToLearn: p.pendingMovesToLearn || [],
-        pendingEvolution: p.pendingEvolution || null,
-        evolutionDeclinedAtLevel: p.evolutionDeclinedAtLevel ?? null,
-        hp: p.hp,
-        maxHp: p.maxHp,
-        belly: p.belly,
-        maxBelly: p.maxBelly,
-        attack: p.attack,
-        defense: p.defense,
-        spAtk: p.spAtk,
-        spDef: p.spDef,
-        speed: p.speed,
-        statusEffects: p.statusEffects || [],
-        statModifiers: p.statModifiers || {},
-        bonusStats: p.bonusStats || null,
-        _statusTick: p._statusTick || 0,
-        isLeader: p.isLeader || false,
-        tactic: p.tactic || 'follow',
-        chargingState: p.chargingState || null,
-        bidingState: p.bidingState || null,
-        mustRecharge: !!p.mustRecharge,
-        reflect: p.reflect || 0,
-        lightScreen: p.lightScreen || 0,
-        substitute: p.substitute || 0,
-        rage: !!p.rage,
-        focusEnergy: !!p.focusEnergy,
-        _preTransform: p._preTransform || null,
-        spriteUrl: p.spriteUrl || null,
-        lastPhysicalDamageTaken: p.lastPhysicalDamageTaken || 0,
-        _intimidatedBy: p._intimidatedBy || [],
-        protectStats: p.protectStats || 0,
-        _rageTurns: p._rageTurns,
-        _focusTurns: p._focusTurns,
-        _traced: !!p._traced
-      })),
+      party: gameState.party.map(toSnapshot),
       inventory: gameState.inventory.map(slot => ({
         itemId: slot.itemId,
         quantity: slot.quantity
