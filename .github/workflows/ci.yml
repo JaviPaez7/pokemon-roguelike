@@ -18,6 +18,8 @@ permissions:
 
 jobs:
   test:
+    # El ruleset de master exige este nombre exacto como check: no cambiarlo
+    # sin actualizar el ruleset.
     name: Build y tests E2E
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -31,13 +33,16 @@ jobs:
 
       - run: npm ci
 
+      - name: Tests unitarios
+        run: npm run test:unit
+
       - run: npm run build
 
       - name: Instalar Chromium para Playwright
         run: npx playwright install --with-deps chromium
 
       - name: Tests E2E
-        run: npm test
+        run: npm run test:e2e
 
       - name: Subir el informe de Playwright
         if: ${{ !cancelled() }}
