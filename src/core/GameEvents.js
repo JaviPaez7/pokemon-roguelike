@@ -417,13 +417,6 @@ export function setupGameEventListeners(game) {
 
   game.eventBus.on('ui_action', (data) => {
     switch (data.action) {
-      case 'pause_menu':
-        if (game._state === GAME_STATES.EXPLORING) {
-          game.changeState(GAME_STATES.MENU);
-        } else if (game._state === GAME_STATES.MENU) {
-          game.changeState(GAME_STATES.EXPLORING);
-        }
-        break;
       case 'select_move':
         if (game._playerId) {
           const info = game.entityManager.getComponent(game._playerId, 'pokemonInfo');

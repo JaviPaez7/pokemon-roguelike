@@ -9,7 +9,6 @@ import { evolve, checkEvolution } from '../../systems/EvolutionSystem.js';
  * @param {{ consumeStoneId?: string|null }} [opts]
  */
 export function openEvolutionMenu(ui, pokemonId, evolution, opts = {}) {
-  ui.currentMenuType = 'evolution';
   const info = ui.game.entityManager.getComponent(pokemonId, 'pokemonInfo');
   if (!info || !evolution) {
     ui.closeMenu();

@@ -8,7 +8,6 @@ import { GAME_STATES, TYPE_NAMES_ES } from '../../constants.js';
  * @param {Object} pendingMove - Movimiento a aprender { moveId, moveName }
  */
 export function openLearnMoveMenu(ui, pokemonId, pendingMove) {
-  ui.currentMenuType = 'learn_move';
   ui.game.changeState(GAME_STATES.MENU);
   const info = ui.game.entityManager.getComponent(pokemonId, 'pokemonInfo');
   if (!info || !pendingMove) {

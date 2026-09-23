@@ -68,6 +68,9 @@ export class Game {
     /** @type {string|null} Estado anterior (para transiciones) */
     this._previousState = null;
 
+    /** @type {boolean} Si se está emitiendo `state_changed` (ver changeState) */
+    this._notifyingStateChange = false;
+
     /** @type {boolean} Bandera para controlar si se necesita redibujar */
     this.needsRender = true;
 
@@ -285,11 +288,23 @@ export class Game {
 
   /**
    * Cambiar el estado del juego con validación de transiciones.
+   *
+   * Quien reacciona a `state_changed` no puede volver a llamar a `changeState`:
+   * esa reentrada provocó la recursión infinita del menú de pausa. Si ocurre, el
+   * cambio anidado se ignora y se registra un error.
    * @param {string} newState - Nuevo estado
    */
   changeState(newState) {
     if (!Object.values(GAME_STATES).includes(newState)) {
       console.error(`[Game] Estado no válido: '${newState}'`);
+      return;
+    }
+
+    if (this._notifyingStateChange) {
+      console.error(
+        `[Game] changeState('${newState}') ignorado: se llamó mientras se notificaba ` +
+        `el cambio a '${this._state}'. Quien reacciona a 'state_changed' no debe cambiar el estado.`
+      );
       return;
     }
 
@@ -303,7 +318,12 @@ export class Game {
     this.needsRender = true;
 
     // Notificar al UIManager
-    this.eventBus.emit('state_changed', { state: newState });
+    this._notifyingStateChange = true;
+    try {
+      this.eventBus.emit('state_changed', { state: newState });
+    } finally {
+      this._notifyingStateChange = false;
+    }
   }
 
   _onStateExit(state) {

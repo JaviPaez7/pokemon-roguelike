@@ -24,7 +24,6 @@ export function openRecruitMenu(ui, entityId, info) {
     </div>
   `;
 
-  ui.currentMenuType = 'recruit_menu';
   ui.game.changeState(GAME_STATES.MENU);
   ui.showMenu('recruit_menu', html);
   ui._recruitEntityId = entityId;
