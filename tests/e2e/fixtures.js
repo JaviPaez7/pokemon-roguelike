@@ -96,6 +96,95 @@ export async function expectExploring(page) {
 }
 
 /**
+ * Cierra el diálogo visible con Z. Los diálogos animados piden dos pulsaciones
+ * (la primera completa el texto), los instantáneos una.
+ * @param {import('@playwright/test').Page} page
+ */
+export async function dismissDialog(page) {
+  const dialog = page.locator('.dialog-panel');
+  await expect(dialog).toBeVisible();
+  for (let i = 0; i < 3 && (await dialog.isVisible()); i++) {
+    await page.keyboard.press('z');
+  }
+  await expect(dialog).toBeHidden();
+}
+
+/**
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<{ x: number, y: number }>}
+ */
+export function playerPosition(page) {
+  return page.evaluate(() => {
+    const game = window.game;
+    const { x, y } = game.entityManager.getComponent(game.getPlayerId(), 'position');
+    return { x, y };
+  });
+}
+
+/**
+ * Una dirección ortogonal en la que el jugador da un paso normal: suelo
+ * transitable, sin escaleras, trampas, objetos ni Pokémon. `null` si no hay.
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<{ key: string, dx: number, dy: number } | null>}
+ */
+export function findFreeStep(page) {
+  return page.evaluate(() => {
+    const game = window.game;
+    const em = game.entityManager;
+    const map = game.tileMap;
+    const { x, y } = em.getComponent(game.getPlayerId(), 'position');
+    const steps = [
+      { key: 'ArrowRight', dx: 1, dy: 0 },
+      { key: 'ArrowLeft', dx: -1, dy: 0 },
+      { key: 'ArrowDown', dx: 0, dy: 1 },
+      { key: 'ArrowUp', dx: 0, dy: -1 },
+    ];
+    return (
+      steps.find(({ dx, dy }) => {
+        const tx = x + dx;
+        const ty = y + dy;
+        return (
+          map.isWalkable(tx, ty) &&
+          !map.isStairs(tx, ty) &&
+          !map.isTrap(tx, ty) &&
+          em.getTrapAt(tx, ty) === null &&
+          em.getEntityAt(tx, ty, true) === null
+        );
+      }) ?? null
+    );
+  });
+}
+
+/**
+ * Unidades de un objeto en la mochila, sumando todas sus casillas.
+ * @param {import('@playwright/test').Page} page
+ * @param {string} itemId
+ */
+export function itemQuantity(page, itemId) {
+  return page.evaluate(
+    (id) => window.game.inventory.filter((s) => s.itemId === id).reduce((n, s) => n + s.quantity, 0),
+    itemId,
+  );
+}
+
+/**
+ * Lo que una partida guardada debe conservar.
+ * @param {import('@playwright/test').Page} page
+ */
+export function runSummary(page) {
+  return page.evaluate(() => {
+    const game = window.game;
+    return {
+      floor: game.getCurrentFloor(),
+      coins: game.coins,
+      party: game.party.map((p) => ({ name: p.name, level: p.level, hp: p.hp, maxHp: p.maxHp })),
+      inventory: game.inventory.map(({ itemId, quantity }) => ({ itemId, quantity })),
+      pokedexSeen: [...game.pokedexSeen].sort(),
+    };
+  });
+}
+
+/**
  * Registra en la página cada `state_changed` emitido a partir de ahora.
  * Se leen con `stateChanges(page)`.
  * @param {import('@playwright/test').Page} page
