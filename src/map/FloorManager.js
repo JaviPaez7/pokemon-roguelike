@@ -7,6 +7,7 @@ import { spawnTraps } from '../systems/TrapSystem.js';
 import { getBiomeForFloor } from './Biomes.js';
 import { getAbility } from '../systems/AbilitySystem.js';
 import { floorSeed } from '../core/Random.js';
+import { relativeFloor } from '../core/Dungeons.js';
 
 /**
  * Generación de pisos, spawn de enemigos y pre-carga de sprites.
@@ -28,7 +29,7 @@ export class FloorManager {
     game.fovRadiusModifier = 0;
     game._stairsAnnounced = false;
     // La semilla del piso sale de la de la partida: al cargar se regenera igual
-    game.seed = floorSeed(game.runSeed, game._currentFloor);
+    game.seed = floorSeed(game.runSeed, game._currentFloor, game.dungeonId ?? '');
     const zone = this.getZoneConfig();
     const theme = zone ? zone.theme : 'default';
     const isBossRoom = zone && zone.boss && game._currentFloor === zone.floors[1];
@@ -502,7 +503,7 @@ export class FloorManager {
     });
 
     game.eventBus.emit('message', {
-      text: `Entrando a ${game.zoneName || 'Zona Desconocida'} (Piso ${game._currentFloor})`
+      text: `Entrando a ${game.zoneName || 'Zona Desconocida'} (Piso ${game.getCurrentFloor()})`
     });
     if (!skipHeal) {
       game.eventBus.emit('message', {
@@ -586,9 +587,13 @@ export class FloorManager {
     }
 
     // Anunciar cambio de zona (primer piso de cada zona)
-    if (zone && game._currentFloor === zone.floors[0] && game._currentFloor > 1) {
+    // Solo dentro de mazmorras que cruzan zonas (la Torre del Desafío)
+    if (zone && game._currentFloor === zone.floors[0] && game.getCurrentFloor() > 1) {
+      const dungeon = game.dungeon;
+      const from = dungeon ? relativeFloor(dungeon, zone.floors[0]) : zone.floors[0];
+      const to = dungeon ? relativeFloor(dungeon, zone.floors[1]) : zone.floors[1];
       game.eventBus.emit('show_dialog', {
-        text: `¡Nueva zona!\n\n${zone.name}\nPisos ${zone.floors[0]}–${zone.floors[1]}${zone.boss ? `\nJefe al final: ${zone.boss.name}` : ''}`
+        text: `¡Nueva zona!\n\n${zone.name}\nPisos ${from}–${to}${zone.boss ? `\nJefe al final: ${zone.boss.name}` : ''}`
       });
     }
 

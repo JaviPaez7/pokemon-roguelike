@@ -15,7 +15,8 @@ export function startNewGame(game, starterPokemonId) {
   game.runSeed = newRunSeed();
   game._messageLog = [];
   if (game.messageLog) game.messageLog.clear();
-  game._currentFloor = 1;
+  game.dungeonId = 'torre_desafio';
+  game._currentFloor = game.dungeon.floors[0];
   game._lastStarterId = starterPokemonId;
   game._deathReason = null;
   game._bellyWarned20 = false;
@@ -106,6 +107,7 @@ export async function loadSavedGame(game) {
   }
 
   game.runSeed = data.runSeed;
+  game.dungeonId = data.dungeonId ?? 'torre_desafio';
   game._currentFloor = data.currentFloor;
   game.currentWeather = data.currentWeather || data.weather || 'normal';
   game.inventory = data.inventory;
@@ -310,7 +312,7 @@ export async function loadSavedGame(game) {
     .some(id => game.entityManager.getComponent(id, 'pokemonInfo')?.pendingEvolution);
   const evoHint = evoPending ? '\nHay una evolución pendiente al reanudar.' : '';
   game.eventBus.emit('show_dialog', {
-    text: `Partida cargada.\n\nPiso ${game._currentFloor}: ${game.zoneName}.\nLíder: ${leader ? leader.name : '—'}.\nClima: ${w}.\nObjetos en suelo: ${nObj}. Trampas: ${nTrap}.${evoHint}\n\nEl mapa de este piso se ha regenerado.`,
+    text: `Partida cargada.\n\nPiso ${game.getCurrentFloor()}: ${game.zoneName}.\nLíder: ${leader ? leader.name : '—'}.\nClima: ${w}.\nObjetos en suelo: ${nObj}. Trampas: ${nTrap}.${evoHint}\n\nEl mapa de este piso se ha regenerado.`,
     instant: true,
     callback: () => {}
   });

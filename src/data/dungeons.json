@@ -1,0 +1,61 @@
+{
+  "dungeons": [
+    {
+      "id": "bosque_verde",
+      "name": "Bosque Verde",
+      "floors": [1, 5],
+      "description": "Un bosque tranquilo junto al pueblo. Buen sitio para empezar.",
+      "unlock": null
+    },
+    {
+      "id": "cueva_oscura",
+      "name": "Cueva Oscura",
+      "floors": [6, 10],
+      "description": "Galerías húmedas donde un Onix vigila la salida.",
+      "unlock": { "cleared": "bosque_verde" }
+    },
+    {
+      "id": "ruta_electrica",
+      "name": "Ruta Eléctrica",
+      "floors": [11, 15],
+      "description": "Un sendero lleno de chispas. Al final espera un Raichu.",
+      "unlock": { "cleared": "cueva_oscura" }
+    },
+    {
+      "id": "monte_lunar",
+      "name": "Monte Lunar",
+      "floors": [16, 20],
+      "description": "Cumbres de piedra lunar, hogar de los Clefairy.",
+      "unlock": { "cleared": "ruta_electrica" }
+    },
+    {
+      "id": "profundidades_oscuras",
+      "name": "Profundidades Oscuras",
+      "floors": [21, 30],
+      "description": "Donde no llega la luz. Dicen que un Gengar ríe en el fondo.",
+      "unlock": { "cleared": "monte_lunar" }
+    },
+    {
+      "id": "isla_volcanica",
+      "name": "Isla Volcánica",
+      "floors": [31, 40],
+      "description": "Lava, ceniza y un Arcanine que guarda la cima.",
+      "unlock": { "cleared": "profundidades_oscuras" }
+    },
+    {
+      "id": "laboratorio_final",
+      "name": "Laboratorio Final",
+      "floors": [41, 50],
+      "description": "Un laboratorio abandonado. Algo muy poderoso despertó aquí.",
+      "unlock": { "cleared": "isla_volcanica" }
+    },
+    {
+      "id": "torre_desafio",
+      "name": "Torre del Desafío",
+      "floors": [1, 50],
+      "description": "Cincuenta pisos seguidos, de todas las zonas. Solo para los mejores equipos.",
+      "unlock": { "cleared": "laboratorio_final" },
+      "challenge": true
+    }
+  ]
+}

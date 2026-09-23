@@ -1,4 +1,4 @@
-import { GAME_STATES, MAX_INVENTORY, MAX_PARTY_SIZE } from '../constants.js';
+import { MAX_INVENTORY, MAX_PARTY_SIZE } from '../constants.js';
 import { pickupItem } from '../systems/ItemSystem.js';
 import { getAbility } from '../systems/AbilitySystem.js';
 import { revertTransform } from '../systems/CombatSystem.js';
@@ -233,13 +233,13 @@ export function setupGameEventListeners(game) {
 
         game.entityManager.destroyEntity(data.entityId);
 
-        const isFinalBoss = bossName === 'Mewtwo' || (game._currentFloor || 0) >= 50;
+        const isFinalBoss = game.isLastFloor();
         game.eventBus.emit('show_dialog', { 
           text: isFinalBoss
-            ? `¡Mewtwo ha sido derrotado!\n\nHas conquistado el PokéRogue.\n\nObjeto: ¡${itemName}!`
+            ? `¡${bossName} ha sido derrotado!\n\n¡Has completado ${game.dungeon?.name ?? 'la mazmorra'}!\n\nObjeto: ¡${itemName}!`
             : `¡El Jefe ${bossName} ha sido derrotado!\n\nLas escaleras han aparecido en el centro de la sala, y ha caído un objeto valioso: ¡${itemName}!`,
           callback: isFinalBoss
-            ? () => { game.changeState(GAME_STATES.VICTORY); }
+            ? () => { game.completeDungeon(); }
             : null
         });
         

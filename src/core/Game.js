@@ -41,6 +41,7 @@ import { setupGameEventListeners } from './GameEvents.js';
 import { startNewGame as startNewGameSession, loadSavedGame as loadSavedGameSession } from './GameSession.js';
 import { useInventoryItem as useInventoryItemHandler, throwInventoryItem } from '../systems/InventorySystem.js';
 import { MessageLog } from '../ui/MessageLog.js';
+import { getDungeon, relativeFloor, isLastFloor } from './Dungeons.js';
 
 // Importar JSONs estáticos directamente para empaquetarlos con Vite
 import pokemonData from '../data/pokemon.json';
@@ -74,8 +75,11 @@ export class Game {
     /** @type {boolean} Bandera para controlar si se necesita redibujar */
     this.needsRender = true;
 
-    /** @type {number} Piso actual de la mazmorra */
+    /** @type {number} Piso global actual (decide zona, enemigos y dificultad; ver core/Dungeons.js) */
     this._currentFloor = 1;
+
+    /** @type {string|null} Mazmorra en la que está el equipo */
+    this.dungeonId = null;
 
     /** @type {number|null} ID de la entidad del jugador (líder del equipo) */
     this._playerId = null;
@@ -1015,13 +1019,31 @@ export class Game {
     return zone ? zone.name : 'Mazmorra';
   }
 
+  /** @returns {import('./Dungeons.js').Dungeon|null} */
+  get dungeon() {
+    return this.dungeonId ? getDungeon(this.dungeonId) : null;
+  }
+
+  /** @returns {number} Piso que ve el jugador, relativo a la mazmorra */
   getCurrentFloor() {
-    return this._currentFloor;
+    const dungeon = this.dungeon;
+    return dungeon ? relativeFloor(dungeon, this._currentFloor) : this._currentFloor;
   }
 
   // Getter floor adicional para Renderer.js
   get floor() {
-    return this._currentFloor;
+    return this.getCurrentFloor();
+  }
+
+  /** @returns {boolean} Si el equipo está en el último piso de la mazmorra */
+  isLastFloor() {
+    const dungeon = this.dungeon;
+    return dungeon ? isLastFloor(dungeon, this._currentFloor) : this._currentFloor >= 50;
+  }
+
+  /** La mazmorra se ha completado (escaleras del último piso o jefe final). */
+  completeDungeon() {
+    this.changeState(GAME_STATES.VICTORY);
   }
 
   // Getter messages adicional para Renderer.js

@@ -211,8 +211,8 @@ export class CombatHandler {
               game.eventBus.emit('message', `¡El aura de ${bossName} te impide usar las escaleras!`);
               return { success: false, type: 'blocked' };
             }
-            if (game._currentFloor === 50) {
-              game.changeState(GAME_STATES.VICTORY);
+            if (game.isLastFloor()) {
+              game.completeDungeon();
               return { success: true, type: 'victory' };
             }
             game.uiManager.openStairsMenu();
@@ -584,8 +584,8 @@ export class CombatHandler {
           game.eventBus.emit('message', `¡El aura de ${bossName} te impide usar las escaleras!`);
           return { success: false, type: 'blocked' };
         }
-        if (game._currentFloor === 50) {
-          game.changeState(GAME_STATES.VICTORY);
+        if (game.isLastFloor()) {
+          game.completeDungeon();
           return { success: true, type: 'victory' };
         }
         game.uiManager.openStairsMenu();

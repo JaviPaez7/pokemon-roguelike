@@ -17,7 +17,7 @@ export function openMerchantMenu(ui, merchantId) {
       <h2 class="game-panel-title">TIENDA KECLEON</h2>
       <div style="font-size: 8px; line-height: 1.5; color: var(--text-primary); margin-bottom: 12px; display: flex; justify-content: space-between; padding: 0 10px;">
         <span>Tus Monedas: <strong style="color: #ffd700;">${ui.game.coins || 0} Poké</strong></span>
-        <span>Piso ${ui.game._currentFloor}</span>
+        <span>Piso ${ui.game.getCurrentFloor()}</span>
       </div>
       <div id="options-list">
         <div class="menu-option selected" data-index="0"><span class="cursor">▶</span> Comprar objetos</div>

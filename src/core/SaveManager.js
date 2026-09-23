@@ -152,7 +152,9 @@ export function saveGame(gameState) {
       runSeed: gameState.runSeed,
       currentWeather: gameState.currentWeather || 'normal',
       coins: gameState.coins ?? 0,
-      currentFloor: typeof gameState.getCurrentFloor === 'function' ? gameState.getCurrentFloor() : gameState._currentFloor,
+      dungeonId: gameState.dungeonId,
+      // Piso global: el relativo se calcula con la mazmorra
+      currentFloor: gameState._currentFloor,
       turnCount: (typeof gameState.turnManager?.getTurnCount === 'function' ? gameState.turnManager.getTurnCount() : 0),
       party: gameState.party.map(p => ({
         speciesId: p.speciesId,
