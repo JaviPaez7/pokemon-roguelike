@@ -10,6 +10,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Golpea al objetivo con la pata delantera"
   },
   {
@@ -23,6 +24,7 @@
     "effect": "high_crit",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Golpe de kárate con alto ratio de crítico"
   },
   {
@@ -36,6 +38,7 @@
     "effect": "multi_hit",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Golpea de 2 a 5 veces seguidas"
   },
   {
@@ -49,6 +52,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Un poderoso puñetazo"
   },
   {
@@ -62,6 +66,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Lanza monedas al objetivo"
   },
   {
@@ -75,6 +80,7 @@
     "effect": "burn",
     "effectChance": 10,
     "priority": 0,
+    "range": "front",
     "description": "Puñetazo de fuego que puede quemar"
   },
   {
@@ -88,6 +94,7 @@
     "effect": "freeze",
     "effectChance": 10,
     "priority": 0,
+    "range": "front",
     "description": "Puñetazo helado que puede congelar"
   },
   {
@@ -101,6 +108,7 @@
     "effect": "paralyze",
     "effectChance": 10,
     "priority": 0,
+    "range": "front",
     "description": "Puñetazo eléctrico que puede paralizar"
   },
   {
@@ -114,6 +122,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Araña al objetivo con garras afiladas"
   },
   {
@@ -127,6 +136,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Agarra al objetivo con grandes pinzas"
   },
   {
@@ -140,6 +150,7 @@
     "effect": "ohko",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Ataque de K.O. de un golpe"
   },
   {
@@ -153,6 +164,7 @@
     "effect": "charge",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Cuchilla de viento que requiere un turno de carga"
   },
   {
@@ -166,6 +178,7 @@
     "effect": "stat_up_attack_2",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Danza que sube mucho el Ataque"
   },
   {
@@ -179,6 +192,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Corta al objetivo con garras o cuchillas"
   },
   {
@@ -192,6 +206,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "line",
     "description": "Crea un vendaval con las alas"
   },
   {
@@ -205,6 +220,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Golpea con las alas extendidas"
   },
   {
@@ -218,6 +234,7 @@
     "effect": "switch_out",
     "effectChance": null,
     "priority": -6,
+    "range": "front",
     "description": "Sopla al enemigo fuera del combate"
   },
   {
@@ -231,6 +248,7 @@
     "effect": "charge",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Vuela alto y ataca en el siguiente turno"
   },
   {
@@ -244,6 +262,7 @@
     "effect": "trap",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Aprieta al objetivo durante 2-5 turnos"
   },
   {
@@ -257,6 +276,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Golpea con la cola o el cuerpo"
   },
   {
@@ -270,6 +290,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Golpea con látigos de vid"
   },
   {
@@ -283,6 +304,7 @@
     "effect": "flinch",
     "effectChance": 30,
     "priority": 0,
+    "range": "front",
     "description": "Pisotón que puede hacer retroceder"
   },
   {
@@ -296,6 +318,7 @@
     "effect": "multi_hit_2",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Patea dos veces seguidas"
   },
   {
@@ -309,6 +332,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Una patada devastadora"
   },
   {
@@ -322,6 +346,7 @@
     "effect": "recoil_miss",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Patada saltarina, daña al usuario si falla"
   },
   {
@@ -335,6 +360,7 @@
     "effect": "flinch",
     "effectChance": 30,
     "priority": 0,
+    "range": "front",
     "description": "Patada giratoria que puede hacer retroceder"
   },
   {
@@ -348,6 +374,7 @@
     "effect": "stat_down_accuracy",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Lanza arena para bajar la Precisión"
   },
   {
@@ -361,6 +388,7 @@
     "effect": "flinch",
     "effectChance": 30,
     "priority": 0,
+    "range": "front",
     "description": "Cabezazo que puede hacer retroceder"
   },
   {
@@ -374,6 +402,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Ataca con el cuerno afilado"
   },
   {
@@ -387,6 +416,7 @@
     "effect": "multi_hit",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Golpea de 2 a 5 veces con cuerno o pico"
   },
   {
@@ -400,6 +430,7 @@
     "effect": "ohko",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Ataque de K.O. de un golpe con el cuerno"
   },
   {
@@ -413,6 +444,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Un ataque físico básico"
   },
   {
@@ -426,6 +458,7 @@
     "effect": "paralyze",
     "effectChance": 30,
     "priority": 0,
+    "range": "front",
     "description": "Placaje con todo el cuerpo que puede paralizar"
   },
   {
@@ -439,6 +472,7 @@
     "effect": "trap",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Envuelve y aprieta durante 2-5 turnos"
   },
   {
@@ -452,6 +486,7 @@
     "effect": "recoil",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Placaje que también daña al usuario"
   },
   {
@@ -465,6 +500,7 @@
     "effect": "confuse_self",
     "effectChance": null,
     "priority": 0,
+    "range": "around",
     "description": "Ataca 2-3 turnos y luego se confunde"
   },
   {
@@ -478,6 +514,7 @@
     "effect": "recoil",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Placaje temerario con retroceso severo"
   },
   {
@@ -491,6 +528,7 @@
     "effect": "stat_down_defense",
     "effectChance": null,
     "priority": 0,
+    "range": "room",
     "description": "Mueve la cola para bajar la Defensa"
   },
   {
@@ -504,6 +542,7 @@
     "effect": "poison",
     "effectChance": 30,
     "priority": 0,
+    "range": "front",
     "description": "Aguijón venenoso que puede envenenar"
   },
   {
@@ -517,6 +556,7 @@
     "effect": "poison",
     "effectChance": 20,
     "priority": 0,
+    "range": "front",
     "description": "Golpea dos veces y puede envenenar"
   },
   {
@@ -530,6 +570,7 @@
     "effect": "multi_hit",
     "effectChance": null,
     "priority": 0,
+    "range": "line",
     "description": "Lanza agujas de 2 a 5 veces"
   },
   {
@@ -543,6 +584,7 @@
     "effect": "stat_down_defense",
     "effectChance": null,
     "priority": 0,
+    "range": "room",
     "description": "Mirada intimidante que baja la Defensa",
     "sound": true
   },
@@ -557,6 +599,7 @@
     "effect": "flinch",
     "effectChance": 10,
     "priority": 0,
+    "range": "front",
     "description": "Muerde con colmillos afilados"
   },
   {
@@ -570,6 +613,7 @@
     "effect": "stat_down_attack",
     "effectChance": null,
     "priority": 0,
+    "range": "room",
     "description": "Gruñido que baja el Ataque rival",
     "sound": true
   },
@@ -584,6 +628,7 @@
     "effect": "switch_out",
     "effectChance": null,
     "priority": -6,
+    "range": "front",
     "description": "Ruge para ahuyentar al rival"
   },
   {
@@ -597,6 +642,7 @@
     "effect": "sleep",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Canta una nana que duerme al rival",
     "sound": true
   },
@@ -611,6 +657,7 @@
     "effect": "confuse",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Emite ondas sónicas que confunden",
     "sound": true
   },
@@ -625,6 +672,7 @@
     "effect": "fixed_20",
     "effectChance": null,
     "priority": 0,
+    "range": "line",
     "description": "Siempre causa exactamente 20 puntos de daño"
   },
   {
@@ -638,6 +686,7 @@
     "effect": "disable",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Inhabilita el último movimiento usado"
   },
   {
@@ -651,6 +700,7 @@
     "effect": "stat_down_defense",
     "effectChance": 10,
     "priority": 0,
+    "range": "front",
     "description": "Ácido que puede bajar la Defensa"
   },
   {
@@ -664,6 +714,7 @@
     "effect": "burn",
     "effectChance": 10,
     "priority": 0,
+    "range": "front",
     "description": "Lanza pequeñas llamas que pueden quemar"
   },
   {
@@ -677,6 +728,7 @@
     "effect": "burn",
     "effectChance": 10,
     "priority": 0,
+    "range": "front",
     "description": "Potente llamarada que puede quemar"
   },
   {
@@ -690,6 +742,7 @@
     "effect": "protect_stats",
     "effectChance": null,
     "priority": 0,
+    "range": "team",
     "description": "Protege contra reducciones de estadísticas"
   },
   {
@@ -703,6 +756,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "line",
     "description": "Dispara un chorro de agua"
   },
   {
@@ -716,6 +770,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "line",
     "description": "Lanza un torrente de agua a presión"
   },
   {
@@ -729,6 +784,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "room",
     "description": "Crea una gran ola que golpea al rival"
   },
   {
@@ -742,6 +798,7 @@
     "effect": "freeze",
     "effectChance": 10,
     "priority": 0,
+    "range": "line",
     "description": "Rayo helado que puede congelar"
   },
   {
@@ -755,6 +812,7 @@
     "effect": "freeze",
     "effectChance": 10,
     "priority": 0,
+    "range": "front",
     "description": "Tormenta de nieve que puede congelar"
   },
   {
@@ -768,6 +826,7 @@
     "effect": "confuse",
     "effectChance": 10,
     "priority": 0,
+    "range": "line",
     "description": "Rayo psíquico que puede confundir"
   },
   {
@@ -781,6 +840,7 @@
     "effect": "stat_down_speed",
     "effectChance": 10,
     "priority": 0,
+    "range": "line",
     "description": "Ráfaga de burbujas que puede bajar Velocidad"
   },
   {
@@ -794,6 +854,7 @@
     "effect": "stat_down_attack",
     "effectChance": 10,
     "priority": 0,
+    "range": "line",
     "description": "Rayo de aurora que puede bajar Ataque"
   },
   {
@@ -807,6 +868,7 @@
     "effect": "recharge",
     "effectChance": null,
     "priority": 0,
+    "range": "line",
     "description": "Devastador rayo que requiere recargar un turno"
   },
   {
@@ -820,6 +882,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Picotazo con el pico afilado"
   },
   {
@@ -833,6 +896,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Picotazo giratorio muy potente"
   },
   {
@@ -846,6 +910,7 @@
     "effect": "recoil",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Llave de lucha que también daña al usuario"
   },
   {
@@ -859,6 +924,7 @@
     "effect": "flinch",
     "effectChance": 30,
     "priority": 0,
+    "range": "front",
     "description": "Patada baja que puede hacer retroceder"
   },
   {
@@ -872,6 +938,7 @@
     "effect": "counter",
     "effectChance": null,
     "priority": -5,
+    "range": "front",
     "description": "Devuelve el doble del daño físico recibido"
   },
   {
@@ -885,6 +952,7 @@
     "effect": "level_damage",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Causa daño igual al nivel del usuario"
   },
   {
@@ -898,6 +966,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Golpe poderoso con fuerza bruta"
   },
   {
@@ -911,6 +980,7 @@
     "effect": "drain",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Absorbe PS del rival"
   },
   {
@@ -924,6 +994,7 @@
     "effect": "drain",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Absorbe más PS del rival"
   },
   {
@@ -937,6 +1008,7 @@
     "effect": "leech_seed",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Planta una semilla que drena PS cada turno"
   },
   {
@@ -950,6 +1022,7 @@
     "effect": "stat_up_special",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Crece para subir el Especial"
   },
   {
@@ -963,6 +1036,7 @@
     "effect": "high_crit",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Hojas afiladas con alto ratio de crítico"
   },
   {
@@ -976,6 +1050,7 @@
     "effect": "charge",
     "effectChance": null,
     "priority": 0,
+    "range": "line",
     "description": "Absorbe luz un turno y luego dispara"
   },
   {
@@ -989,6 +1064,7 @@
     "effect": "poison",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Esparce polvo venenoso"
   },
   {
@@ -1002,6 +1078,7 @@
     "effect": "paralyze",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Esparce esporas paralizantes"
   },
   {
@@ -1015,6 +1092,7 @@
     "effect": "sleep",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Esparce polvo somnífero"
   },
   {
@@ -1028,6 +1106,7 @@
     "effect": "confuse_self",
     "effectChance": null,
     "priority": 0,
+    "range": "around",
     "description": "Danza de pétalos 2-3 turnos, luego confusión"
   },
   {
@@ -1041,6 +1120,7 @@
     "effect": "stat_down_speed",
     "effectChance": null,
     "priority": 0,
+    "range": "room",
     "description": "Hilo que baja la Velocidad rival"
   },
   {
@@ -1054,6 +1134,7 @@
     "effect": "fixed_40",
     "effectChance": null,
     "priority": 0,
+    "range": "line",
     "description": "Siempre causa exactamente 40 puntos de daño"
   },
   {
@@ -1067,6 +1148,7 @@
     "effect": "trap",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Atrapa al rival en un torbellino de fuego"
   },
   {
@@ -1080,6 +1162,7 @@
     "effect": "paralyze",
     "effectChance": 10,
     "priority": 0,
+    "range": "front",
     "description": "Descarga eléctrica que puede paralizar"
   },
   {
@@ -1093,6 +1176,7 @@
     "effect": "paralyze",
     "effectChance": 10,
     "priority": 0,
+    "range": "front",
     "description": "Poderoso rayo que puede paralizar"
   },
   {
@@ -1106,6 +1190,7 @@
     "effect": "paralyze",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Onda eléctrica que paraliza al rival"
   },
   {
@@ -1119,6 +1204,7 @@
     "effect": "paralyze",
     "effectChance": 30,
     "priority": 0,
+    "range": "front",
     "description": "Tremendo trueno que puede paralizar"
   },
   {
@@ -1132,6 +1218,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "line",
     "description": "Lanza rocas al objetivo"
   },
   {
@@ -1145,6 +1232,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "room",
     "description": "Terremoto devastador"
   },
   {
@@ -1158,6 +1246,7 @@
     "effect": "ohko",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Abre una grieta. K.O. de un golpe"
   },
   {
@@ -1171,6 +1260,7 @@
     "effect": "charge",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Excava bajo tierra y ataca el siguiente turno"
   },
   {
@@ -1184,6 +1274,7 @@
     "effect": "badly_poison",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Envenena gravemente al rival"
   },
   {
@@ -1197,6 +1288,7 @@
     "effect": "confuse",
     "effectChance": 10,
     "priority": 0,
+    "range": "front",
     "description": "Ataque psíquico que puede confundir"
   },
   {
@@ -1210,6 +1302,7 @@
     "effect": "stat_down_special",
     "effectChance": 33,
     "priority": 0,
+    "range": "front",
     "description": "Poderoso ataque psíquico que puede bajar Especial"
   },
   {
@@ -1223,6 +1316,7 @@
     "effect": "sleep",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Hipnotiza para dormir al rival"
   },
   {
@@ -1236,6 +1330,7 @@
     "effect": "stat_up_attack",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Medita para subir el Ataque"
   },
   {
@@ -1249,6 +1344,7 @@
     "effect": "stat_up_speed_2",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Relaja el cuerpo para subir mucho la Velocidad"
   },
   {
@@ -1262,6 +1358,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 1,
+    "range": "front",
     "description": "Ataque rápido con prioridad alta"
   },
   {
@@ -1275,6 +1372,7 @@
     "effect": "rage",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Sube Ataque cada vez que el usuario recibe daño"
   },
   {
@@ -1288,6 +1386,7 @@
     "effect": "flee",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Se teletransporta para huir del combate"
   },
   {
@@ -1301,6 +1400,7 @@
     "effect": "level_damage",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Causa daño igual al nivel del usuario"
   },
   {
@@ -1314,6 +1414,7 @@
     "effect": "mimic",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Copia un movimiento del rival"
   },
   {
@@ -1327,6 +1428,7 @@
     "effect": "stat_down_defense_2",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Chillido que baja mucho la Defensa",
     "sound": true
   },
@@ -1341,6 +1443,7 @@
     "effect": "stat_up_evasion",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Crea copias para subir la Evasión"
   },
   {
@@ -1354,6 +1457,7 @@
     "effect": "heal_self",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Recupera la mitad de los PS máximos"
   },
   {
@@ -1367,6 +1471,7 @@
     "effect": "stat_up_defense",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Endurece el cuerpo para subir la Defensa"
   },
   {
@@ -1380,6 +1485,7 @@
     "effect": "stat_up_evasion",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Se encoge para subir la Evasión"
   },
   {
@@ -1393,6 +1499,7 @@
     "effect": "stat_down_accuracy",
     "effectChance": null,
     "priority": 0,
+    "range": "room",
     "description": "Pantalla de humo que baja la Precisión"
   },
   {
@@ -1406,6 +1513,7 @@
     "effect": "confuse",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Luz siniestra que confunde al rival"
   },
   {
@@ -1419,6 +1527,7 @@
     "effect": "stat_up_defense",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Se retrae en el caparazón para subir Defensa"
   },
   {
@@ -1432,6 +1541,7 @@
     "effect": "stat_up_defense",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Se enrolla para subir la Defensa"
   },
   {
@@ -1445,6 +1555,7 @@
     "effect": "stat_up_defense_2",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Crea barrera que sube mucho la Defensa"
   },
   {
@@ -1458,6 +1569,7 @@
     "effect": "light_screen",
     "effectChance": null,
     "priority": 0,
+    "range": "team",
     "description": "Muro de luz que reduce daño especial"
   },
   {
@@ -1471,6 +1583,7 @@
     "effect": "reset_stats",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Neblina que reinicia todos los cambios de estadísticas"
   },
   {
@@ -1484,6 +1597,7 @@
     "effect": "reflect",
     "effectChance": null,
     "priority": 0,
+    "range": "team",
     "description": "Muro que reduce daño físico"
   },
   {
@@ -1497,6 +1611,7 @@
     "effect": "focus_energy",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Se concentra para subir ratio de crítico"
   },
   {
@@ -1510,6 +1625,7 @@
     "effect": "bide",
     "effectChance": null,
     "priority": 1,
+    "range": "front",
     "description": "Aguanta 2 turnos y devuelve doble daño recibido"
   },
   {
@@ -1523,6 +1639,7 @@
     "effect": "random_move",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Usa un movimiento completamente aleatorio"
   },
   {
@@ -1536,6 +1653,7 @@
     "effect": "self_destruct",
     "effectChance": null,
     "priority": 0,
+    "range": "around",
     "description": "Se autodestruye causando daño masivo"
   },
   {
@@ -1549,6 +1667,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Lanza un gran huevo al rival"
   },
   {
@@ -1562,6 +1681,7 @@
     "effect": "paralyze",
     "effectChance": 30,
     "priority": 0,
+    "range": "front",
     "description": "Lame al rival y puede paralizar"
   },
   {
@@ -1575,6 +1695,7 @@
     "effect": "poison",
     "effectChance": 40,
     "priority": 0,
+    "range": "front",
     "description": "Gas tóxico que puede envenenar"
   },
   {
@@ -1588,6 +1709,7 @@
     "effect": "poison",
     "effectChance": 30,
     "priority": 0,
+    "range": "front",
     "description": "Lanza lodo tóxico que puede envenenar"
   },
   {
@@ -1601,6 +1723,7 @@
     "effect": "flinch",
     "effectChance": 10,
     "priority": 0,
+    "range": "front",
     "description": "Golpea con un hueso, puede hacer retroceder"
   },
   {
@@ -1614,6 +1737,7 @@
     "effect": "burn",
     "effectChance": 30,
     "priority": 0,
+    "range": "front",
     "description": "Explosión de fuego devastadora que puede quemar"
   },
   {
@@ -1627,6 +1751,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Carga con la fuerza de una cascada"
   },
   {
@@ -1640,6 +1765,7 @@
     "effect": "trap",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Atrapa al rival con la concha durante 2-5 turnos"
   },
   {
@@ -1653,6 +1779,7 @@
     "effect": "never_miss",
     "effectChance": null,
     "priority": 0,
+    "range": "room",
     "description": "Estrellas que nunca fallan"
   },
   {
@@ -1666,6 +1793,7 @@
     "effect": "charge",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Baja la cabeza un turno y embiste al siguiente"
   },
   {
@@ -1679,6 +1807,7 @@
     "effect": "multi_hit",
     "effectChance": null,
     "priority": 0,
+    "range": "line",
     "description": "Lanza púas de 2 a 5 veces"
   },
   {
@@ -1692,6 +1821,7 @@
     "effect": "stat_down_speed",
     "effectChance": 10,
     "priority": 0,
+    "range": "front",
     "description": "Tentáculo que puede bajar la Velocidad"
   },
   {
@@ -1705,6 +1835,7 @@
     "effect": "stat_up_special_2",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Se vacía la mente para subir mucho el Especial"
   },
   {
@@ -1718,6 +1849,7 @@
     "effect": "stat_down_accuracy",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Distorsiona las cucharas para bajar Precisión"
   },
   {
@@ -1731,6 +1863,7 @@
     "effect": "heal_self",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Recupera la mitad de los PS máximos"
   },
   {
@@ -1744,6 +1877,7 @@
     "effect": "recoil_miss",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Patada voladora, daña al usuario si falla"
   },
   {
@@ -1757,6 +1891,7 @@
     "effect": "paralyze",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Mirada fija que paraliza al rival"
   },
   {
@@ -1770,6 +1905,7 @@
     "effect": "drain_sleep",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Come los sueños del rival dormido y recupera PS"
   },
   {
@@ -1783,6 +1919,7 @@
     "effect": "poison",
     "effectChance": null,
     "priority": 0,
+    "range": "room",
     "description": "Gas venenoso que envenena al rival"
   },
   {
@@ -1796,6 +1933,7 @@
     "effect": "multi_hit",
     "effectChance": null,
     "priority": 0,
+    "range": "line",
     "description": "Lanza objetos de 2 a 5 veces"
   },
   {
@@ -1809,6 +1947,7 @@
     "effect": "drain",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Chupa la vida del rival para recuperar PS"
   },
   {
@@ -1822,6 +1961,7 @@
     "effect": "sleep",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Beso que duerme al rival"
   },
   {
@@ -1835,6 +1975,7 @@
     "effect": "charge",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Carga un turno y lanza un ataque aéreo devastador"
   },
   {
@@ -1848,6 +1989,7 @@
     "effect": "transform",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Se transforma en el Pokémon rival"
   },
   {
@@ -1861,6 +2003,7 @@
     "effect": "stat_down_speed",
     "effectChance": 10,
     "priority": 0,
+    "range": "line",
     "description": "Lanza burbujas que pueden bajar Velocidad"
   },
   {
@@ -1874,6 +2017,7 @@
     "effect": "confuse",
     "effectChance": 20,
     "priority": 0,
+    "range": "front",
     "description": "Puñetazo que puede confundir"
   },
   {
@@ -1887,6 +2031,7 @@
     "effect": "sleep",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Esporas que siempre duermen al rival"
   },
   {
@@ -1900,6 +2045,7 @@
     "effect": "stat_down_accuracy",
     "effectChance": null,
     "priority": 0,
+    "range": "room",
     "description": "Destello que baja la Precisión rival"
   },
   {
@@ -1913,6 +2059,7 @@
     "effect": "random_damage",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Onda psíquica con daño variable"
   },
   {
@@ -1926,6 +2073,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "No hace absolutamente nada"
   },
   {
@@ -1939,6 +2087,7 @@
     "effect": "stat_up_defense_2",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Se licúa para subir mucho la Defensa"
   },
   {
@@ -1952,6 +2101,7 @@
     "effect": "high_crit",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Martillazo con pinzas con alto ratio de crítico"
   },
   {
@@ -1965,6 +2115,7 @@
     "effect": "self_destruct",
     "effectChance": null,
     "priority": 0,
+    "range": "around",
     "description": "Explosión masiva que debilita al usuario"
   },
   {
@@ -1978,6 +2129,7 @@
     "effect": "multi_hit",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Araña de 2 a 5 veces"
   },
   {
@@ -1991,6 +2143,7 @@
     "effect": "multi_hit_2",
     "effectChance": null,
     "priority": 0,
+    "range": "line",
     "description": "Lanza un hueso que golpea dos veces"
   },
   {
@@ -2004,6 +2157,7 @@
     "effect": "rest",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Duerme 2 turnos y recupera todos los PS"
   },
   {
@@ -2017,6 +2171,7 @@
     "effect": "flinch",
     "effectChance": 30,
     "priority": 0,
+    "range": "front",
     "description": "Lanza rocas que pueden hacer retroceder"
   },
   {
@@ -2030,6 +2185,7 @@
     "effect": "flinch",
     "effectChance": 10,
     "priority": 0,
+    "range": "front",
     "description": "Mordisco feroz que puede hacer retroceder"
   },
   {
@@ -2043,6 +2199,7 @@
     "effect": "stat_up_attack",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Afila el cuerpo para subir el Ataque"
   },
   {
@@ -2056,6 +2213,7 @@
     "effect": "conversion",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Cambia el tipo al del primer movimiento"
   },
   {
@@ -2069,6 +2227,7 @@
     "effect": null,
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Ataque triple de fuego, hielo y electricidad"
   },
   {
@@ -2082,6 +2241,7 @@
     "effect": "half_hp",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Reduce los PS del rival a la mitad"
   },
   {
@@ -2095,6 +2255,7 @@
     "effect": "high_crit",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Tajo con alto ratio de crítico"
   },
   {
@@ -2108,6 +2269,7 @@
     "effect": "substitute",
     "effectChance": null,
     "priority": 0,
+    "range": "self",
     "description": "Crea un señuelo a costa de PS"
   },
   {
@@ -2121,6 +2283,7 @@
     "effect": "recoil",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Último recurso cuando no quedan PP"
   },
   {
@@ -2134,6 +2297,7 @@
     "effect": "multi_hit",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Puñetazos de 2 a 5 veces"
   },
   {
@@ -2147,6 +2311,7 @@
     "effect": "multi_hit",
     "effectChance": null,
     "priority": 0,
+    "range": "front",
     "description": "Golpea con hueso de 2 a 5 veces"
   }
 ]

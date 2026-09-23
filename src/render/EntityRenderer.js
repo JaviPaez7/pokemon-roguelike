@@ -263,6 +263,13 @@ export class EntityRenderer {
           spriteSize,
           ''
         );
+      } else if (p.color) {
+        // Movimiento en línea: una bola del color del tipo
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath();
+        ctx.arc(0, 0, spriteSize / 3, 0, Math.PI * 2);
+        ctx.fill();
       } else {
         ctx.font = `${spriteSize}px Arial`;
         ctx.textAlign = 'center';

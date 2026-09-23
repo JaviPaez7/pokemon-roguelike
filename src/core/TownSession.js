@@ -195,6 +195,9 @@ export function updateTown(game) {
 
   if (action.type === ACTIONS.MOVE) {
     moveLeader(game, action.dx, action.dy);
+  } else if (action.type === 'turn') {
+    game.movementSystem._updateFacing(game.entityManager.getComponent(game._playerId, 'position'), action.dx, action.dy);
+    game.needsRender = true;
   } else if (action.type === 'confirm') {
     const pos = game.entityManager.getComponent(game._playerId, 'position');
     const [dx, dy] = facingVector(pos);

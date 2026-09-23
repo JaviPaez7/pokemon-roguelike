@@ -450,8 +450,14 @@ function applyStatModifier(baseStat, stage) {
  * @param {Object} params.game - Objeto Game
  * @returns {Object} { success, damage, effectiveness, messages, defenderFainted }
  */
+/**
+ * Ejecuta un movimiento contra un objetivo.
+ * Con `extraTarget` (segundo y siguientes objetivos de un movimiento de área)
+ * no vuelve a gastar PP, ni a anunciar el movimiento, ni a gestionar carga o
+ * Venganza, y la Explosión no debilita al usuario (lo hace el objetivo principal).
+ */
 export function executeMove(params) {
-  const { attackerId, defenderId, move, entityManager, typeChart, eventBus, game, currentWeather } = params;
+  const { attackerId, defenderId, move, entityManager, typeChart, eventBus, game, currentWeather, extraTarget = false } = params;
   const activeWeather = currentWeather || (game ? game.currentWeather : 'normal');
   
   const attackerFighter = entityManager.getComponent(attackerId, 'fighter');
@@ -471,7 +477,9 @@ export function executeMove(params) {
   const messages = [];
 
   // Movimientos de carga: 1er turno prepara, 2º golpea
-  if (move.effect === 'charge') {
+  if (extraTarget) {
+    // El movimiento ya se anunció y se pagó con el objetivo principal
+  } else if (move.effect === 'charge') {
     if (!attackerFighter.charging || attackerFighter.charging.moveId !== move.id) {
       const n = String(move.name || '').toLowerCase();
       attackerFighter.charging = {
@@ -521,7 +529,7 @@ export function executeMove(params) {
   }
 
   // Reducir PP (carga y 1er turno de Venganza ya gastaron PP)
-  if (move.effect !== 'charge' && move.effect !== 'bide') {
+  if (!extraTarget && move.effect !== 'charge' && move.effect !== 'bide') {
     const moveSlot = attackerInfo.currentMoves.find(m => m.moveId === move.id);
     if (moveSlot) {
       if (moveSlot.currentPP <= 0) {
@@ -826,7 +834,7 @@ export function executeMove(params) {
   }
 
   // Autodestrucción / Explosión: el usuario se debilita (Humedad lo anula)
-  if (move.effect === 'self_destruct' && totalDamage > 0 && attackerFighter.hp > 0) {
+  if (move.effect === 'self_destruct' && totalDamage > 0 && attackerFighter.hp > 0 && !extraTarget) {
     const dampNear = getAbility(defenderInfo) === 'damp';
     if (dampNear) {
       messages.push('¡La habilidad Humedad impidió la explosión!');

@@ -20,7 +20,7 @@
  * - TileMap:         Datos del mapa actual
  */
 
-import { MAX_INVENTORY, GAME_STATES, TILE_SIZE, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, MAP_WIDTH, MAP_HEIGHT, FOV_RADIUS } from '../constants.js';
+import { ACTIONS, MAX_INVENTORY, GAME_STATES, TILE_SIZE, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, MAP_WIDTH, MAP_HEIGHT, FOV_RADIUS } from '../constants.js';
 import { EventBus } from './EventBus.js';
 import { TurnManager } from './TurnManager.js';
 import { WeatherSystem } from '../systems/WeatherSystem.js';
@@ -44,6 +44,7 @@ import { useInventoryItem as useInventoryItemHandler, throwInventoryItem } from 
 import { MessageLog } from '../ui/MessageLog.js';
 import { getDungeon, relativeFloor, isLastFloor } from './Dungeons.js';
 import { setSeed, newRunSeed } from './Random.js';
+import { roomAt } from '../systems/MoveTargeting.js';
 
 // Importar JSONs estáticos directamente para empaquetarlos con Vite
 import pokemonData from '../data/pokemon.json';
@@ -522,7 +523,10 @@ export class Game {
       updateTown(this);
       return;
     }
-    if (this._state !== GAME_STATES.EXPLORING) return;
+    if (this._state !== GAME_STATES.EXPLORING) {
+      this._run = null;
+      return;
+    }
     // Si el input quedó en "dialog" sin diálogo visible, recuperar exploración
     if (this.inputHandler && this.inputHandler._context === 'dialog' && !this.uiManager.hasOpenDialog()) {
       this.inputHandler.setContext('exploration');
@@ -571,7 +575,24 @@ export class Game {
     }
 
     let action = this.inputHandler.getAction();
-    
+
+    if (action?.type === 'turn') {
+      // Girarse no gasta turno
+      const pos = this.entityManager.getComponent(this._playerId, 'position');
+      if (pos) this.movementSystem._updateFacing(pos, action.dx, action.dy);
+      this._run = null;
+      this.needsRender = true;
+      return;
+    }
+    if (action?.type === ACTIONS.MOVE && action.run) {
+      this._run = this._startRun(action.dx, action.dy);
+      action = { type: ACTIONS.MOVE, dx: action.dx, dy: action.dy };
+    } else if (action) {
+      this._run = null;
+    } else if (this._run) {
+      action = this._nextRunStep();
+    }
+
     if (!action && this.inputHandler.enabled) {
       action = this.inputHandler.getHeldMovementAction();
     }
@@ -584,6 +605,65 @@ export class Game {
     }
 
     this._processPlayerAction(action);
+  }
+
+  /**
+   * Empieza a correr en una dirección.
+   * @param {number} dx
+   * @param {number} dy
+   */
+  _startRun(dx, dy) {
+    const pos = this.entityManager.getComponent(this._playerId, 'position');
+    const fighter = this.entityManager.getComponent(this._playerId, 'fighter');
+    return {
+      dx,
+      dy,
+      steps: 0,
+      hp: fighter?.hp ?? 0,
+      room: pos && this.tileMap ? roomAt(this.tileMap, pos.x, pos.y) : null,
+    };
+  }
+
+  /**
+   * Siguiente paso de la carrera, o null si hay que pararse: rival a la vista,
+   * objeto o escalera cerca, cambio de sala, daño recibido o camino cortado.
+   * @returns {{ type: string, dx: number, dy: number } | null}
+   */
+  _nextRunStep() {
+    const run = this._run;
+    const em = this.entityManager;
+    const pos = em.getComponent(this._playerId, 'position');
+    const fighter = em.getComponent(this._playerId, 'fighter');
+    const stop = () => {
+      this._run = null;
+      return null;
+    };
+    if (!pos || !fighter || !this.tileMap || this.uiManager.hasOpenDialog()) return stop();
+    run.steps++;
+    if (run.steps > 60 || fighter.hp < run.hp) return stop();
+
+    const room = roomAt(this.tileMap, pos.x, pos.y);
+    if (run.steps > 1 && room !== run.room) return stop();
+
+    for (let oy = -1; oy <= 1; oy++) {
+      for (let ox = -1; ox <= 1; ox++) {
+        const x = pos.x + ox;
+        const y = pos.y + oy;
+        if (em.getItemAt(x, y) != null || this.tileMap.isStairs(x, y)) return stop();
+      }
+    }
+    const hostileInSight = em.getEntitiesWithComponents('fighter', 'aiControlled', 'position').some((id) => {
+      if (em.hasComponent(id, 'partyMember')) return false;
+      const f = em.getComponent(id, 'fighter');
+      const p = em.getComponent(id, 'position');
+      return f.hp > 0 && this.tileMap.getVisibility(p.x, p.y) === 2;
+    });
+    if (hostileInSight) return stop();
+
+    const nx = pos.x + run.dx;
+    const ny = pos.y + run.dy;
+    if (!this.tileMap.isWalkable(nx, ny) || em.getEntityAt(nx, ny) != null) return stop();
+    return { type: ACTIONS.MOVE, dx: run.dx, dy: run.dy };
   }
 
   /**

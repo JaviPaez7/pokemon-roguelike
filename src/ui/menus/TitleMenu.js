@@ -108,7 +108,7 @@ function confirmNewAdventure(ui) {
 /** @param {import('../UIManager.js').UIManager} ui */
 export function showControlsDialog(ui) {
   ui.showDialog(
-    'Controles:\nWASD / Flechas / HJKL - Mover (chocar = ataque básico sin PP)\nDiagonales: Tecl. Num. / YUBN / Inicio/Fin...\nZ / Enter - Hablar / Recoger / Escaleras / Examinar\n1-4 - Movimientos (PP; ¡PULSA! = carga/Venganza)\nX - Mochila  C - Equipo  Tab - Cambiar líder\nM - Mapa  Esc - Pausa / Guardar\nEn el pueblo: habla con los vecinos y sal por el sur hacia las mazmorras.\nSi el equipo cae, pierde el dinero y la mochila; el banco y el almacén no.\nEn móvil: D-pad + botones Z/X/C/Tab/M',
+    'Controles:\nWASD / Flechas / HJKL - Mover (chocar = ataque básico sin PP)\nDiagonales: Tecl. Num. / YUBN / Inicio/Fin...\nMayús + dirección: correr · Ctrl + dirección: girarse sin moverse\nZ / Enter - Hablar / Recoger / Escaleras / Examinar\n1-4 - Movimientos (PP): delante, en línea, alrededor o a toda la sala\nX - Mochila  C - Equipo  Tab - Cambiar líder\nM - Mapa  Esc - Pausa / Guardar\nEn el pueblo: habla con los vecinos y sal por el sur hacia las mazmorras.\nSi el equipo cae, pierde el dinero y la mochila; el banco y el almacén no.\nEn móvil: D-pad + botones Z/X/C/Tab/M',
     () => openTitleScreen(ui)
   );
 }

@@ -8,6 +8,14 @@ import { getCaptureChance } from './CaptureSystem.js';
 import { canWalkOnTile } from './MovementSystem.js';
 import { random } from '../core/Random.js';
 import { talkToMissionClient } from './MissionSystem.js';
+import { moveRange, getMoveTargets, facingVector } from './MoveTargeting.js';
+
+/** Color del proyectil de un movimiento en línea, según su tipo. */
+const PROJECTILE_COLORS = {
+  fire: '#ff7a3d', water: '#4aa3ff', ice: '#a8e8ff', electric: '#ffe14d', psychic: '#ff6fd8',
+  grass: '#6fd36f', rock: '#b89a6a', ground: '#d8b060', dragon: '#8a6bff', poison: '#b06bff',
+  bug: '#a8c43a', flying: '#b8c8ff', ghost: '#7a5cc4', fighting: '#d05a3a', normal: '#f2f2f2'
+};
 
 /**
  * Combate, movimiento de entidades y acciones de IA enemiga.
@@ -359,9 +367,10 @@ export class CombatHandler {
       }
 
       case ACTIONS.ATTACK:
-        // IA: movimiento o ataque básico según flag
+        // IA: movimiento elegido, ataque básico o el mejor movimiento
         return this.handleCombat(entityId, action.targetId, {
-          regularAttack: !!action.regularAttack
+          regularAttack: !!action.regularAttack,
+          moveId: action.moveId ?? null
         });
 
       case ACTIONS.USE_MOVE:
@@ -423,10 +432,18 @@ export class CombatHandler {
     const startingBide = move && move.effect === 'bide' && !(fighter && fighter.biding);
     const startingCharge = move && move.effect === 'charge' && !(fighter && fighter.charging);
     const releasingBide = move && move.effect === 'bide' && fighter && fighter.biding;
-    let targetId = this._findAdjacentFoe(entityId);
-    if (targetId == null && move && (SELF_MOVE_EFFECTS.has(move.effect) || startingBide || startingCharge)) {
-      targetId = entityId; // auto-objetivo
+    const range = moveRange(move);
+    let targetId = null;
+    if (range === 'self' || range === 'team') {
+      targetId = entityId;
+    } else if (range === 'front') {
+      targetId = this._findAdjacentFoe(entityId);
+      if (targetId == null && move && SELF_MOVE_EFFECTS.has(move.effect)) targetId = entityId; // auto-objetivo
+    } else {
+      targetId = getMoveTargets(game, entityId, move)[0] ?? null;
     }
+    // Preparar carga o Venganza no necesita objetivo
+    if (targetId == null && (startingBide || startingCharge)) targetId = entityId;
     if (targetId == null) {
       // Liberar carga/venganza sin rival: falla y gasta turno (evita softlock)
       if (fighter?.charging && move?.effect === 'charge' && fighter.charging.moveId === move.id) {
@@ -453,7 +470,12 @@ export class CombatHandler {
         });
         return { success: true, type: 'bide_cancelled' };
       }
-      game.eventBus.emit('message', `¡No hay un objetivo cerca para usar ${moveName}!`);
+      const hint = {
+        line: `¡No hay ningún rival en línea recta hacia donde miras para usar ${moveName}! (Ctrl + dirección para girarte)`,
+        around: `¡No hay rivales a tu alrededor para usar ${moveName}!`,
+        room: `¡No hay rivales en la sala para usar ${moveName}!`,
+      }[range] ?? `¡No hay un objetivo cerca para usar ${moveName}!`;
+      game.eventBus.emit('message', hint);
       return { success: false, type: 'no_target' };
     }
 
@@ -814,8 +836,16 @@ export class CombatHandler {
     return { success: false, type: 'nothing_here' };
   }
 
+  /**
+   * Un ataque o movimiento de `attackerId`. Si el movimiento tiene alcance de
+   * área (línea, alrededor, sala, equipo), se reparte entre sus objetivos.
+   * @param {number} attackerId
+   * @param {number} defenderId - Objetivo principal
+   * @param {{ regularAttack?: boolean, moveIndex?: number|null, moveId?: number|null }} [options]
+   *   `moveId`: movimiento elegido por la IA (si no, lo elige selectBestMove)
+   */
   handleCombat(attackerId, defenderId, options = {}) {
-    const { regularAttack = false, moveIndex = null } = options;
+    const { regularAttack = false, moveIndex = null, moveId = null } = options;
     const game = this.game;
     const attackerInfo = game.entityManager.getComponent(attackerId, 'pokemonInfo');
     const defenderInfo = game.entityManager.getComponent(defenderId, 'pokemonInfo');
@@ -894,6 +924,8 @@ export class CombatHandler {
           moveSelected = game.movesData.find(m => m.id === validSlot.moveId);
         }
       }
+    } else if (moveId != null) {
+      moveSelected = game.movesData.find(m => m.id === moveId) || null;
     } else {
       const defenderFighter = game.entityManager.getComponent(defenderId, 'fighter');
       moveSelected = selectBestMove(attackerInfo, defenderInfo, game.movesData, game.typeChart, attackerFighter, defenderFighter);
@@ -918,6 +950,49 @@ export class CombatHandler {
       }
     }
 
+    // Alcance: a quién alcanza el movimiento
+    const range = regularAttack ? 'front' : moveRange(moveSelected);
+    let primary = defenderId;
+    let extras = [];
+    if (range === 'self' || range === 'team') {
+      primary = attackerId;
+    } else if (range !== 'front') {
+      if (range === 'line' && attackerId !== game._playerId) this._faceTowards(attackerId, defenderId);
+      const targets = getMoveTargets(game, attackerId, moveSelected);
+      if (targets.length) {
+        primary = targets.includes(defenderId) ? defenderId : targets[0];
+        extras = targets.filter(id => id !== primary);
+      }
+      if (range === 'line') this._emitLineProjectile(attackerId, primary, moveSelected);
+    }
+
+    // Explosión: golpear a los demás antes de que el usuario se debilite
+    if (moveSelected.effect === 'self_destruct') {
+      for (const id of extras) this._resolveMoveOn(attackerId, id, moveSelected, true);
+    }
+    const result = this._resolveMoveOn(attackerId, primary, moveSelected, false);
+    if (moveSelected.effect !== 'self_destruct') {
+      for (const id of extras) {
+        const f = game.entityManager.getComponent(id, 'fighter');
+        if (f && f.hp > 0) this._resolveMoveOn(attackerId, id, moveSelected, true);
+      }
+    }
+    if (range === 'team') this._shareTeamEffect(attackerId, moveSelected);
+    return result;
+  }
+
+  /**
+   * Aplica un movimiento ya elegido a un objetivo: daño, mensajes, experiencia.
+   * @param {number} attackerId
+   * @param {number} defenderId
+   * @param {Object} moveSelected
+   * @param {boolean} extraTarget - Segundo o siguiente objetivo de un movimiento de área
+   */
+  _resolveMoveOn(attackerId, defenderId, moveSelected, extraTarget) {
+    const game = this.game;
+    const defenderInfo = game.entityManager.getComponent(defenderId, 'pokemonInfo');
+    if (!defenderInfo) return { success: false };
+
     const combatResult = executeMove({
       attackerId,
       defenderId,
@@ -926,7 +1001,8 @@ export class CombatHandler {
       typeChart: game.typeChart,
       eventBus: game.eventBus,
       currentWeather: game.currentWeather,
-      game: game
+      game: game,
+      extraTarget
     });
 
     if (combatResult.messages) {
@@ -1000,6 +1076,55 @@ export class CombatHandler {
     if (typeof game._syncAbilitySpeeds === 'function') game._syncAbilitySpeeds();
     game.needsRender = true;
     return { success: true, type: 'attacked' };
+  }
+
+  /** La IA se gira hacia su objetivo antes de un movimiento en línea. */
+  _faceTowards(entityId, targetId) {
+    const em = this.game.entityManager;
+    const from = em.getComponent(entityId, 'position');
+    const to = em.getComponent(targetId, 'position');
+    if (!from || !to || (from.x === to.x && from.y === to.y)) return;
+    this.game.movementSystem._updateFacing(from, to.x - from.x, to.y - from.y);
+  }
+
+  /** Animación del proyectil de un movimiento en línea hasta su objetivo (o hasta el muro). */
+  _emitLineProjectile(attackerId, targetId, move) {
+    const game = this.game;
+    const from = game.entityManager.getComponent(attackerId, 'position');
+    if (!from) return;
+    let end = targetId !== attackerId ? game.entityManager.getComponent(targetId, 'position') : null;
+    if (!end) {
+      const [dx, dy] = facingVector(from);
+      let x = from.x;
+      let y = from.y;
+      for (let i = 0; i < 10 && game.tileMap.isTransparent(x + dx, y + dy); i++) { x += dx; y += dy; }
+      end = { x, y };
+    }
+    game.eventBus.emit('throw_projectile', {
+      startX: from.x, startY: from.y, endX: end.x, endY: end.y,
+      color: PROJECTILE_COLORS[move.type] || PROJECTILE_COLORS.normal
+    });
+  }
+
+  /** Reflejo, Pantalla de Luz y Neblina protegen también a los aliados de la zona. */
+  _shareTeamEffect(userId, move) {
+    const game = this.game;
+    const em = game.entityManager;
+    const user = em.getComponent(userId, 'fighter');
+    if (!user) return;
+    const field = { reflect: 'reflect', light_screen: 'lightScreen', protect_stats: 'protectStats' }[move.effect];
+    if (!field || !user[field]) return;
+    const allies = getMoveTargets(game, userId, move).filter(id => id !== userId);
+    for (const id of allies) {
+      const f = em.getComponent(id, 'fighter');
+      if (!f) continue;
+      f[field] = Math.max(f[field] || 0, user[field]);
+      em.setComponent(id, 'fighter', f);
+    }
+    if (allies.length) {
+      const names = allies.map(id => em.getComponent(id, 'pokemonInfo')?.name).filter(Boolean).join(', ');
+      game.eventBus.emit('message', { text: `¡${move.name} también protege a ${names}!`, color: '#aaddff' });
+    }
   }
 
   /**
