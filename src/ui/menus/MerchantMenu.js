@@ -10,7 +10,6 @@ export function openMerchantMenu(ui, merchantId) {
   const merchant = ui.game.entityManager.getComponent(merchantId, 'npcMerchant');
   if (!merchant) return;
 
-  ui.currentMenuType = 'merchant';
   ui.game.changeState(GAME_STATES.MENU);
 
   const html = `

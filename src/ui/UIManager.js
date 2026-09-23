@@ -115,17 +115,15 @@ export class UIManager {
     this.eventBus.on('ui_action', (data) => {
       if (this.game.getState() !== GAME_STATES.EXPLORING && this.game.getState() !== GAME_STATES.MENU) return;
 
+      // Cada menú pasa a MENU al abrirse: no hay que cambiar el estado antes.
       switch (data.action) {
         case 'open_inventory':
-          this.game.changeState(GAME_STATES.MENU);
           this.openInventoryMenu();
           break;
         case 'open_team':
-          this.game.changeState(GAME_STATES.MENU);
           this.openTeamMenu();
           break;
         case 'open_pause':
-          this.game.changeState(GAME_STATES.MENU);
           this.openPauseMenu();
           break;
         case 'toggle_minimap':
@@ -200,6 +198,12 @@ export class UIManager {
     this.updateSelectionVisuals();
   }
 
+  /**
+   * Reacción de la UI a `state_changed`. No puede llamar a `changeState`
+   * (Game lo impide). Entrar en MENU no abre nada: MENU es la consecuencia de
+   * abrir un menú, nunca la causa.
+   * @param {string} state
+   */
   handleStateChange(state) {
     switch (state) {
       case GAME_STATES.TITLE:
@@ -212,11 +216,7 @@ export class UIManager {
         this.closeMenu();
         break;
       case GAME_STATES.DIALOG:
-        break;
       case GAME_STATES.MENU:
-        if (this.currentMenuType === null) {
-          this.openPauseMenu();
-        }
         break;
       case GAME_STATES.GAME_OVER:
         this.openGameOverScreen();

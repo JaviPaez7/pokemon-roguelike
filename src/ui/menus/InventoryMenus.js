@@ -91,7 +91,6 @@ function sortInventory(ui) {
 }
 
 export function openInventoryMenu(ui) {
-  ui.currentMenuType = 'inventory'; // evita que MENU abra la pausa por carrera
   ui.game.changeState(GAME_STATES.MENU);
   sortInventory(ui);
   const inv = ui.game.inventory || [];

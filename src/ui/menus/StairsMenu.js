@@ -87,7 +87,6 @@ export function openStairsMenu(ui) {
     </div>
   `;
 
-  ui.currentMenuType = 'stairs_menu';
   ui.game.changeState(GAME_STATES.MENU);
   ui.showMenu('stairs_menu', html);
 

@@ -5,7 +5,6 @@ import { GAME_STATES, TYPE_NAMES_ES } from '../../constants.js';
 
 /** @param {import('../UIManager.js').UIManager} ui */
 export function openTeamMenu(ui) {
-  ui.currentMenuType = 'team';
   ui.game.changeState(GAME_STATES.MENU);
   const party = ui.game.party;
 

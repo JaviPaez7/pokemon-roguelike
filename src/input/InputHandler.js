@@ -365,7 +365,7 @@ export class InputHandler {
         break;
       case 'Escape':
         // Menú de pausa
-        this._eventBus.emit('ui_action', { action: 'pause_menu' });
+        this._eventBus.emit('ui_action', { action: 'open_pause' });
         break;
 
       // ── Usar movimiento (1-4): consume PP, requiere enemigo adyacente ──
