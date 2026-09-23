@@ -8,16 +8,21 @@ JavaScript sin framework (módulos ES), Canvas 2D, arquitectura ECS y Vite 8. La
 
 - `npm run dev`: servidor de desarrollo en http://localhost:5173. Para comprobar cambios, ábrelo en el navegador integrado.
 - `npm run build`: build de producción en `dist/`.
-- `npm test`: test E2E con Puppeteer (`tests/test_play.js`). Arranca su propio `npm run dev` y abre el 5173, así que ese puerto tiene que estar libre: si Vite arranca en otro, el test prueba el servidor equivocado. Si el test falla, sale sin cerrar Vite; hay que parar a mano el proceso que queda en el 5173.
-- `tests/test_click.js` y `tests/test_pickup.js` no están en `npm test`; se lanzan con `node tests/<fichero>`.
+- `npm test`: tests E2E con Playwright (`tests/e2e/*.spec.js`). Playwright hace `vite build` y sirve el resultado con `vite preview` en el puerto 4317 (`E2E_PORT` lo cambia), así que prueba el build de producción. Usa `--strictPort`: si el puerto está ocupado falla con un error claro. Al acabar mata el servidor. La primera vez en una máquina nueva: `npx playwright install chromium`.
+  - Un fichero o un test: `npm test -- tests/e2e/save-load.spec.js`, `npm test -- -g "mochila"`. Con navegador visible: `npm test -- --headed`.
+  - `npm run test:report` abre el informe HTML de la última ejecución, con trazas de los fallos.
+  - Cualquier `console.error` o excepción de la página hace fallar el test (`tests/e2e/fixtures.js`). Las peticiones a otros dominios (Google Fonts, sprites de PokeAPI) se responden en local.
+  - La mazmorra aún es aleatoria: los tests eligen casillas libres leyendo el mapa desde `window.game`, no dan pasos a ciegas.
 - `build:ghpages` y `build:itch` solo cambian la `base` (ver `vite.config.js`). Producción no los usa.
 
-## Despliegue: cada push a `master` va a producción
+## CI y despliegue: `master` va a producción
 
-`.github/workflows/deploy.yml` hace `npm ci`, `npm run build` y `rsync --delete` de `dist/` al VPS. **No ejecuta los tests.** Por tanto:
+`.github/workflows/ci.yml`:
 
-- Trabaja en una rama y fusiona en `master` solo con `npm run build` y `npm test` en verde, y el cambio probado en el navegador.
-- `vercel.json` y `public/_redirects` son restos de despliegues anteriores (Vercel y Netlify). Producción es el VPS.
+- En cada PR y en cada push a `master`: `npm ci`, `npm run build` y `npm test`. El informe de Playwright queda como artefacto de la ejecución.
+- Solo en un push a `master` y solo si los tests pasan (`needs: test`): el job `deploy` hace `rsync --delete` al VPS del mismo `dist/` que se ha probado.
+
+Trabaja en una rama y fusiona en `master` por PR con la CI en verde y el cambio probado en el navegador. `vercel.json` y `public/_redirects` son restos de despliegues anteriores (Vercel y Netlify). Producción es el VPS.
 
 ## Arquitectura (`src/`)
 
@@ -32,7 +37,9 @@ JavaScript sin framework (módulos ES), Canvas 2D, arquitectura ECS y Vite 8. La
 - `data/`: JSON de Pokémon, movimientos, objetos, tipos, evoluciones y pisos, más `starterData.js`.
 - `public/sprites/`: sprites. `download_sprites.cjs` baja los 151 de PokeAPI a `public/sprites/pokemon/`.
 
-Flujo de estados: `Game.changeState(nuevo)` ejecuta `_onStateExit` y `_onStateEnter`, y emite `state_changed`. `UIManager.handleStateChange` abre o cierra el menú que toque. Si un menú llama a `changeState` al abrirse, puede provocar una recursión (ver «Estado conocido»).
+Flujo de estados: `Game.changeState(nuevo)` ejecuta `_onStateExit` y `_onStateEnter`, y emite `state_changed`. `UIManager.handleStateChange` reacciona: abre el título, la selección de inicial o las pantallas finales, y cierra la UI al volver a `EXPLORING`. **`MENU` no abre nada:** cada menú llama a `changeState(MENU)` al abrirse, y quien quiere un menú llama a su función `open*` (Escape, X, C y el botón táctil emiten `ui_action` y `UIManager` abre el menú). Quien reacciona a `state_changed` no puede llamar a `changeState`: `Game` lo ignora y registra un `console.error`, que hace fallar los tests.
+
+`changeState` todavía no es idempotente: pasar a un estado en el que ya se está vuelve a ejecutar la entrada y a emitir el evento (ver «Estado conocido»).
 
 La estructura del README está desactualizada (menciona `src/utils` y un sistema de carga en `src/assets` que no existen así). Manda el código.
 
@@ -44,7 +51,9 @@ La estructura del README está desactualizada (menciona `src/utils` y un sistema
 
 ## Estado conocido (2026-09-23)
 
-- **Bug en producción desde `75eebf4` (28 de julio):** abrir el menú de pausa (Escape) provoca una recursión infinita ("Maximum call stack size exceeded"). `openPauseMenu` (`ui/menus/PauseMenu.js`) llama a `game.changeState(MENU)`, que emite `state_changed`. `UIManager.handleStateChange(MENU)` ve `currentMenuType` aún en `null` y vuelve a llamar a `openPauseMenu`. `npm test` falla por esto en el paso 4, y producción sirve ese mismo build.
+- **Arreglado en la fase 1 del plan:** desde `75eebf4` (28 de julio), abrir la pausa, la mochila o el equipo desde exploración entraba en una recursión (`openPauseMenu` → `changeState(MENU)` → `state_changed` → `openPauseMenu`…). El `EventBus` se tragaba el `RangeError` y el menú salía tras más de mil repintados. Lo cubre `tests/e2e/menu-state.spec.js`.
+- **Al reclutar, el diálogo «se ha unido a tu equipo» se borra al instante.** `RecruitMenu` hace `closeMenu()`, emite `recruit_pokemon` (que abre el diálogo) y luego `changeState(EXPLORING)`; como ya se está en `EXPLORING`, el evento vuelve a llamar a `closeMenu()`, que vacía los diálogos. Varios menús repiten `closeMenu()` + `changeState(EXPLORING)`. Se arregla haciendo `changeState` idempotente, pero antes hay que cambiar dos flujos que dependen de repetir estado: volver al título desde la selección de inicial con Escape (el estado sigue en `STARTER_SELECT`) y el fallo al cargar partida (pide `TITLE` estando en `TITLE`).
+- **Los diálogos animados piden dos pulsaciones de Z aunque el texto ya haya terminado.** `DialogController.animateText` no pone `dialogTimer` a `null` al acabar, así que la primera Z se gasta en «saltar» una animación terminada.
 
 ## Plan de mejora
 
@@ -52,8 +61,7 @@ Hay un plan por fases en la nota del vault. Se mantienen el motor y la arquitect
 
 - Aleatoriedad solo con el RNG de rot-js, nunca `Math.random` (hoy conviven los dos y las partidas no se pueden reproducir).
 - Tipos en JSDoc en las funciones que toques.
-- Un menú no llama a `changeState` desde la reacción a `state_changed`.
-- Todo cambio de comportamiento lleva un test que lo cubra.
+- Todo cambio de comportamiento lleva un test E2E que lo cubra (hasta que llegue Vitest para la lógica pura).
 
 ## Contexto y registro
 
