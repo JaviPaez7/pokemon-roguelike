@@ -1,6 +1,6 @@
 # PokéRogue
 
-Roguelike por turnos estilo Mystery Dungeon con los 151 Pokémon de primera generación. En producción: https://roguelike.javistudio.dev
+Pokémon Mundo Misterioso con los 151 de primera generación: un equipo de exploración con base en un pueblo sale a mazmorras procedurales por turnos, cumple misiones y sube de rango. En producción: https://roguelike.javistudio.dev
 
 JavaScript sin framework (módulos ES), Canvas 2D, arquitectura ECS y Vite 8. La única dependencia de runtime es `rot-js`. No es React ni una PWA, aunque alguna nota antigua lo diga.
 
@@ -28,22 +28,31 @@ JavaScript sin framework (módulos ES), Canvas 2D, arquitectura ECS y Vite 8. La
 
 Trabaja en una rama y fusiona en `master` por PR con la CI en verde y el cambio probado en el navegador. `vercel.json` y `public/_redirects` son restos de despliegues anteriores (Vercel y Netlify). Producción es el VPS.
 
+## Cómo se juega (estructura)
+
+- **Título → nueva aventura** (`STARTER_SELECT`, `ui/menus/QuizMenu.js`): test de personalidad (`core/Personality.js`, `data/personality.json`), protagonista, compañero que no comparte tipo y nombre del equipo. Crea el perfil y entra en el pueblo.
+- **Pueblo** (`TOWN`, `core/TownSession.js`, mapa en `data/town.json`): sin turnos ni enemigos; el equipo sigue al líder en fila. Kecleon (tienda, `core/Shop.js`), Kangaskhan (almacén), Persian (banco), base (formación, dormir = día siguiente, guardar), tablón de misiones y la salida del sur hacia las mazmorras. Menús en `ui/menus/TownMenus.js` y `MissionMenus.js`.
+- **Expedición** (`EXPLORING`, `core/Expedition.js`): del pueblo a una mazmorra y vuelta con uno de estos finales: `cleared` (abre la siguiente mazmorra y da rango), `defeated` (se pierden el dinero y la mochila; el banco y el almacén no), `escaped` (Cuerda Huida) o `mission` (volver tras cumplir una misión). Al volver se cobran las misiones cumplidas, los reclutados pasan a la base, el equipo se cura y pasa un día. `Game.endExpedition()` lo aplaza al siguiente fotograma para no vaciar entidades en mitad de un turno.
+- **Mazmorras** (`core/Dungeons.js`, `data/dungeons.json`): cada una es un tramo de los 50 pisos globales de `floors.json`. `game._currentFloor` es el piso global (decide zona, enemigos, jefe y dificultad) y `game.getCurrentFloor()` el que ve el jugador. La Torre del Desafío recorre los 50 con reglas roguelike: copias de nivel 5, kit fijo y lo de fuera guardado en `profile.stash`.
+- **Misiones** (`core/Missions.js`, `systems/MissionSystem.js`): tablón diario determinista (rescate, buscar objeto, entrega). El cliente o el objeto aparece en su piso; al cumplir se pregunta si volver.
+- **Perfil** (`core/Profile.js`): plantilla de Pokémon (fichas de `core/PokemonSnapshot.js` con `uid`), formación (protagonista y compañero siempre), banco, almacén, rango, día, mazmorras completadas y misiones. La mochila y la cartera en juego son `game.inventory` y `game.coins`.
+
 ## Arquitectura (`src/`)
 
-- `main.js` crea `Game` sobre `#game-canvas`. `window.game` queda expuesto para depurar desde la consola.
-- `core/`: `Game` (máquina de estados `GAME_STATES` y bucle), `EventBus`, `GameEvents`, `GameSession`, `TurnManager`, `SaveManager`.
-- `entities/`: `EntityManager`, `Components` (ECS) y `EnemyAI`.
-- `systems/`: sistemas ECS (combate, movimiento, FOV, habilidades, captura, evolución, experiencia, inventario, objetos, trampas, clima, acciones, estadísticas y eventos de piso).
-- `map/`: generación de mazmorras (`DungeonGenerator`), `FloorManager`, `TileMap`, `TileTypes` y `Biomes`.
+- `main.js` crea `Game` sobre `#game-canvas`. `window.game` queda expuesto para depurar desde la consola (los E2E lo usan).
+- `core/`: `Game` (máquina de estados `GAME_STATES` y bucle), `EventBus`, `GameEvents`, `GameSession` (cargar partida), `TurnManager`, `SaveManager`, `Random`, más los módulos de la estructura MM de arriba.
+- `entities/`: `EntityManager`, `Components` (ECS; un componente nuevo hay que declararlo ahí o se descarta) y `EnemyAI`.
+- `systems/`: sistemas ECS (combate, movimiento, FOV, habilidades, captura, evolución, experiencia, inventario, objetos, trampas, clima, acciones, estadísticas, eventos de piso y misiones).
+- `map/`: generación de mazmorras (`DungeonGenerator`), `FloorManager`, `TileMap`, `TileTypes` (las casillas del pueblo son los ids 20+), `Biomes` y `Town`.
 - `render/`: `Renderer`, `MapRenderer`, `EntityRenderer`, `Camera`, `SpriteManager` y `ParticleSystem`.
 - `ui/`: `UIManager` más `ui/menus/*` (menús en HTML sobre el canvas), `HUD`, `MessageLog` y `DialogController`.
-- `audio/`: `MusicManager` y `SfxManager`.
-- `data/`: JSON de Pokémon, movimientos, objetos, tipos, evoluciones y pisos, más `starterData.js`.
+- `audio/`: `MusicManager` y `SfxManager` (sonido sintetizado).
+- `data/`: JSON de Pokémon, movimientos, objetos, tipos, evoluciones, pisos, mazmorras, pueblo y test de personalidad.
 - `public/sprites/`: sprites. `download_sprites.cjs` baja los 151 de PokeAPI a `public/sprites/pokemon/`.
 
-Flujo de estados: `Game.changeState(nuevo)` ejecuta `_onStateExit` y `_onStateEnter`, y emite `state_changed`. `UIManager.handleStateChange` reacciona: abre el título, la selección de inicial o las pantallas finales, y cierra la UI al volver a `EXPLORING`. **`MENU` no abre nada:** cada menú llama a `changeState(MENU)` al abrirse, y quien quiere un menú llama a su función `open*` (Escape, X, C y el botón táctil emiten `ui_action` y `UIManager` abre el menú). Quien reacciona a `state_changed` no puede llamar a `changeState`: `Game` lo ignora y registra un `console.error`, que hace fallar los tests.
+Flujo de estados: `Game.changeState(nuevo)` ejecuta `_onStateExit` y `_onStateEnter`, y emite `state_changed`. `UIManager.handleStateChange` reacciona: abre el título o la nueva aventura, y cierra la UI al volver a `EXPLORING` o `TOWN`. `closeMenu()` vuelve a `game.homeState` (el pueblo o la mazmorra, según el mapa). **`MENU` no abre nada:** cada menú llama a `changeState(MENU)` al abrirse, y quien quiere un menú llama a su función `open*` (Escape, X, C y el botón táctil emiten `ui_action` y `UIManager` abre el menú). Quien reacciona a `state_changed` no puede llamar a `changeState`: `Game` lo ignora y registra un `console.error`, que hace fallar los tests.
 
-`changeState` es idempotente: pedir el estado en el que ya se está no hace nada. Para volver a mostrar una pantalla del mismo estado, llama a su función `open*`. `showMenu` da el teclado al menú.
+`changeState` es idempotente: pedir el estado en el que ya se está no hace nada. Para volver a mostrar una pantalla del mismo estado, llama a su función `open*`. `showMenu(type, html, { onCancel })` da el teclado al menú; `onCancel` dice qué hace Escape (si no, lo decide `handleCancelAction` según `type`).
 
 Aleatoriedad (`core/Random.js`): todo lo que afecta a la partida usa `random()`, `randomInt()`, `chance()`, `pick()` o `shuffle()`, que salen del RNG de rot-js con semilla. Cada partida tiene `runSeed` (`?seed=N` en la URL la fija) y la semilla de cada piso se deriva de ella con `floorSeed()`. Solo render y audio pueden usar `Math.random`.
 
@@ -51,7 +60,7 @@ La estructura del README está desactualizada (menciona `src/utils` y un sistema
 
 ## Reglas
 
-- **Partidas guardadas:** se guardan en `localStorage` con la clave `pokerogue_save` y `SAVE_VERSION` (`core/SaveManager.js`). **Nunca se borra la partida de un jugador por cambiar el formato:** añade a `MIGRATIONS` la función pura que pasa de la versión actual a la siguiente, sube `SAVE_VERSION` y añade su caso a `tests/unit/save.test.js`. Al cargar una partida antigua se guarda la original en `pokerogue_save_backup_v<n>`. Una partida ilegible se aparta a `pokerogue_save_backup_corrupt_<fecha>` y una de una versión más nueva no se toca.
+- **Partidas guardadas:** se guardan en `localStorage` con la clave `pokerogue_save` y `SAVE_VERSION` (`core/SaveManager.js`). Formato v3: `profile`, `bag`, `wallet` y `run` (la expedición en curso o `null`). **Nunca se borra la partida de un jugador por cambiar el formato:** añade a `MIGRATIONS` la función pura que pasa de la versión actual a la siguiente, sube `SAVE_VERSION` y añade su caso a `tests/unit/save.test.js`. Al cargar una partida antigua se guarda la original en `pokerogue_save_backup_v<n>`. Una partida ilegible se aparta a `pokerogue_save_backup_corrupt_<fecha>` y una de una versión más nueva no se toca.
 - El balance y el contenido van en `src/data/*.json`, no metidos en el código.
 - No añadas dependencias sin un motivo claro: el juego solo depende de `rot-js`.
 
@@ -59,6 +68,8 @@ La estructura del README está desactualizada (menciona `src/utils` y un sistema
 
 - **Arreglado en la fase 1 del plan:** desde `75eebf4` (28 de julio), abrir la pausa, la mochila o el equipo desde exploración entraba en una recursión (`openPauseMenu` → `changeState(MENU)` → `state_changed` → `openPauseMenu`…). El `EventBus` se tragaba el `RangeError` y el menú salía tras más de mil repintados. Lo cubre `tests/e2e/menu-state.spec.js`.
 - **Arreglados en el hito H0:** el diálogo «se ha unido a tu equipo» que se borraba al reclutar (con `changeState` idempotente) y los diálogos animados que pedían dos Z con el texto ya terminado. Los cubre `tests/e2e/dialogs.spec.js`.
+- **Pendiente según el plan MM** (no son fallos): en las mazmorras siguen las Poké Ball y todos los movimientos atacan solo a la casilla de al lado (hito H2); si el equipo está lleno, un Pokémon amigable no puede unirse en vez de irse a la base (H2); sprites estáticos de PokeAPI (H3); sin historia (H4).
+- La batería E2E completa tarda unos 4 minutos en local: mientras trabajas, ejecuta solo los ficheros afectados.
 
 ## Plan de mejora
 
