@@ -72,6 +72,8 @@ export class DialogController {
         if (idx % 2 === 0) this.ui.sfx.playMenuSound();
       } else {
         clearInterval(timer);
+        // Texto completo: la siguiente pulsación ya avanza el diálogo
+        if (this.dialogTimer === timer) this.dialogTimer = null;
       }
     }, 20);
 

@@ -62,8 +62,8 @@ export class Game {
     this.ctx = canvas.getContext('2d');
 
     // ── Estado del juego ──
-    /** @type {string} Estado actual de la máquina de estados */
-    this._state = GAME_STATES.TITLE;
+    /** @type {string|null} Estado actual de la máquina de estados (null hasta init) */
+    this._state = null;
 
     /** @type {string|null} Estado anterior (para transiciones) */
     this._previousState = null;
@@ -295,6 +295,9 @@ export class Game {
    * Quien reacciona a `state_changed` no puede volver a llamar a `changeState`:
    * esa reentrada provocó la recursión infinita del menú de pausa. Si ocurre, el
    * cambio anidado se ignora y se registra un error.
+   *
+   * Es idempotente: pedir el estado en el que ya se está no hace nada (ni
+   * vuelve a entrar ni emite el evento).
    * @param {string} newState - Nuevo estado
    */
   changeState(newState) {
@@ -310,6 +313,8 @@ export class Game {
       );
       return;
     }
+
+    if (newState === this._state) return;
 
     const oldState = this._state;
     this._previousState = oldState;

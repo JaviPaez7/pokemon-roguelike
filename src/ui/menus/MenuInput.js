@@ -73,7 +73,7 @@ export function handleCancelAction(ui) {
     case 'title':
       break;
     case 'starter':
-      openTitleScreen(ui);
+      ui.game.changeState(GAME_STATES.TITLE);
       break;
     case 'pause':
       ui.closeMenu();

@@ -100,7 +100,7 @@ export async function loadSavedGame(game) {
   if (!data) {
     game.uiManager?.showDialog?.(
       'No se pudo cargar la partida (corrupta o de otra versión).',
-      () => game.changeState(GAME_STATES.TITLE)
+      () => game.uiManager.openTitleScreen()
     );
     return;
   }
