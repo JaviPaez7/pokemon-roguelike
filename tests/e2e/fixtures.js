@@ -63,9 +63,18 @@ export function panelTitle(page) {
   return page.locator('#menu-container .game-panel-title').first();
 }
 
-/** @param {import('@playwright/test').Page} page */
-export async function openTitleScreen(page) {
-  await page.goto('/');
+/**
+ * Semilla de las partidas de los tests: con la misma semilla y las mismas
+ * teclas, la partida se repite. `E2E_SEED=123 npm run test:e2e` prueba otra.
+ */
+export const SEED = Number(process.env.E2E_SEED ?? 20260923);
+
+/**
+ * @param {import('@playwright/test').Page} page
+ * @param {{ seed?: number }} [options]
+ */
+export async function openTitleScreen(page, { seed = SEED } = {}) {
+  await page.goto(`/?seed=${seed}`);
   await expect(page.locator('.menu-option', { hasText: 'Nueva Partida' })).toBeVisible();
 }
 
@@ -73,9 +82,10 @@ export async function openTitleScreen(page) {
  * Nueva partida con el primer inicial (Bulbasaur), usando solo el teclado,
  * y con el diálogo de bienvenida ya cerrado.
  * @param {import('@playwright/test').Page} page
+ * @param {{ seed?: number }} [options]
  */
-export async function startNewGame(page) {
-  await openTitleScreen(page);
+export async function startNewGame(page, options) {
+  await openTitleScreen(page, options);
   await page.keyboard.press('z');
   await expect(panelTitle(page)).toHaveText('ELIGE TU COMPAÑERO INICIAL');
   await page.keyboard.press('z');

@@ -6,6 +6,7 @@ import { spawnTraps } from '../systems/TrapSystem.js';
 
 import { getBiomeForFloor } from './Biomes.js';
 import { getAbility } from '../systems/AbilitySystem.js';
+import { floorSeed } from '../core/Random.js';
 
 /**
  * Generación de pisos, spawn de enemigos y pre-carga de sprites.
@@ -26,11 +27,8 @@ export class FloorManager {
     const game = this.game;
     game.fovRadiusModifier = 0;
     game._stairsAnnounced = false;
-    if (game._preserveSeedOnNextFloor && game.seed) {
-      game._preserveSeedOnNextFloor = false;
-    } else {
-      game.seed = Math.floor(Math.random() * 1000000);
-    }
+    // La semilla del piso sale de la de la partida: al cargar se regenera igual
+    game.seed = floorSeed(game.runSeed, game._currentFloor);
     const zone = this.getZoneConfig();
     const theme = zone ? zone.theme : 'default';
     const isBossRoom = zone && zone.boss && game._currentFloor === zone.floors[1];

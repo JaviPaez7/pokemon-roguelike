@@ -1,19 +1,94 @@
 /**
- * SaveManager.js — Sistema de guardado y carga
- * Guarda el estado del juego en localStorage
- * El save se borra al morir (permadeath)
+ * SaveManager.js — Guardado y carga en localStorage.
+ *
+ * Una partida de otra versión nunca se borra: se migra paso a paso con
+ * MIGRATIONS. Para cambiar el formato, añade la migración de la versión actual
+ * a la siguiente y sube SAVE_VERSION. Antes de sobrescribir una partida
+ * migrada se guarda una copia de la original.
+ *
+ * La partida sí se borra al perder o ganar (muerte permanente).
  */
 
 const SAVE_KEY = 'pokerogue_save';
-export const SAVE_VERSION = 1;
-// v1: party/inventory/floor (+ floorItems si hay; mapa regenerado al cargar)
+const BACKUP_PREFIX = 'pokerogue_save_backup_';
+export const SAVE_VERSION = 2;
 
 /**
- * Guarda el estado actual del juego
- * @param {Object} gameState - Estado del juego
- * @returns {boolean} Si se guardó correctamente
+ * MIGRATIONS[n] convierte una partida de la versión n en una de la n + 1.
+ * Deben ser funciones puras: reciben los datos y devuelven los nuevos.
+ * @type {Record<number, (data: Object) => Object>}
+ */
+const MIGRATIONS = {
+  // v1 → v2: la semilla guardada era la del piso; pasa a ser la de la partida
+  // (runSeed) y la de cada piso se deriva de ella. El piso se regenera igual
+  // que antes al cargar, pero con otro trazado.
+  1: (data) => {
+    const { seed, ...rest } = data;
+    return { ...rest, version: 2, runSeed: Number.isInteger(seed) ? seed & 0x7fffffff : 1 };
+  },
+};
+
+/**
+ * Lleva una partida a SAVE_VERSION aplicando las migraciones que falten.
+ * @param {Object} data - Partida en cualquier versión anterior o igual
+ * @returns {Object} Partida en SAVE_VERSION
+ */
+export function migrateSave(data) {
+  let current = data;
+  while (current.version < SAVE_VERSION) {
+    const step = MIGRATIONS[current.version];
+    if (!step) throw new Error(`No hay migración desde la versión ${current.version}`);
+    current = step(current);
+  }
+  return current;
+}
+
+/**
+ * @typedef {{ status: 'none' }
+ *   | { status: 'ok', data: Object, migratedFrom: number|null }
+ *   | { status: 'newer', version: number }
+ *   | { status: 'corrupt' }} SaveReadResult
  */
 
+/**
+ * Lee y valida la partida guardada, migrándola en memoria si es antigua.
+ * No escribe nada.
+ * @param {string|null} raw - Contenido de localStorage
+ * @returns {SaveReadResult}
+ */
+export function parseSave(raw) {
+  if (!raw) return { status: 'none' };
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch (e) {
+    return { status: 'corrupt' };
+  }
+  if (!data || typeof data !== 'object' || !Number.isInteger(data.version) || data.version < 1) {
+    return { status: 'corrupt' };
+  }
+  if (data.version > SAVE_VERSION) return { status: 'newer', version: data.version };
+  let migrated;
+  try {
+    migrated = migrateSave(data);
+  } catch (e) {
+    return { status: 'corrupt' };
+  }
+  if (!Array.isArray(migrated.party) || migrated.party.length === 0) return { status: 'corrupt' };
+  return { status: 'ok', data: migrated, migratedFrom: data.version < SAVE_VERSION ? data.version : null };
+}
+
+/**
+ * Estado de la partida guardada, para el menú de título.
+ * @returns {SaveReadResult}
+ */
+export function inspectSave() {
+  try {
+    return parseSave(localStorage.getItem(SAVE_KEY));
+  } catch (e) {
+    return { status: 'none' };
+  }
+}
 
 
 function collectFloorMerchants(gameState) {
@@ -64,14 +139,19 @@ function collectFloorItems(gameState) {
   }
 }
 
+/**
+ * Guarda el estado actual del juego.
+ * @param {Object} gameState - Instancia de Game
+ * @returns {boolean} Si se guardó correctamente
+ */
 export function saveGame(gameState) {
   try {
     const saveData = {
       version: SAVE_VERSION,
       timestamp: Date.now(),
-      seed: gameState.seed || Date.now(),
+      runSeed: gameState.runSeed,
       currentWeather: gameState.currentWeather || 'normal',
-      coins: gameState.coins || 100,
+      coins: gameState.coins ?? 0,
       currentFloor: typeof gameState.getCurrentFloor === 'function' ? gameState.getCurrentFloor() : gameState._currentFloor,
       turnCount: (typeof gameState.turnManager?.getTurnCount === 'function' ? gameState.turnManager.getTurnCount() : 0),
       party: gameState.party.map(p => ({
@@ -146,75 +226,46 @@ export function saveGame(gameState) {
 }
 
 /**
- * Carga el estado guardado del juego
- * @returns {Object|null} Estado guardado o null si no hay save
+ * Carga la partida guardada. Si era de una versión anterior, guarda una copia
+ * de la original y la sustituye por la migrada.
+ * @returns {Object|null} Datos de la partida, o null si no hay una válida
  */
 export function loadGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return null;
+    const result = parseSave(raw);
+    if (result.status !== 'ok') return null;
 
-    const data = JSON.parse(raw);
-    
-    // Verificar versión (migraciones futuras: intentar cargar si es compatible)
-    if (data.version !== SAVE_VERSION) {
-      console.warn('Versión de guardado incompatible; se borrará el save.');
-      try {
-        // Marcar para que el título pueda avisar una vez
-        sessionStorage.setItem('pokerogue_save_wiped', '1');
-      } catch (e) {}
-      deleteSave();
-      return null;
+    const data = result.data;
+    if (result.migratedFrom !== null) {
+      localStorage.setItem(`${BACKUP_PREFIX}v${result.migratedFrom}`, raw);
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     }
 
-    // Restaurar Set del Pokédex
     data.pokedexSeen = new Set(data.pokedex || []);
     delete data.pokedex;
-
     return data;
   } catch (e) {
     console.error('Error al cargar:', e);
-    deleteSave();
     return null;
   }
 }
 
 /**
- * Borra el save (para permadeath)
+ * Aparta una partida ilegible a una copia de seguridad, para que deje de
+ * ofrecerse en el título sin perderla.
+ */
+export function setAsideCorruptSave() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) localStorage.setItem(`${BACKUP_PREFIX}corrupt_${Date.now()}`, raw);
+    localStorage.removeItem(SAVE_KEY);
+  } catch (e) {}
+}
+
+/**
+ * Borra la partida (al perder o ganar: muerte permanente).
  */
 export function deleteSave() {
   localStorage.removeItem(SAVE_KEY);
-}
-
-/**
- * Verifica si existe un save
- * @returns {boolean}
- */
-export function hasSave() {
-  return localStorage.getItem(SAVE_KEY) !== null;
-}
-
-/**
- * Obtiene info resumida del save (para mostrar en menú)
- * @returns {Object|null} { floor, partySize, leaderName, leaderLevel, timestamp }
- */
-export function getSaveInfo() {
-  try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return null;
-
-    const data = JSON.parse(raw);
-    const leader = data.party.find(p => p.isLeader) || data.party[0];
-    
-    return {
-      floor: data.currentFloor,
-      partySize: data.party.length,
-      leaderName: leader ? leader.name : '???',
-      leaderLevel: leader ? leader.level : 0,
-      timestamp: data.timestamp,
-      stats: data.stats
-    };
-  } catch (e) {
-    return null;
-  }
 }

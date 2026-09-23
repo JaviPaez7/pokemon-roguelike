@@ -6,6 +6,7 @@ import { Path } from 'rot-js';
 import { ENEMY_DETECT_RANGE } from '../constants.js';
 import { canWalkOnTile } from '../systems/MovementSystem.js';
 import { getAbility } from '../systems/AbilitySystem.js';
+import { random } from '../core/Random.js';
 
 /**
  * Determina la acción de un enemigo
@@ -252,7 +253,7 @@ function fleeAction(entityId, pos, playerPos, tileMap, entityManager, focusId = 
  */
 function wanderAction(entityId, pos, tileMap, entityManager) {
   // 15% de probabilidad de quedarse quieto
-  if (Math.random() < 0.15) return { type: 'wait' };
+  if (random() < 0.15) return { type: 'wait' };
 
   // Direcciones aleatorias
   const directions = [
@@ -262,7 +263,7 @@ function wanderAction(entityId, pos, tileMap, entityManager) {
 
   // Barajar direcciones
   for (let i = directions.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(random() * (i + 1));
     [directions[i], directions[j]] = [directions[j], directions[i]];
   }
 

@@ -1,5 +1,6 @@
 import { GAME_STATES } from '../constants.js';
 import { loadGame } from './SaveManager.js';
+import { newRunSeed } from './Random.js';
 
 /**
  * Inicia una nueva partida con el Pokémon inicial seleccionado.
@@ -11,6 +12,7 @@ export function startNewGame(game, starterPokemonId) {
 
   game.entityManager.clear();
   game.turnManager.reset();
+  game.runSeed = newRunSeed();
   game._messageLog = [];
   if (game.messageLog) game.messageLog.clear();
   game._currentFloor = 1;
@@ -103,14 +105,13 @@ export async function loadSavedGame(game) {
     return;
   }
 
-  game.seed = data.seed;
+  game.runSeed = data.runSeed;
   game._currentFloor = data.currentFloor;
   game.currentWeather = data.currentWeather || data.weather || 'normal';
   game.inventory = data.inventory;
   game.stats = data.stats;
-  game.coins = data.coins || 100;
+  game.coins = data.coins ?? 0;
   game.pokedexSeen = data.pokedexSeen;
-  game._preserveSeedOnNextFloor = true;
   game._safeSpawnOnLoad = true;
   game._bagAlmostFullWarned = false;
   game._lifetimeStatsSaved = false;

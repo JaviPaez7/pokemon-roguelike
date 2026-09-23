@@ -86,7 +86,10 @@ export class Game {
     /** @type {boolean} Si el juego está en ejecución */
     this._running = false;
 
-    // Semilla para el piso actual
+    /** @type {number} Semilla de la partida; la de cada piso se deriva de ella (core/Random.js) */
+    this.runSeed = 0;
+
+    /** @type {number} Semilla del piso actual */
     this.seed = 0;
 
     // Estadísticas acumuladas

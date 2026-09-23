@@ -6,6 +6,7 @@ import { checkEvolution } from './EvolutionSystem.js';
 import { triggerTrap } from './TrapSystem.js';
 import { getCaptureChance } from './CaptureSystem.js';
 import { canWalkOnTile } from './MovementSystem.js';
+import { random } from '../core/Random.js';
 
 /**
  * Combate, movimiento de entidades y acciones de IA enemiga.
@@ -336,12 +337,12 @@ export class CombatHandler {
 
       case ACTIONS.WAIT: {
         const fighter = game.entityManager.getComponent(entityId, 'fighter');
-        if (fighter && fighter.hp > 0 && fighter.hp < fighter.maxHp && Math.random() < 0.15) {
+        if (fighter && fighter.hp > 0 && fighter.hp < fighter.maxHp && random() < 0.15) {
           fighter.hp = Math.min(fighter.maxHp, fighter.hp + 1);
           game.entityManager.setComponent(entityId, 'fighter', fighter);
         }
         // Regenerar un poco de tripa al esperar si no estás muerto de hambre
-        if (fighter && fighter.hp > 0 && fighter.belly != null && fighter.belly > 0 && fighter.belly < (fighter.maxBelly || 100) && Math.random() < 0.12) {
+        if (fighter && fighter.hp > 0 && fighter.belly != null && fighter.belly > 0 && fighter.belly < (fighter.maxBelly || 100) && random() < 0.12) {
           fighter.belly = Math.min(fighter.maxBelly || 100, fighter.belly + 1);
           game.entityManager.setComponent(entityId, 'fighter', fighter);
         }

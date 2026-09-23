@@ -1,6 +1,7 @@
 import { RNG } from 'rot-js';
 import { getAbility } from './AbilitySystem.js';
 import { revertTransform } from './CombatSystem.js';
+import { random } from '../core/Random.js';
 
 /**
  * TrapSystem.js
@@ -113,7 +114,7 @@ export function triggerTrap(targetEntityId, trapEntityId, entityManager, tileMap
       const hasMajor = targetFighter.statusEffects.some(s =>
         ['burn', 'poison', 'paralyze', 'freeze', 'sleep'].includes(s.type));
       if (!hasMajor) {
-        let turns = Math.floor(Math.random() * 2) + 1;
+        let turns = Math.floor(random() * 2) + 1;
         if (getAbility(targetInfo) === 'early_bird') turns = 1;
         targetFighter.statusEffects.push({ type: 'sleep', turnsLeft: turns });
         messages.push(`¡El gas somnífero durmió a ${targetInfo.name}!`);
@@ -147,9 +148,9 @@ export function triggerTrap(targetEntityId, trapEntityId, entityManager, tileMap
         if (pos) {
           let placed = false;
           for (let attempt = 0; attempt < 40 && !placed; attempt++) {
-            const randomRoom = tileMap.rooms[Math.floor(Math.random() * tileMap.rooms.length)];
-            const newX = randomRoom.x + 1 + Math.floor(Math.random() * Math.max(1, randomRoom.w - 2));
-            const newY = randomRoom.y + 1 + Math.floor(Math.random() * Math.max(1, randomRoom.h - 2));
+            const randomRoom = tileMap.rooms[Math.floor(random() * tileMap.rooms.length)];
+            const newX = randomRoom.x + 1 + Math.floor(random() * Math.max(1, randomRoom.w - 2));
+            const newY = randomRoom.y + 1 + Math.floor(random() * Math.max(1, randomRoom.h - 2));
             if (!tileMap.isWalkable(newX, newY)) continue;
             const occ = entityManager.getEntityAt(newX, newY);
             if (occ !== null && occ !== targetEntityId) continue;
