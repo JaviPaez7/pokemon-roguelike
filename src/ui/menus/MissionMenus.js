@@ -192,7 +192,9 @@ function openAcceptedMission(ui, mission, back, index, canAbandon) {
               action: () => {
                 abandonMission(ui.game.profile, mission.id);
                 ui.game.saveGameData();
-                ui.showDialog('Misión abandonada.', () => openAcceptedList(ui, back, 0));
+                // Sin misiones pendientes, volver sin encadenar otro diálogo
+                const next = ui.game.profile.missions.accepted.length ? () => openAcceptedList(ui, back, 0) : back;
+                ui.showDialog('Misión abandonada.', next);
               },
             },
           ]

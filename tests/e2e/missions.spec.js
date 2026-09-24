@@ -97,6 +97,8 @@ test('el tablón ofrece encargos que se aceptan y se abandonan', async ({ page }
   await page.locator('#menu-container .menu-option[data-index="0"]').click();
   await option(page, 'Abandonar').click();
   await dismissDialog(page);
+  // Sin misiones pendientes se vuelve al tablón, sin otro diálogo
+  await expect(panelTitle(page)).toHaveText('TABLÓN DE MISIONES');
   missions = await page.evaluate(() => window.game.profile.missions);
   expect(missions.accepted).toHaveLength(0);
 });
