@@ -45,7 +45,7 @@ export function openEvolutionMenu(ui, pokemonId, evolution, opts = {}) {
 
   const finishExploring = () => {
     ui.closeMenu();
-    ui.game.changeState(GAME_STATES.EXPLORING);
+    ui.game.changeState(ui.game.homeState);
   };
 
   ui.menuOptions = [

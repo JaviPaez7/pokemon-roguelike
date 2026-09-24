@@ -134,8 +134,8 @@ export function useInventoryItem(game, itemId, targetPokemonId) {
     }
 
     if (itemData.type === 'escape' && result.success) {
-      game.saveGameData();
-      game.changeState(GAME_STATES.TITLE);
+      // Salir de la mazmorra conservando todo
+      game.endExpedition('escaped');
       game.needsRender = true;
       return;
     }

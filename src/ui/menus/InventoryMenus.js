@@ -186,6 +186,11 @@ export function openItemActionsMenu(ui) {
   const item = ui.game.itemsData.find(i => i.id === ui.selectedItem);
   const name = item ? item.name : ui.selectedItem;
 
+  if (ui.game.tileMap?.isTown) {
+    openTownItemActionsMenu(ui, name);
+    return;
+  }
+
   const html = `
     <div class="game-panel" style="width: 280px;">
       <h2 class="game-panel-title">${name}</h2>
@@ -267,6 +272,43 @@ export function openItemActionsMenu(ui) {
           if (slotIdx > -1) {
             ui.game.inventory.splice(slotIdx, 1);
           }
+          ui.showDialog('Objeto descartado.', () => openInventoryMenu(ui));
+        },
+        () => openItemActionsMenu(ui)
+      );
+    },
+    () => openInventoryMenu(ui)
+  ];
+  ui.selectedIndex = 0;
+  ui.updateSelectionVisuals();
+}
+
+/**
+ * En el pueblo los objetos no se usan: solo se pueden tirar.
+ * @param {import('../UIManager.js').UIManager} ui
+ * @param {string} name
+ */
+function openTownItemActionsMenu(ui, name) {
+  const html = `
+    <div class="game-panel" style="width: 280px;">
+      <h2 class="game-panel-title">${name}</h2>
+      <p class="town-text">En el pueblo los objetos no se usan. Guárdalos en el almacén de Kangaskhan o llévalos a la mazmorra.</p>
+      <div id="options-list">
+        <div class="menu-option selected" data-index="0"><span class="cursor">▶</span> Tirar objeto</div>
+        <div class="menu-option" data-index="1"><span class="cursor">▶</span> Atrás</div>
+      </div>
+    </div>
+  `;
+  ui.showMenu('item_actions', html);
+  ui.menuOptions = [
+    () => {
+      openYesNoConfirm(
+        ui,
+        '¿Descartar?',
+        `¿Descartar ${name}? No podrás recuperarlo.`,
+        () => {
+          const slotIdx = ui.game.inventory.findIndex(s => s.itemId === ui.selectedItem);
+          if (slotIdx > -1) ui.game.inventory.splice(slotIdx, 1);
           ui.showDialog('Objeto descartado.', () => openInventoryMenu(ui));
         },
         () => openItemActionsMenu(ui)

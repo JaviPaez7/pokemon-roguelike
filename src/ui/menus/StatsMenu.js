@@ -46,8 +46,14 @@ export function getLifetimeStats() {
  * @param {Object} game - Instancia del juego
  * @param {boolean} isVictory - Si finalizó en victoria
  */
-export function saveLifetimeStats(game, isVictory = false) {
-  if (!game || !game.stats) return;
+/**
+ * Suma una expedición (o una partida) a las estadísticas históricas.
+ * @param {Object} game
+ * @param {boolean} [isVictory=false]
+ * @param {Object} [stats=game.stats] - Lo que sumar; por defecto, las estadísticas de la partida
+ */
+export function saveLifetimeStats(game, isVictory = false, stats = game?.stats) {
+  if (!game || !stats) return;
 
   try {
     const lifetime = getLifetimeStats();
@@ -59,13 +65,13 @@ export function saveLifetimeStats(game, isVictory = false) {
 
     const currentFloor = typeof game.getCurrentFloor === 'function' ? game.getCurrentFloor() : game._currentFloor;
     lifetime.maxFloor = Math.max(lifetime.maxFloor, currentFloor || 1);
-    lifetime.pokemonDefeated += game.stats.pokemonDefeated || 0;
-    lifetime.pokemonCaptured += game.stats.pokemonCaptured || 0;
-    lifetime.floorsExplored += game.stats.floorsExplored || 0;
-    lifetime.itemsUsed += game.stats.itemsUsed || 0;
-    lifetime.totalDamageDealt += game.stats.totalDamageDealt || 0;
-    lifetime.totalDamageTaken += game.stats.totalDamageTaken || 0;
-    lifetime.turnsPlayed += game.stats.turnsPlayed || 0;
+    lifetime.pokemonDefeated += stats.pokemonDefeated || 0;
+    lifetime.pokemonCaptured += stats.pokemonCaptured || 0;
+    lifetime.floorsExplored += stats.floorsExplored || 0;
+    lifetime.itemsUsed += stats.itemsUsed || 0;
+    lifetime.totalDamageDealt += stats.totalDamageDealt || 0;
+    lifetime.totalDamageTaken += stats.totalDamageTaken || 0;
+    lifetime.turnsPlayed += stats.turnsPlayed || 0;
 
     localStorage.setItem(LIFETIME_KEY, JSON.stringify(lifetime));
   } catch (e) {

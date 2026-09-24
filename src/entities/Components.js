@@ -129,6 +129,15 @@ export function createComponentStore() {
     isBoss: new Map(),
 
     /** @type {Map<number, {shopInventory: Array, gold: number}>} */
-    npcMerchant: new Map()
+    npcMerchant: new Map(),
+
+    /** @type {Map<number, {id: string, role: string}>} Habitante del pueblo */
+    npcTown: new Map(),
+
+    /** @type {Map<number, {missionId: string}>} Cliente de una misión en la mazmorra */
+    missionClient: new Map(),
+
+    /** @type {Map<number, {missionId: string}>} Objeto perdido de una misión */
+    missionItem: new Map()
   };
 }

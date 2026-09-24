@@ -120,7 +120,7 @@ export class DialogController {
     ui.menuContainer.innerHTML = '';
 
     const state = ui.game.getState();
-    if (state === GAME_STATES.EXPLORING) {
+    if (state === GAME_STATES.EXPLORING || state === GAME_STATES.TOWN) {
       ui.game.inputHandler.setContext('exploration');
     } else if (state === GAME_STATES.MENU || state === GAME_STATES.TITLE
         || state === GAME_STATES.STARTER_SELECT || state === GAME_STATES.GAME_OVER

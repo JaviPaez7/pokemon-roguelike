@@ -1,4 +1,5 @@
 import { GAME_STATES, TYPE_NAMES_ES } from '../../constants.js';
+import { rankFor } from '../../core/Profile.js';
 import { openInventoryMenu } from './InventoryMenus.js';
 import { openTeamMenu } from './TeamMenus.js';
 import { openOptionsMenu } from './OptionsMenu.js';
@@ -17,16 +18,28 @@ export function openPauseMenu(ui) {
   const living = party.filter(p => p.hp > 0).length;
   const partyLine = party.length ? `Equipo ${living}/${party.length} vivos` : '';
 
-  const html = `
-    <div class="game-panel" style="width: 280px;">
-      <h2 class="game-panel-title">PAUSA</h2>
+  const inTown = !!ui.game.tileMap?.isTown;
+  const profile = ui.game.profile;
+  const header = inTown
+    ? `
+      <div class="pause-header">
+        <span>${profile.teamName}</span>
+        <span>Rango ${rankFor(profile.rankPoints).name}</span>
+        <span>Día ${profile.day}</span>
+      </div>
+      <div class="pause-subheader">${coins} Poké · Banco ${profile.bank} · Pokédex ${seen}</div>`
+    : `
       <div style="font-size: 7px; color: var(--text-secondary); margin-bottom: 10px; display: flex; justify-content: space-between; padding: 0 4px;">
-        <span>Piso ${floor}</span>
+        <span>${ui.game.dungeon?.name ?? 'Mazmorra'} · Piso ${floor}</span>
         <span style="color:#ffd700;">${coins} Poké</span>
         <span>Pokédex ${seen}</span>
       </div>
       ${wLabel ? `<div style="font-size: 6px; color:#6ab0ff; text-align:center; margin:-6px 0 8px;">Clima: ${wLabel}</div>` : ''}
-      <div style="font-size: 6px; color:#aaaacc; text-align:center; margin:-4px 0 8px;">Bolsa ${(ui.game.inventory||[]).length}/${ui.game.maxInventorySize||24}${partyLine ? ' · '+partyLine : ''}${(ui.game.entityManager?.getEntitiesWithComponents?.('itemDrop')||[]).length ? ' · suelo '+(ui.game.entityManager.getEntitiesWithComponents('itemDrop').length) : ''}</div>
+      <div style="font-size: 6px; color:#aaaacc; text-align:center; margin:-4px 0 8px;">Bolsa ${(ui.game.inventory||[]).length}/${ui.game.maxInventorySize||24}${partyLine ? ' · '+partyLine : ''}${(ui.game.entityManager?.getEntitiesWithComponents?.('itemDrop')||[]).length ? ' · suelo '+(ui.game.entityManager.getEntitiesWithComponents('itemDrop').length) : ''}</div>`;
+
+  const html = `
+    <div class="game-panel" style="width: 280px;">
+      <h2 class="game-panel-title">PAUSA</h2>${header}
       <div id="options-list">
         <div class="menu-option selected" data-index="0"><span class="cursor">▶</span> Continuar</div>
         <div class="menu-option" data-index="1"><span class="cursor">▶</span> Mochila</div>
@@ -35,8 +48,9 @@ export function openPauseMenu(ui) {
         <div class="menu-option" data-index="4"><span class="cursor">▶</span> Historial de Mensajes</div>
         <div class="menu-option" data-index="5"><span class="cursor">▶</span> Estadísticas</div>
         <div class="menu-option" data-index="6"><span class="cursor">▶</span> Opciones</div>
-        <div class="menu-option" data-index="7"><span class="cursor">▶</span> Guardar partida</div>
-        <div class="menu-option" data-index="8"><span class="cursor">▶</span> Guardar y salir</div>
+        <div class="menu-option" data-index="7"><span class="cursor">▶</span> Misiones</div>
+        <div class="menu-option" data-index="8"><span class="cursor">▶</span> Guardar partida</div>
+        <div class="menu-option" data-index="9"><span class="cursor">▶</span> Guardar y salir</div>
       </div>
     </div>
   `;
@@ -51,10 +65,15 @@ export function openPauseMenu(ui) {
     () => openLogMenu(ui),
     () => openStatsMenu(ui, 'pause'),
     () => openOptionsMenu(ui),
+    () => ui.openAcceptedMissions(() => openPauseMenu(ui)),
     () => {
       const ok = ui.game.saveGameData();
       if (!ok) {
         ui.showDialog('No se pudo guardar (¿almacenamiento lleno?).', () => openPauseMenu(ui));
+        return;
+      }
+      if (inTown) {
+        ui.showDialog('Partida guardada.', () => openPauseMenu(ui));
         return;
       }
       const nObj = (ui.game.entityManager?.getEntitiesWithComponents?.('itemDrop') || []).length;

@@ -8,17 +8,25 @@ import { SfxManager } from '../audio/SfxManager.js';
 import { MusicManager } from '../audio/MusicManager.js';
 import { DialogController } from './DialogController.js';
 import { openTitleScreen } from './menus/TitleMenu.js';
-import { openStarterSelectScreen } from './menus/StarterMenu.js';
+import { openNewAdventure } from './menus/QuizMenu.js';
 import { openPauseMenu, openStairsConfirmationMenu } from './menus/PauseMenu.js';
 import { openInventoryMenu } from './menus/InventoryMenus.js';
 import { openTeamMenu } from './menus/TeamMenus.js';
-import { openGameOverScreen, openVictoryScreen } from './menus/EndScreens.js';
 import { handleMenuInput, updateSelectionVisuals } from './menus/MenuInput.js';
 import { openStairsMenu } from './menus/StairsMenu.js';
 import { openRecruitMenu } from './menus/RecruitMenu.js';
 import { openLearnMoveMenu } from './menus/LearnMoveMenu.js';
 import { openEvolutionMenu } from './menus/EvolutionMenu.js';
 import { openMerchantMenu } from './menus/MerchantMenu.js';
+import {
+  openTownShop,
+  openStorageMenu,
+  openBankMenu,
+  openBaseMenu,
+  openDungeonSelect,
+  openMissionBoard,
+} from './menus/TownMenus.js';
+import { openMissionReturnPrompt, openAcceptedList } from './menus/MissionMenus.js';
 
 export class UIManager {
   /**
@@ -113,7 +121,8 @@ export class UIManager {
     });
 
     this.eventBus.on('ui_action', (data) => {
-      if (this.game.getState() !== GAME_STATES.EXPLORING && this.game.getState() !== GAME_STATES.MENU) return;
+      const state = this.game.getState();
+      if (state !== GAME_STATES.EXPLORING && state !== GAME_STATES.TOWN && state !== GAME_STATES.MENU) return;
 
       // Cada menú pasa a MENU al abrirse: no hay que cambiar el estado antes.
       switch (data.action) {
@@ -172,6 +181,7 @@ export class UIManager {
       }
     }
     this.currentMenuType = null;
+    this.onCancel = null;
     this.selectedIndex = 0;
     this.menuOptions = [];
     this.selectedItem = null;
@@ -182,9 +192,10 @@ export class UIManager {
     this.overlay.classList.add('hidden');
     this.menuContainer.innerHTML = '';
 
-    if (this.game.getState() === GAME_STATES.MENU) {
-      this.game.changeState(GAME_STATES.EXPLORING);
-    } else if (this.game.getState() === GAME_STATES.EXPLORING) {
+    const state = this.game.getState();
+    if (state === GAME_STATES.MENU) {
+      this.game.changeState(this.game.homeState);
+    } else if (state === GAME_STATES.EXPLORING || state === GAME_STATES.TOWN) {
       // Recuperar control si closeMenu cerró un diálogo sin closeDialog()
       this.game.inputHandler?.setContext?.('exploration');
     }
@@ -194,10 +205,13 @@ export class UIManager {
    * Muestra un menú y le da el teclado.
    * @param {string} type - Identificador del menú (lo usa handleCancelAction)
    * @param {string} htmlContent
+   * @param {{ onCancel?: () => void }} [options] - Qué hace Escape en este menú;
+   *   si no se indica, lo decide handleCancelAction según `type`
    */
-  showMenu(type, htmlContent) {
+  showMenu(type, htmlContent, { onCancel = null } = {}) {
     this.game.inputHandler.setContext('menu');
     this.currentMenuType = type;
+    this.onCancel = onCancel;
     this.overlay.classList.remove('hidden', 'dialog-mode');
     this.menuContainer.innerHTML = htmlContent;
     try { document.body.classList.add('menu-open'); } catch (e) {}
@@ -216,37 +230,38 @@ export class UIManager {
         this.openTitleScreen();
         break;
       case GAME_STATES.STARTER_SELECT:
-        this.openStarterSelectScreen();
+        openNewAdventure(this);
         break;
       case GAME_STATES.EXPLORING:
+      case GAME_STATES.TOWN:
         this.closeMenu();
         break;
       case GAME_STATES.DIALOG:
       case GAME_STATES.MENU:
         break;
-      case GAME_STATES.GAME_OVER:
-        this.openGameOverScreen();
-        break;
-      case GAME_STATES.VICTORY:
-        this.openVictoryScreen();
-        break;
     }
   }
 
   openTitleScreen() { openTitleScreen(this); }
-  openStarterSelectScreen() { openStarterSelectScreen(this); }
   openPauseMenu() { openPauseMenu(this); }
   openStairsConfirmationMenu() { openStairsConfirmationMenu(this); }
   openInventoryMenu() { openInventoryMenu(this); }
   openTeamMenu() { openTeamMenu(this); }
-  openGameOverScreen() { openGameOverScreen(this); }
-  openVictoryScreen() { openVictoryScreen(this); }
   
   openStairsMenu() { openStairsMenu(this); }
   openRecruitMenu(targetId, defenderInfo) { openRecruitMenu(this, targetId, defenderInfo); }
   openLearnMoveMenu(entityId, moveId) { openLearnMoveMenu(this, entityId, moveId); }
   openEvolutionMenu(entityId, evolution, opts) { openEvolutionMenu(this, entityId, evolution, opts); }
   openMerchantMenu(merchantId) { openMerchantMenu(this, merchantId); }
+
+  openTownShop() { openTownShop(this); }
+  openStorageMenu() { openStorageMenu(this); }
+  openBankMenu() { openBankMenu(this); }
+  openBaseMenu() { openBaseMenu(this); }
+  openDungeonSelect() { openDungeonSelect(this); }
+  openMissionBoard() { openMissionBoard(this); }
+  openMissionReturnPrompt() { openMissionReturnPrompt(this); }
+  openAcceptedMissions(back) { openAcceptedList(this, back); }
 
   handleMenuInput(data) { handleMenuInput(this, data); }
   updateSelectionVisuals() { updateSelectionVisuals(this); }

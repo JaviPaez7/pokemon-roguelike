@@ -1,8 +1,9 @@
-import { GAME_STATES, MAX_INVENTORY, MAX_PARTY_SIZE } from '../constants.js';
+import { MAX_INVENTORY, MAX_PARTY_SIZE } from '../constants.js';
 import { pickupItem } from '../systems/ItemSystem.js';
 import { getAbility } from '../systems/AbilitySystem.js';
 import { revertTransform } from '../systems/CombatSystem.js';
 import { random } from './Random.js';
+import { onMissionItemFound } from '../systems/MissionSystem.js';
 
 /**
  * Registra los listeners globales del EventBus en la instancia del juego.
@@ -233,13 +234,13 @@ export function setupGameEventListeners(game) {
 
         game.entityManager.destroyEntity(data.entityId);
 
-        const isFinalBoss = bossName === 'Mewtwo' || (game._currentFloor || 0) >= 50;
+        const isFinalBoss = game.isLastFloor();
         game.eventBus.emit('show_dialog', { 
           text: isFinalBoss
-            ? `¡Mewtwo ha sido derrotado!\n\nHas conquistado el PokéRogue.\n\nObjeto: ¡${itemName}!`
+            ? `¡${bossName} ha sido derrotado!\n\n¡Has completado ${game.dungeon?.name ?? 'la mazmorra'}!\n\nObjeto: ¡${itemName}!`
             : `¡El Jefe ${bossName} ha sido derrotado!\n\nLas escaleras han aparecido en el centro de la sala, y ha caído un objeto valioso: ¡${itemName}!`,
           callback: isFinalBoss
-            ? () => { game.changeState(GAME_STATES.VICTORY); }
+            ? () => { game.completeDungeon(); }
             : null
         });
         
@@ -382,6 +383,7 @@ export function setupGameEventListeners(game) {
   });
 
   game.eventBus.on('item_picked_up', (data) => {
+    const missionItem = game.entityManager.getComponent(data.itemEntity, 'missionItem');
     const result = pickupItem(
       data.entityId,
       data.itemEntity,
@@ -402,6 +404,9 @@ export function setupGameEventListeners(game) {
     }
     if (result.success && game.uiManager && game.uiManager.sfx && game.uiManager.sfx.playConfirmSound) {
       try { game.uiManager.sfx.playConfirmSound(); } catch (e) {}
+    }
+    if (result.success && missionItem) {
+      onMissionItemFound(game, missionItem.missionId);
     }
     if (result.success) {
       const maxInv = game.maxInventorySize || 24;

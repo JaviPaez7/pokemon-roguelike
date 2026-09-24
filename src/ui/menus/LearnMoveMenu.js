@@ -13,7 +13,7 @@ export function openLearnMoveMenu(ui, pokemonId, pendingMove) {
   if (!info || !pendingMove) {
     ui.showDialog('No hay movimiento pendiente.', () => {
       ui.closeMenu();
-      ui.game.changeState(GAME_STATES.EXPLORING);
+      ui.game.changeState(ui.game.homeState);
     });
     return;
   }
@@ -90,7 +90,7 @@ export function openLearnMoveMenu(ui, pokemonId, pendingMove) {
         dequeuePending();
         ui.showDialog('No se pudo aprender ese movimiento.', () => {
           ui.closeMenu();
-          ui.game.changeState(GAME_STATES.EXPLORING);
+          ui.game.changeState(ui.game.homeState);
         });
         return;
       }
@@ -106,7 +106,7 @@ export function openLearnMoveMenu(ui, pokemonId, pendingMove) {
 
       ui.showDialog(`¡${fresh.name} olvidó ${mName}...\n\n...y aprendió ${(pendingMove.moveName || pendingMove.name)}!`, () => {
         ui.closeMenu();
-        ui.game.changeState(GAME_STATES.EXPLORING);
+        ui.game.changeState(ui.game.homeState);
       });
     };
   });
@@ -116,7 +116,7 @@ export function openLearnMoveMenu(ui, pokemonId, pendingMove) {
     dequeuePending();
     ui.showDialog(`¡${info.name} no aprendió ${(pendingMove.moveName || pendingMove.name)}!`, () => {
       ui.closeMenu();
-      ui.game.changeState(GAME_STATES.EXPLORING);
+      ui.game.changeState(ui.game.homeState);
     });
   });
 

@@ -106,6 +106,11 @@ export class MapRenderer {
    * @private
    */
   _dibujarTile(ctx, tile, sx, sy, size, visibilidad, worldX, worldY, tileMap) {
+    if (tile.id >= TILES.TOWN_GRASS.id) {
+      this._dibujarTilePueblo(ctx, tile, sx, sy, size, worldX, worldY);
+      return;
+    }
+
     // Guardar estado del contexto para aplicar opacidad
     ctx.save();
 
@@ -198,6 +203,112 @@ export class MapRenderer {
       this._dibujarEscaleras(ctx, sx, sy, size);
     }
 
+    ctx.restore();
+  }
+
+  /**
+   * Casillas del pueblo (ids 20+): siempre visibles, con dibujo propio.
+   * @private
+   */
+  _dibujarTilePueblo(ctx, tile, sx, sy, size, worldX, worldY) {
+    const hash = ((worldX * 73856093) ^ (worldY * 19349663)) >>> 0;
+    const grass = TILES.TOWN_GRASS.colors.floor;
+    ctx.save();
+
+    // Fondo: hierba bajo árboles, tablón y flores; el color propio en el resto
+    const onGrass = [TILES.TOWN_TREE.id, TILES.TOWN_BOARD.id, TILES.TOWN_FLOWERS.id].includes(tile.id);
+    ctx.fillStyle = onGrass ? grass : tile.colors.floor;
+    ctx.fillRect(sx, sy, size, size);
+
+    switch (tile.id) {
+      case TILES.TOWN_GRASS.id:
+      case TILES.TOWN_FLOWERS.id: {
+        ctx.fillStyle = 'rgba(20, 60, 20, 0.35)';
+        if (hash % 3 === 0) ctx.fillRect(sx + 5 + (hash % 7), sy + 14, 1, 4);
+        if (hash % 5 === 0) ctx.fillRect(sx + 15, sy + 6 + (hash % 5), 1, 3);
+        if (tile.id === TILES.TOWN_FLOWERS.id) {
+          const petals = ['#ffd84d', '#ff7aa8', '#ffffff', '#b58cff'];
+          for (let i = 0; i < 3; i++) {
+            ctx.fillStyle = petals[(hash + i) % petals.length];
+            ctx.fillRect(sx + 4 + ((hash >> (i * 3)) % 14), sy + 4 + ((hash >> (i * 4)) % 14), 3, 3);
+          }
+        }
+        break;
+      }
+      case TILES.TOWN_PATH.id:
+      case TILES.TOWN_EXIT.id: {
+        ctx.fillStyle = 'rgba(90, 70, 40, 0.25)';
+        if (hash % 4 === 0) ctx.fillRect(sx + 4 + (hash % 12), sy + 6 + (hash % 9), 2, 2);
+        if (hash % 7 === 0) ctx.fillRect(sx + 14, sy + 16, 2, 1);
+        if (tile.id === TILES.TOWN_EXIT.id) {
+          // Flecha hacia la salida
+          ctx.fillStyle = 'rgba(70, 45, 20, 0.7)';
+          ctx.beginPath();
+          ctx.moveTo(sx + size / 2, sy + size - 5);
+          ctx.lineTo(sx + 6, sy + 9);
+          ctx.lineTo(sx + size - 6, sy + 9);
+          ctx.closePath();
+          ctx.fill();
+        }
+        break;
+      }
+      case TILES.TOWN_TREE.id: {
+        ctx.fillStyle = '#5b3a1e';
+        ctx.fillRect(sx + size / 2 - 2, sy + size - 8, 4, 7);
+        ctx.fillStyle = tile.colors.wall;
+        ctx.beginPath();
+        ctx.arc(sx + size / 2, sy + size / 2 - 2, size / 2 - 1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = tile.colors.floor;
+        ctx.beginPath();
+        ctx.arc(sx + size / 2 - 2, sy + size / 2 - 4, size / 3, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+      case TILES.TOWN_WALL.id: {
+        ctx.strokeStyle = tile.colors.wall;
+        ctx.lineWidth = 1;
+        for (let row = 0; row < 3; row++) {
+          const y = sy + 4 + row * 8 + 0.5;
+          ctx.beginPath();
+          ctx.moveTo(sx, y);
+          ctx.lineTo(sx + size, y);
+          ctx.stroke();
+        }
+        if (hash % 3 === 0) {
+          ctx.fillStyle = '#7fb3d9';
+          ctx.fillRect(sx + 7, sy + 7, 10, 8);
+          ctx.strokeStyle = '#5e4a32';
+          ctx.strokeRect(sx + 7.5, sy + 7.5, 9, 7);
+        }
+        break;
+      }
+      case TILES.TOWN_ROOF.id: {
+        ctx.fillStyle = tile.colors.wall;
+        for (let row = 0; row < 3; row++) ctx.fillRect(sx, sy + 6 + row * 7, size, 2);
+        break;
+      }
+      case TILES.TOWN_DOOR.id: {
+        ctx.fillStyle = TILES.TOWN_WALL.colors.floor;
+        ctx.fillRect(sx, sy, size, size);
+        ctx.fillStyle = tile.colors.floor;
+        ctx.fillRect(sx + 5, sy + 4, size - 10, size - 4);
+        ctx.fillStyle = '#e6c15a';
+        ctx.fillRect(sx + size - 9, sy + 13, 2, 2);
+        break;
+      }
+      case TILES.TOWN_BOARD.id: {
+        ctx.fillStyle = tile.colors.wall;
+        ctx.fillRect(sx + 4, sy + 14, 2, 9);
+        ctx.fillRect(sx + size - 6, sy + 14, 2, 9);
+        ctx.fillStyle = '#8a5a2b';
+        ctx.fillRect(sx + 2, sy + 3, size - 4, 13);
+        ctx.fillStyle = '#f2ead3';
+        ctx.fillRect(sx + 4, sy + 5, 7, 5);
+        ctx.fillRect(sx + 13, sy + 6, 6, 7);
+        break;
+      }
+    }
     ctx.restore();
   }
 

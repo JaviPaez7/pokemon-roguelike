@@ -4,6 +4,8 @@
  */
 
 import { COLORS, TILE_SIZE, TYPE_NAMES_ES } from '../constants.js';
+import { TOWN } from '../map/Town.js';
+import { rankFor } from '../core/Profile.js';
 
 export class HUD {
   constructor() {
@@ -20,9 +22,17 @@ export class HUD {
    */
   render(ctx, gameState, canvasWidth, canvasHeight) {
     this.animationFrame++;
-    
+
+    if (gameState.tileMap?.isTown) {
+      this.renderTownInfo(ctx, gameState);
+      if (gameState.party && gameState.party.length > 0) {
+        this.renderPartyStatus(ctx, gameState, canvasWidth, canvasHeight);
+      }
+      return;
+    }
+
     this.renderFloorInfo(ctx, gameState, canvasWidth);
-    
+
     // Estado del equipo
     if (gameState.party && gameState.party.length > 0) {
       this.renderPartyStatus(ctx, gameState, canvasWidth, canvasHeight);
@@ -37,6 +47,36 @@ export class HUD {
     if (this.showMinimap && gameState.tileMap) {
       this.renderMinimap(ctx, gameState, canvasWidth, canvasHeight);
     }
+  }
+
+  /**
+   * En el pueblo: nombre del pueblo, del equipo, dinero, rango y día.
+   */
+  renderTownInfo(ctx, gameState) {
+    const profile = gameState.profile;
+    if (!profile) return;
+    const padding = 8;
+    ctx.save();
+    ctx.fillStyle = 'rgba(10, 10, 26, 0.7)';
+    ctx.fillRect(padding, padding, 230, 48);
+    ctx.strokeStyle = COLORS.UI_BORDER;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(padding, padding, 230, 48);
+
+    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(TOWN.name, padding + 8, padding + 8);
+
+    ctx.font = '6px "Press Start 2P", monospace';
+    ctx.fillStyle = '#aaddff';
+    ctx.fillText(profile.teamName, padding + 8, padding + 22);
+    ctx.fillStyle = '#ffd700';
+    ctx.fillText(`${gameState.coins || 0} Poké`, padding + 150, padding + 22);
+    ctx.fillStyle = '#ccccee';
+    ctx.fillText(`Rango ${rankFor(profile.rankPoints).name} · Día ${profile.day}`, padding + 8, padding + 34);
+    ctx.restore();
   }
 
   /**

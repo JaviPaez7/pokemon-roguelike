@@ -1,103 +1,27 @@
 import { GAME_STATES } from '../constants.js';
 import { loadGame } from './SaveManager.js';
-import { newRunSeed } from './Random.js';
+import { spawnFromSnapshot } from './PokemonSnapshot.js';
+import { enterTown } from './TownSession.js';
+import { TOWN } from '../map/Town.js';
 
-/**
- * Inicia una nueva partida con el Pokémon inicial seleccionado.
- * @param {import('../Game.js').Game} game
- * @param {number|string} starterPokemonId
- */
-export function startNewGame(game, starterPokemonId) {
-  console.log(`[Game] Iniciando nueva partida con: ${starterPokemonId}`);
-
-  game.entityManager.clear();
-  game.turnManager.reset();
-  game.runSeed = newRunSeed();
-  game._messageLog = [];
-  if (game.messageLog) game.messageLog.clear();
-  game._currentFloor = 1;
-  game._lastStarterId = starterPokemonId;
-  game._deathReason = null;
-  game._bellyWarned20 = false;
-  game._bellyWarned10 = false;
-  game._stairsAnnounced = false;
-  game._seenMonsterHouseDialog = false;
-  game._bagAlmostFullWarned = false;
-  game._lifetimeStatsSaved = false;
-  game._lowPpWarnedThisFloor = false;
-  game._restoredItemCount = 0;
-  game.fovRadiusModifier = 0;
-  game.inventory = [
-    { itemId: 'potion', quantity: 2 },
-    { itemId: 'pokeball', quantity: 4 },
-    { itemId: 'apple', quantity: 3 },
-    { itemId: 'oran_berry', quantity: 2 },
-    { itemId: 'ether', quantity: 1 },
-    { itemId: 'antidote', quantity: 1 },
-    { itemId: 'paralyze_heal', quantity: 1 },
-    { itemId: 'awakening', quantity: 1 },
-    { itemId: 'reviver_seed', quantity: 1 },
-    { itemId: 'escape_rope', quantity: 1 }
-  ];
-  game.coins = 140;
-  game.stats = {
-    pokemonDefeated: 0,
-    pokemonCaptured: 0,
-    floorsExplored: 1,
-    itemsUsed: 0,
-    totalDamageDealt: 0,
-    totalDamageTaken: 0,
-    turnsPlayed: 0
-  };
-  game.pokedexSeen = new Set([starterPokemonId]);
-
-  game.floorManager.generateFloor();
-
-  const startPos = game._playerStart;
-
-  game._playerId = game.entityManager.createPokemon(
-    starterPokemonId,
-    5,
-    startPos.x,
-    startPos.y,
-    false
-  );
-
-  game.entityManager.setComponent(game._playerId, 'partyMember', {
-    slot: 0,
-    isLeader: true,
-    tactic: 'follow'
-  });
-
-  const fighterData = game.entityManager.getComponent(game._playerId, 'fighter');
-  game.turnManager.addEntity(
-    game._playerId,
-    fighterData ? fighterData.speed : 50,
-    true
-  );
-
-  game.floorManager.spawnEnemies();
-  game._updateCamera();
-  game._updateFOV();
-  game.floorManager.preloadVisibleSprites();
-
-  game.changeState(GAME_STATES.EXPLORING);
-  game.eventBus.emit('show_dialog', {
-    text: `¡Bienvenido a PokéRogue!\n\nPiso 1: ${game.zoneName}.\n\n• Choca = ataque básico (sin PP)\n• 1-4 = movimientos (gastan PP)\n• Z = recoger / escaleras / examinar\n• Tab = cambiar de líder\n• X = mochila (Cuerda Huida te saca al menú)\n• Come manzanas si baja la tripa\n• Captura: mira al salvaje (también diagonal) y usa Poké Ball\n• ¡Busca las escaleras!`,
-    instant: true,
-    callback: () => {}
-  });
-
-  game.needsRender = true;
-}
+/** Estadísticas de un perfil nuevo; las que falten en una partida guardada se rellenan con estas. */
+const EMPTY_STATS = {
+  pokemonDefeated: 0,
+  pokemonCaptured: 0,
+  floorsExplored: 0,
+  itemsUsed: 0,
+  totalDamageDealt: 0,
+  totalDamageTaken: 0,
+  turnsPlayed: 0,
+};
 
 /**
  * Carga la partida guardada.
  * @param {import('../Game.js').Game} game
  */
 export async function loadSavedGame(game) {
-  const data = loadGame();
-  if (!data) {
+  const save = loadGame();
+  if (!save) {
     game.uiManager?.showDialog?.(
       'No se pudo cargar la partida (corrupta o de otra versión).',
       () => game.uiManager.openTitleScreen()
@@ -105,16 +29,39 @@ export async function loadSavedGame(game) {
     return;
   }
 
+  const { pokedexSeen, stats, ...profile } = save.profile;
+  game.profile = profile;
+  game.pokedexSeen = new Set(pokedexSeen || []);
+  game.stats = { ...EMPTY_STATS, ...stats };
+  game.inventory = save.bag;
+  game.coins = save.wallet ?? 0;
+  game._messageLog = [];
+  game.messageLog?.clear?.();
+
+  if (!save.run) {
+    enterTown(game);
+    const migrated = profile.flags?.migratedFromRun && !profile.flags.migrationNoticeShown;
+    if (migrated) profile.flags.migrationNoticeShown = true;
+    game.eventBus.emit('show_dialog', {
+      text: migrated
+        ? `¡El juego ha cambiado!\n\nAhora tu equipo, ${profile.teamName}, tiene una base en ${TOWN.name}. ` +
+          'Tus Pokémon, tu mochila y tu dinero te esperan aquí, y las mazmorras que ya habías atravesado ' +
+          'cuentan como completadas.\n\nMira el tablón y sal por el camino del sur para seguir explorando.'
+        : `Partida cargada.\n\n${profile.teamName} está en ${TOWN.name}.`,
+      instant: true,
+    });
+    if (migrated) game.saveGameData();
+    return;
+  }
+
+  const data = save.run;
   game.runSeed = data.runSeed;
+  game.dungeonId = data.dungeonId;
+  game.expedition = data.expedition ?? null;
   game._currentFloor = data.currentFloor;
   game.currentWeather = data.currentWeather || data.weather || 'normal';
-  game.inventory = data.inventory;
-  game.stats = data.stats;
-  game.coins = data.coins ?? 0;
-  game.pokedexSeen = data.pokedexSeen;
   game._safeSpawnOnLoad = true;
   game._bagAlmostFullWarned = false;
-  game._lifetimeStatsSaved = false;
   game._seenMonsterHouseDialog = true; // no repetir tutorial MH al cargar
   game._skipFloorHealOnLoad = true;
   game._preserveWeatherOnLoad = true;
@@ -134,127 +81,8 @@ export async function loadSavedGame(game) {
 
   game._playerId = null;
   data.party.forEach((p, idx) => {
-    const id = game.entityManager.createEntity();
-
-    game.entityManager.setComponent(id, 'position', {
-      x: 0,
-      y: 0,
-      facing: 'down',
-      prevX: 0,
-      prevY: 0,
-      moveStartTime: 0
-    });
-
-    game.entityManager.setComponent(id, 'pokemonInfo', {
-      speciesId: p.speciesId,
-      name: p.name,
-      level: p.level,
-      xp: p.xp,
-      ability: p.ability || null,
-      _traced: !!p._traced,
-      currentMoves: (p.currentMoves || []).map(m => {
-        const enabled = m.enabled !== undefined ? m.enabled : true;
-        const disableTurns = m._disableTurns;
-        const fixedEnabled = (!enabled && (disableTurns == null || disableTurns <= 0)) ? true : enabled;
-        const slot = {
-          moveId: m.moveId,
-          currentPP: m.currentPP,
-          maxPP: m.maxPP,
-          enabled: fixedEnabled,
-          _mimicOriginal: m._mimicOriginal
-        };
-        if (!fixedEnabled && disableTurns != null && disableTurns > 0) {
-          slot._disableTurns = disableTurns;
-        }
-        return slot;
-      }),
-      pendingMovesToLearn: p.pendingMovesToLearn || [],
-      pendingEvolution: p.pendingEvolution || null,
-      evolutionDeclinedAtLevel: p.evolutionDeclinedAtLevel ?? null,
-      types: p.types
-    });
-
-    // Sueño/congelación al cargar: duración finita (evita softlock con turnsLeft -1)
-    const statuses = (p.statusEffects || []).map(s => {
-      if (typeof s === 'string') {
-        if (s === 'sleep') return { type: 'sleep', turnsLeft: 2 };
-        if (s === 'freeze') return { type: 'freeze', turnsLeft: 2 };
-        return { type: s, turnsLeft: 3 };
-      }
-      if (['sleep', 'freeze', 'paralyze', 'confuse', 'burn', 'poison'].includes(s.type)
-          && (s.turnsLeft === -1 || s.turnsLeft == null || s.turnsLeft <= 0)) {
-        const defaults = { sleep: 2, freeze: 2, paralyze: 3, confuse: 3, burn: 5, poison: 5 };
-        return { ...s, turnsLeft: defaults[s.type] || 3 };
-      }
-      // Drenadoras: IDs de entidad no sobreviven al cargar
-      if (s.type === 'leech_seed') {
-        return { ...s, sourceId: null, sourcePartySlot: s.sourcePartySlot ?? null };
-      }
-      return s;
-    });
-
-    const movesForCharge = (p.currentMoves || []).map(m => m && m.moveId);
-    let charging = p.chargingState || null;
-    let biding = p.bidingState || null;
-    if (charging && !movesForCharge.includes(charging.moveId)) charging = null;
-    if (biding && !movesForCharge.includes(biding.moveId)) biding = null;
-
-    game.entityManager.setComponent(id, 'fighter', {
-      hp: p.hp,
-      maxHp: p.maxHp,
-      belly: p.belly !== undefined ? p.belly : 100,
-      maxBelly: p.maxBelly || 100,
-      attack: p.attack,
-      defense: p.defense,
-      spAtk: p.spAtk,
-      spDef: p.spDef,
-      speed: p.speed,
-      statusEffects: statuses,
-      statModifiers: p.statModifiers || {},
-      bonusStats: p.bonusStats || { maxHp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 },
-      _statusTick: p._statusTick || 0,
-      charging,
-      biding,
-      mustRecharge: !!p.mustRecharge,
-      reflect: p.reflect || 0,
-      lightScreen: p.lightScreen || 0,
-      substitute: p.substitute || 0,
-      rage: !!p.rage,
-      focusEnergy: !!p.focusEnergy,
-      _preTransform: p._preTransform || null,
-      _intimidatedBy: p._intimidatedBy || [],
-      protectStats: p.protectStats || 0,
-      _rageTurns: p._rageTurns,
-      _focusTurns: p._focusTurns,
-      lastPhysicalDamageTaken: p.lastPhysicalDamageTaken || 0
-    });
-
-    const pokeRef = game.pokemonData.find(poke => poke.id === p.speciesId || poke.name.toLowerCase() === p.speciesId);
-    const defaultSprite = pokeRef ? pokeRef.sprite : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.speciesId}.png`;
-    // Si hay transformación activa, conservar el sprite copiado
-    const spriteUrl = (p._preTransform && p.spriteUrl) ? p.spriteUrl : defaultSprite;
-    game.entityManager.setComponent(id, 'sprite', {
-      url: spriteUrl,
-      image: null,
-      loaded: false
-    });
-
-    game.entityManager.setComponent(id, 'partyMember', {
-      slot: idx,
-      isLeader: p.isLeader,
-      tactic: p.tactic || 'follow'
-    });
-
-    if (p.isLeader) {
-      game._playerId = id;
-    } else {
-      game.entityManager.setComponent(id, 'aiControlled', {
-        behavior: 'follower',
-        detectRange: 5,
-        alertedTo: null
-      });
-    }
-
+    const id = spawnFromSnapshot(game, p, { slot: idx, isLeader: !!p.isLeader });
+    if (p.isLeader) game._playerId = id;
     // Solo vivos en el sistema de turnos (changeFloor también lo filtrará)
     if (p.hp > 0) {
       game.turnManager.addEntity(id, p.speed, p.isLeader);
@@ -310,7 +138,7 @@ export async function loadSavedGame(game) {
     .some(id => game.entityManager.getComponent(id, 'pokemonInfo')?.pendingEvolution);
   const evoHint = evoPending ? '\nHay una evolución pendiente al reanudar.' : '';
   game.eventBus.emit('show_dialog', {
-    text: `Partida cargada.\n\nPiso ${game._currentFloor}: ${game.zoneName}.\nLíder: ${leader ? leader.name : '—'}.\nClima: ${w}.\nObjetos en suelo: ${nObj}. Trampas: ${nTrap}.${evoHint}\n\nEl mapa de este piso se ha regenerado.`,
+    text: `Partida cargada.\n\nPiso ${game.getCurrentFloor()}: ${game.zoneName}.\nLíder: ${leader ? leader.name : '—'}.\nClima: ${w}.\nObjetos en suelo: ${nObj}. Trampas: ${nTrap}.${evoHint}\n\nEl mapa de este piso se ha regenerado.`,
     instant: true,
     callback: () => {}
   });

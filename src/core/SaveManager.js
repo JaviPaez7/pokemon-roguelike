@@ -6,12 +6,22 @@
  * a la siguiente y sube SAVE_VERSION. Antes de sobrescribir una partida
  * migrada se guarda una copia de la original.
  *
- * La partida sí se borra al perder o ganar (muerte permanente).
+ * Formato v3:
+ * - `profile`: el equipo de exploración (core/Profile.js), con la Pokédex y
+ *   las estadísticas.
+ * - `bag` y `wallet`: lo que lleva encima el equipo ahora mismo.
+ * - `run`: la expedición en curso, o null si el equipo está en el pueblo.
  */
+
+import { toSnapshot } from './PokemonSnapshot.js';
+import { DUNGEONS } from './Dungeons.js';
 
 const SAVE_KEY = 'pokerogue_save';
 const BACKUP_PREFIX = 'pokerogue_save_backup_';
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
+
+/** Nombre que reciben los equipos de partidas anteriores a los perfiles. */
+export const MIGRATED_TEAM_NAME = 'Equipo Pionero';
 
 /**
  * MIGRATIONS[n] convierte una partida de la versión n en una de la n + 1.
@@ -25,6 +35,43 @@ const MIGRATIONS = {
   1: (data) => {
     const { seed, ...rest } = data;
     return { ...rest, version: 2, runSeed: Number.isInteger(seed) ? seed & 0x7fffffff : 1 };
+  },
+
+  // v2 → v3: la carrera de 50 pisos pasa a ser un perfil de equipo en el
+  // pueblo. El equipo, la mochila y el dinero se conservan; el piso en curso
+  // cuenta para desbloquear las mazmorras ya atravesadas.
+  2: (data) => {
+    const party = Array.isArray(data.party) ? data.party : [];
+    const roster = party.map((p, i) => ({ ...p, uid: i + 1, isLeader: false }));
+    const leaderIndex = Math.max(0, party.findIndex((p) => p.isLeader));
+    const heroUid = roster[leaderIndex]?.uid ?? null;
+    const others = roster.filter((p) => p.uid !== heroUid).map((p) => p.uid);
+    const reached = Number.isInteger(data.currentFloor) ? data.currentFloor : 1;
+    return {
+      version: 3,
+      timestamp: data.timestamp ?? Date.now(),
+      profile: {
+        teamName: MIGRATED_TEAM_NAME,
+        day: 1,
+        roster,
+        nextUid: roster.length + 1,
+        heroUid,
+        partnerUid: others[0] ?? null,
+        teamUids: [heroUid, ...others].slice(0, 4),
+        bank: 0,
+        storage: [],
+        rankPoints: 0,
+        clearedDungeons: DUNGEONS.filter((d) => !d.challenge && d.floors[1] < reached).map((d) => d.id),
+        missions: { day: 0, board: [], accepted: [], completed: 0 },
+        flags: { migratedFromRun: true },
+        stash: null,
+        pokedexSeen: Array.isArray(data.pokedex) ? data.pokedex : [],
+        stats: data.stats ?? {},
+      },
+      bag: Array.isArray(data.inventory) ? data.inventory : [],
+      wallet: Number.isFinite(data.coins) ? data.coins : 0,
+      run: null,
+    };
   },
 };
 
@@ -74,7 +121,10 @@ export function parseSave(raw) {
   } catch (e) {
     return { status: 'corrupt' };
   }
-  if (!Array.isArray(migrated.party) || migrated.party.length === 0) return { status: 'corrupt' };
+  const roster = migrated.profile?.roster;
+  if (!Array.isArray(roster) || roster.length === 0 || migrated.profile.heroUid == null) {
+    return { status: 'corrupt' };
+  }
   return { status: 'ok', data: migrated, migratedFrom: data.version < SAVE_VERSION ? data.version : null };
 }
 
@@ -90,6 +140,10 @@ export function inspectSave() {
   }
 }
 
+/** @returns {boolean} Si hay una partida válida guardada */
+export function hasSave() {
+  return inspectSave().status === 'ok';
+}
 
 function collectFloorMerchants(gameState) {
   try {
@@ -127,7 +181,7 @@ function collectFloorItems(gameState) {
   try {
     const em = gameState.entityManager;
     if (!em || typeof em.getEntitiesWithComponents !== 'function') return [];
-    const ids = em.getEntitiesWithComponents('itemDrop', 'position');
+    const ids = em.getEntitiesWithComponents('itemDrop', 'position').filter(id => !em.hasComponent(id, 'missionItem'));
     return ids.map(id => {
       const d = em.getComponent(id, 'itemDrop');
       const pos = em.getComponent(id, 'position');
@@ -140,83 +194,48 @@ function collectFloorItems(gameState) {
 }
 
 /**
+ * Datos de la expedición en curso, o null si el equipo está en el pueblo.
+ * @param {Object} gameState - Instancia de Game
+ * @returns {Object|null}
+ */
+function collectRun(gameState) {
+  if (!gameState.dungeonId) return null;
+  return {
+    dungeonId: gameState.dungeonId,
+    // Piso global: el relativo se calcula con la mazmorra
+    currentFloor: gameState._currentFloor,
+    runSeed: gameState.runSeed,
+    currentWeather: gameState.currentWeather || 'normal',
+    turnCount: (typeof gameState.turnManager?.getTurnCount === 'function' ? gameState.turnManager.getTurnCount() : 0),
+    party: gameState.party.map(toSnapshot),
+    expedition: gameState.expedition ?? null,
+    floorItems: collectFloorItems(gameState),
+    floorTraps: collectFloorTraps(gameState),
+    floorMerchants: collectFloorMerchants(gameState),
+    fovRadiusModifier: gameState.fovRadiusModifier || 0,
+  };
+}
+
+/**
  * Guarda el estado actual del juego.
  * @param {Object} gameState - Instancia de Game
  * @returns {boolean} Si se guardó correctamente
  */
 export function saveGame(gameState) {
+  if (!gameState.profile) return false;
   try {
     const saveData = {
       version: SAVE_VERSION,
       timestamp: Date.now(),
-      runSeed: gameState.runSeed,
-      currentWeather: gameState.currentWeather || 'normal',
-      coins: gameState.coins ?? 0,
-      currentFloor: typeof gameState.getCurrentFloor === 'function' ? gameState.getCurrentFloor() : gameState._currentFloor,
-      turnCount: (typeof gameState.turnManager?.getTurnCount === 'function' ? gameState.turnManager.getTurnCount() : 0),
-      party: gameState.party.map(p => ({
-        speciesId: p.speciesId,
-        name: p.name,
-        level: p.level,
-        xp: p.xp,
-        types: p.types,
-        ability: p.ability || null,
-        currentMoves: p.currentMoves,
-        pendingMovesToLearn: p.pendingMovesToLearn || [],
-        pendingEvolution: p.pendingEvolution || null,
-        evolutionDeclinedAtLevel: p.evolutionDeclinedAtLevel ?? null,
-        hp: p.hp,
-        maxHp: p.maxHp,
-        belly: p.belly,
-        maxBelly: p.maxBelly,
-        attack: p.attack,
-        defense: p.defense,
-        spAtk: p.spAtk,
-        spDef: p.spDef,
-        speed: p.speed,
-        statusEffects: p.statusEffects || [],
-        statModifiers: p.statModifiers || {},
-        bonusStats: p.bonusStats || null,
-        _statusTick: p._statusTick || 0,
-        isLeader: p.isLeader || false,
-        tactic: p.tactic || 'follow',
-        chargingState: p.chargingState || null,
-        bidingState: p.bidingState || null,
-        mustRecharge: !!p.mustRecharge,
-        reflect: p.reflect || 0,
-        lightScreen: p.lightScreen || 0,
-        substitute: p.substitute || 0,
-        rage: !!p.rage,
-        focusEnergy: !!p.focusEnergy,
-        _preTransform: p._preTransform || null,
-        spriteUrl: p.spriteUrl || null,
-        lastPhysicalDamageTaken: p.lastPhysicalDamageTaken || 0,
-        _intimidatedBy: p._intimidatedBy || [],
-        protectStats: p.protectStats || 0,
-        _rageTurns: p._rageTurns,
-        _focusTurns: p._focusTurns,
-        _traced: !!p._traced
-      })),
-      inventory: gameState.inventory.map(slot => ({
-        itemId: slot.itemId,
-        quantity: slot.quantity
-      })),
-      stats: {
-        pokemonDefeated: gameState.stats.pokemonDefeated || 0,
-        pokemonCaptured: gameState.stats.pokemonCaptured || 0,
-        floorsExplored: gameState.stats.floorsExplored || 0,
-        itemsUsed: gameState.stats.itemsUsed || 0,
-        totalDamageDealt: gameState.stats.totalDamageDealt || 0,
-        totalDamageTaken: gameState.stats.totalDamageTaken || 0,
-        turnsPlayed: gameState.stats.turnsPlayed || 0
+      profile: {
+        ...gameState.profile,
+        pokedexSeen: Array.from(gameState.pokedexSeen || new Set()),
+        stats: { ...gameState.stats },
       },
-      pokedex: Array.from(gameState.pokedexSeen || new Set()),
-      floorItems: collectFloorItems(gameState),
-      floorTraps: collectFloorTraps(gameState),
-      floorMerchants: collectFloorMerchants(gameState),
-      fovRadiusModifier: gameState.fovRadiusModifier || 0
+      bag: gameState.inventory.map(slot => ({ itemId: slot.itemId, quantity: slot.quantity })),
+      wallet: gameState.coins ?? 0,
+      run: collectRun(gameState),
     };
-
     localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
     return true;
   } catch (e) {
@@ -228,7 +247,7 @@ export function saveGame(gameState) {
 /**
  * Carga la partida guardada. Si era de una versión anterior, guarda una copia
  * de la original y la sustituye por la migrada.
- * @returns {Object|null} Datos de la partida, o null si no hay una válida
+ * @returns {Object|null} Datos de la partida (formato v3), o null si no hay una válida
  */
 export function loadGame() {
   try {
@@ -236,15 +255,11 @@ export function loadGame() {
     const result = parseSave(raw);
     if (result.status !== 'ok') return null;
 
-    const data = result.data;
     if (result.migratedFrom !== null) {
       localStorage.setItem(`${BACKUP_PREFIX}v${result.migratedFrom}`, raw);
-      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+      localStorage.setItem(SAVE_KEY, JSON.stringify(result.data));
     }
-
-    data.pokedexSeen = new Set(data.pokedex || []);
-    delete data.pokedex;
-    return data;
+    return result.data;
   } catch (e) {
     console.error('Error al cargar:', e);
     return null;
@@ -264,8 +279,12 @@ export function setAsideCorruptSave() {
 }
 
 /**
- * Borra la partida (al perder o ganar: muerte permanente).
+ * Guarda una copia de la partida actual antes de empezar otra encima, para
+ * poder recuperarla si fue un error.
  */
-export function deleteSave() {
-  localStorage.removeItem(SAVE_KEY);
+export function backupBeforeNewGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) localStorage.setItem(`${BACKUP_PREFIX}replaced_${Date.now()}`, raw);
+  } catch (e) {}
 }

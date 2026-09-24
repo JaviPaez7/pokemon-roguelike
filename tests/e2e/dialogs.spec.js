@@ -1,4 +1,4 @@
-import { test, expect, panelTitle, startNewGame, dismissDialog, expectExploring } from './fixtures.js';
+import { test, expect, panelTitle, startNewGame, startInDungeon, dismissDialog, expectExploring } from './fixtures.js';
 
 test('un diálogo con el texto ya completo se cierra con una sola Z', async ({ page }) => {
   await startNewGame(page);
@@ -18,7 +18,7 @@ test('un diálogo con el texto ya completo se cierra con una sola Z', async ({ p
 });
 
 test('al reclutar, el diálogo «se ha unido» sigue en pantalla hasta cerrarlo', async ({ page }) => {
-  await startNewGame(page);
+  await startInDungeon(page);
   const name = await page.evaluate(() => {
     const game = window.game;
     const em = game.entityManager;
@@ -35,7 +35,7 @@ test('al reclutar, el diálogo «se ha unido» sigue en pantalla hasta cerrarlo'
 
   const dialog = page.locator('.dialog-panel');
   await expect(dialog).toContainText(`¡${name} se ha unido a tu equipo`);
-  expect(await page.evaluate(() => window.game.party.length)).toBe(2);
+  expect(await page.evaluate(() => window.game.party.length)).toBe(3);
   await dismissDialog(page);
   await expectExploring(page);
 });

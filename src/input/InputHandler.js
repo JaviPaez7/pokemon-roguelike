@@ -224,6 +224,9 @@ export class InputHandler {
 
   _handleKeyDown(event) {
     if (!this.enabled) return;
+    // Escribiendo en un campo de texto (nombre del equipo): las teclas son suyas
+    const tag = event.target?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
 
     if (event.repeat) return; // Ignorar repeticiones del SO
     if (this._keysDown.has(event.code)) return; // Prevenir duplicados

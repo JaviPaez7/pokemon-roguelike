@@ -1,4 +1,5 @@
 import { GAME_STATES } from '../../constants.js';
+import { floorCount } from '../../core/Dungeons.js';
 
 /**
  * Abre el menú de confirmación para usar las escaleras.
@@ -6,19 +7,21 @@ import { GAME_STATES } from '../../constants.js';
  * @param {import('../UIManager.js').UIManager} ui
  */
 export function openStairsMenu(ui) {
-  const floor = ui.game._currentFloor || ui.game.floor || 1;
+  const floor = ui.game.getCurrentFloor();
   const nextFloor = floor + 1;
+  const nextGlobal = (ui.game._currentFloor || 1) + 1;
+  const dungeon = ui.game.dungeon;
   let nextZone = '';
   let bossHint = '';
   let zoneProgress = '';
+  if (dungeon) {
+    zoneProgress = `<br><span style="color:#aaccff;">${dungeon.name}: piso ${nextFloor}/${floorCount(dungeon)}</span>`;
+  }
   if (ui.game.floorsData && ui.game.floorsData.zones) {
-    const z = ui.game.floorsData.zones.find(zone => nextFloor >= zone.floors[0] && nextFloor <= zone.floors[1]);
+    const z = ui.game.floorsData.zones.find(zone => nextGlobal >= zone.floors[0] && nextGlobal <= zone.floors[1]);
     if (z) {
-      nextZone = z.name;
-      const idx = nextFloor - z.floors[0] + 1;
-      const total = z.floors[1] - z.floors[0] + 1;
-      zoneProgress = `<br><span style="color:#aaccff;">Progreso zona: ${idx}/${total}</span>`;
-      if (z.boss && nextFloor === z.floors[1]) {
+      if (!dungeon || dungeon.challenge) nextZone = z.name;
+      if (z.boss && nextGlobal === z.floors[1]) {
         bossHint = `<br><span style="color:#ff6666;">¡Sala del jefe: ${z.boss.name}!</span>`;
       }
     }
@@ -100,7 +103,7 @@ export function openStairsMenu(ui) {
     },
     () => {
       ui.closeMenu();
-      ui.game.changeState(GAME_STATES.EXPLORING);
+      ui.game.changeState(ui.game.homeState);
     }
   ];
 

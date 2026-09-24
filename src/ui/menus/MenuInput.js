@@ -1,11 +1,8 @@
-import { GAME_STATES } from '../../constants.js';
-import { STARTERS } from '../../data/starterData.js';
 import { openTitleScreen } from './TitleMenu.js';
 import { openInventoryMenu } from './InventoryMenus.js';
 import { openTeamMenu, openPokemonActionsMenu, updateTacticDetails } from './TeamMenus.js';
 import { openPauseMenu, updateMoveDetails } from './PauseMenu.js';
 import { updateItemDetails } from './InventoryMenus.js';
-import { updateStarterDetails } from './StarterMenu.js';
 import { openMerchantMenu } from './MerchantMenu.js';
 
 /** @param {import('../UIManager.js').UIManager} ui @param {Object} data */
@@ -69,11 +66,12 @@ export function handleMenuInput(ui, data) {
 
 /** @param {import('../UIManager.js').UIManager} ui */
 export function handleCancelAction(ui) {
+  if (ui.onCancel) {
+    ui.onCancel();
+    return;
+  }
   switch (ui.currentMenuType) {
     case 'title':
-      break;
-    case 'starter':
-      ui.game.changeState(GAME_STATES.TITLE);
       break;
     case 'pause':
       ui.closeMenu();
@@ -110,7 +108,6 @@ export function handleCancelAction(ui) {
     case 'stairs_confirm':
     case 'stairs_menu':
       ui.closeMenu();
-      ui.game.changeState(GAME_STATES.EXPLORING);
       break;
     case 'recruit_menu': {
       const recruitId = ui._recruitEntityId;
@@ -166,11 +163,8 @@ export function handleCancelAction(ui) {
     case 'options':
       openPauseMenu(ui);
       break;
-    case 'game_over':
-    case 'victory':
     case 'title':
-    case 'starter_select':
-      // No cerrar pantallas finales / título con Esc
+      // El título no se cierra con Esc
       break;
     default:
       ui.closeMenu();
@@ -201,7 +195,5 @@ export function updateSelectionVisuals(ui) {
     updateMoveDetails(ui);
   } else if (ui.currentMenuType === 'tactic_select') {
     updateTacticDetails(ui);
-  } else if (ui.currentMenuType === 'starter') {
-    updateStarterDetails(STARTERS[ui.selectedIndex]);
   }
 }
