@@ -1,0 +1,8 @@
+{
+  "speciesFactor": 0.25,
+  "levelBonusPerLevel": 0.01,
+  "levelBonusMax": 0.1,
+  "friendBowBonus": 0.1,
+  "maxChance": 0.6,
+  "unrecruitable": [144, 145, 146, 150, 151]
+}

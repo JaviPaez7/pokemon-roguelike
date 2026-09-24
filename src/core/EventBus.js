@@ -7,7 +7,6 @@
  * - 'item_picked_up'    → Se ha recogido un objeto del suelo
  * - 'level_up'          → Un Pokémon ha subido de nivel
  * - 'floor_change'      → Se ha cambiado de piso en la mazmorra
- * - 'capture_attempt'   → Se intenta capturar un Pokémon salvaje
  * - 'turn_end'          → Ha terminado un turno completo
  * - 'damage_dealt'      → Se ha infligido daño
  * - 'message'           → Mensaje para el log del juego

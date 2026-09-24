@@ -48,7 +48,7 @@ function selectRandomItem(itemsDB, floor = 1) {
   if (!itemsDB || itemsDB.length === 0) return null;
 
   const earlyBoostIds = new Set([
-    'apple', 'oran_berry', 'potion', 'ether', 'pokeball',
+    'apple', 'oran_berry', 'potion', 'ether',
     'antidote', 'paralyze_heal', 'awakening', 'burn_heal', 'big_apple', 'full_heal'
   ]);
   const early = floor <= 5;
@@ -303,12 +303,6 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
       fighter.statModifiers[stat] = Math.min(6, current + (itemData.stages || 1));
       messages.push(`¡El ${statLabel} de ${pokemonInfo.name} subió!`);
       consumed = true;
-      break;
-    }
-
-    case 'capture': {
-      // La captura se maneja en CaptureSystem, no aquí
-      messages.push('Lanza la Poké Ball hacia un Pokémon salvaje cercano (mirándolo).');
       break;
     }
 

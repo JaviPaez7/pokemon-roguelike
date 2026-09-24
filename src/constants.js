@@ -78,7 +78,7 @@ export const ACTIONS = {
   USE_MOVE: 'use_move',
   /** Usar un objeto del inventario */
   USE_ITEM: 'use_item',
-  /** Lanzar un objeto (ej. Poké Ball) */
+  /** Lanzar un objeto */
   THROW: 'throw',
   /** Esperar un turno sin hacer nada */
   WAIT: 'wait',

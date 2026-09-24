@@ -66,36 +66,6 @@
     "spriteUrl": "/sprites/items/pokeball.png"
   },
   {
-    "id": "pokeball",
-    "name": "Poké Ball",
-    "type": "capture",
-    "captureBonus": 1.15,
-    "rarity": 0.25,
-    "description": "Atrapa Pokémon debilitados",
-    "sprite": "🔴",
-    "spriteUrl": "/sprites/items/pokeball.png"
-  },
-  {
-    "id": "great_ball",
-    "name": "Super Ball",
-    "type": "capture",
-    "captureBonus": 1.6,
-    "rarity": 0.1,
-    "description": "Mejor ratio de captura",
-    "sprite": "🔵",
-    "spriteUrl": "/sprites/items/great_ball.png"
-  },
-  {
-    "id": "ultra_ball",
-    "name": "Ultra Ball",
-    "type": "capture",
-    "captureBonus": 2,
-    "rarity": 0.05,
-    "description": "Excelente ratio de captura",
-    "sprite": "⚫",
-    "spriteUrl": "/sprites/items/ultra_ball.png"
-  },
-  {
     "id": "oran_berry",
     "name": "Baya Aranja",
     "type": "heal",

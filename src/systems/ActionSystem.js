@@ -1,13 +1,13 @@
-import { ACTIONS, GAME_STATES, TYPE_NAMES_ES, MAX_PARTY_SIZE } from '../constants.js';
+import { ACTIONS, GAME_STATES, TYPE_NAMES_ES } from '../constants.js';
 import { getEnemyAction } from '../entities/EnemyAI.js';
 import { executeMove, processStatusEffects, selectBestMove } from './CombatSystem.js';
 import { grantExperience, calculateExpGained } from './ExperienceSystem.js';
 import { checkEvolution } from './EvolutionSystem.js';
 import { triggerTrap } from './TrapSystem.js';
-import { getCaptureChance } from './CaptureSystem.js';
 import { canWalkOnTile } from './MovementSystem.js';
 import { random } from '../core/Random.js';
 import { talkToMissionClient } from './MissionSystem.js';
+import { canTakeRecruit } from './RecruitSystem.js';
 import { moveRange, getMoveTargets, facingVector } from './MoveTargeting.js';
 
 /** Color del proyectil de un movimiento en línea, según su tipo. */
@@ -784,20 +784,8 @@ export class CombatHandler {
         if (lookFighter.lightScreen > 0) stHint = (stHint ? stHint + ' ' : '') + `P.LUZ${lookFighter.lightScreen}`;
         if (lookFighter.substitute > 0) stHint = (stHint ? stHint + ' ' : '') + 'SUS';
         const statusHint = stHint ? ` · ${stHint}` : '';
-        let catchHint = '';
-        const ballSlot = (game.inventory || []).find(s => {
-          const d = game.itemsData.find(i => i.id === s.itemId);
-          return d && d.type === 'capture' && s.quantity > 0;
-        });
-        if (ballSlot) {
-          const ballData = game.itemsData.find(i => i.id === ballSlot.itemId);
-          if (ballData) {
-            const chance = getCaptureChance(lookFighter, lookInfo, ballData, game.pokemonData);
-            catchHint = ` · ${ballData.name} ~${chance}%`;
-          }
-        }
         game.eventBus.emit('message', {
-          text: `${boss ? '¡Jefe! ' : ''}${lookInfo.name} Nv.${lookInfo.level} (${types}) — PS ~${hpPct}%${abilityHint}${statusHint}${catchHint}`,
+          text: `${boss ? '¡Jefe! ' : ''}${lookInfo.name} Nv.${lookInfo.level} (${types}) — PS ~${hpPct}%${abilityHint}${statusHint}`,
           color: boss ? '#ff6666' : '#ffaa66'
         });
         return { success: false, type: 'examine' };
@@ -1136,17 +1124,16 @@ export class CombatHandler {
     const info = game.entityManager.getComponent(npcId, 'pokemonInfo');
     if (!info) return;
 
-    const party = game.entityManager.getEntitiesWithComponents('partyMember');
-    if (party.length < MAX_PARTY_SIZE) {
+    if (canTakeRecruit(game)) {
       game.uiManager.openRecruitMenu(npcId, info);
-      game.changeState(GAME_STATES.MENU);
     } else {
+      // En la Torre, con el equipo completo, no cabe nadie más
       const tip = 15 + Math.floor((info.level || 1) * 2);
       game.coins = (game.coins || 0) + tip;
       game.turnManager.removeEntity(npcId);
       game.entityManager.destroyEntity(npcId);
       game.eventBus.emit('show_dialog', {
-        text: `¡${info.name} te sonríe y te deja ${tip} Poké!\n\n(Equipo lleno: no puede unirse.)`
+        text: `¡${info.name} te sonríe y te deja ${tip} Poké!\n\n(Equipo completo: no puede unirse.)`
       });
       game.needsRender = true;
     }

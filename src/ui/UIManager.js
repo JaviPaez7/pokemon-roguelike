@@ -156,14 +156,6 @@ export class UIManager {
       this.playLevelUpSound();
     });
 
-    this.eventBus.on('capture_attempt', (data) => {
-      for (let i = 0; i < data.shakes; i++) {
-        setTimeout(() => this.playCaptureShakeSound(i), i * 400);
-      }
-      if (data.success) {
-        setTimeout(() => this.playLevelUpSound(), data.shakes * 400 + 200);
-      }
-    });
   }
 
   hasOpenDialog() {
@@ -279,5 +271,5 @@ export class UIManager {
   playCancelSound() { this.sfx.playCancelSound(); }
   playDamageSound() { this.sfx.playDamageSound(); }
   playLevelUpSound() { this.sfx.playLevelUpSound(); }
-  playCaptureShakeSound(shakeIndex) { this.sfx.playCaptureShakeSound(shakeIndex); }
+  playRecruitSound() { this.sfx.playRecruitSound(); }
 }

@@ -6,7 +6,7 @@
  * a la siguiente y sube SAVE_VERSION. Antes de sobrescribir una partida
  * migrada se guarda una copia de la original.
  *
- * Formato v3:
+ * Formato (v3 y v4; la v4 solo quitó las Poké Balls):
  * - `profile`: el equipo de exploración (core/Profile.js), con la Pokédex y
  *   las estadísticas.
  * - `bag` y `wallet`: lo que lleva encima el equipo ahora mismo.
@@ -18,7 +18,7 @@ import { DUNGEONS } from './Dungeons.js';
 
 const SAVE_KEY = 'pokerogue_save';
 const BACKUP_PREFIX = 'pokerogue_save_backup_';
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 /** Nombre que reciben los equipos de partidas anteriores a los perfiles. */
 export const MIGRATED_TEAM_NAME = 'Equipo Pionero';
@@ -73,7 +73,60 @@ const MIGRATIONS = {
       run: null,
     };
   },
+
+  // v3 → v4: las Poké Balls desaparecen (ahora se recluta derrotando al
+  // Pokémon). Las que hubiera se cambian por lo que pagaba Kecleon por ellas:
+  // las de la mochila van a la cartera y las del almacén, al banco. Las del
+  // suelo o la tienda del piso en curso se quitan sin más. El total queda en
+  // `flags.ballRefund` para avisar al jugador al cargar.
+  3: (data) => {
+    const profile = data.profile;
+    const bag = refundBalls(data.bag);
+    const storage = refundBalls(profile?.storage);
+    const stash = refundBalls(profile?.stash?.bag);
+    const refund = bag.money + storage.money + stash.money;
+    const run = data.run && {
+      ...data.run,
+      floorItems: Array.isArray(data.run.floorItems) ? data.run.floorItems.filter((i) => !(i.itemId in BALL_REFUND)) : data.run.floorItems,
+      floorMerchants: Array.isArray(data.run.floorMerchants)
+        ? data.run.floorMerchants.map((m) => ({ ...m, items: (m.items || []).filter((i) => !(i.id in BALL_REFUND)) }))
+        : data.run.floorMerchants,
+    };
+    return {
+      ...data,
+      version: 4,
+      bag: bag.items,
+      wallet: (data.wallet ?? 0) + bag.money,
+      profile: profile && {
+        ...profile,
+        storage: storage.items,
+        bank: (profile.bank ?? 0) + storage.money,
+        stash: profile.stash && { ...profile.stash, bag: stash.items, wallet: (profile.stash.wallet ?? 0) + stash.money },
+        flags: refund ? { ...profile.flags, ballRefund: refund } : profile.flags,
+      },
+      run,
+    };
+  },
 };
+
+/** Lo que pagaba Kecleon por cada Poké Ball (migración v3 → v4). */
+const BALL_REFUND = { pokeball: 48, great_ball: 120, ultra_ball: 120 };
+
+/**
+ * Separa las Poké Balls de una lista de objetos y las cambia por dinero.
+ * @param {{ itemId: string, quantity: number }[] | undefined} items
+ * @returns {{ items: { itemId: string, quantity: number }[], money: number }}
+ */
+function refundBalls(items) {
+  if (!Array.isArray(items)) return { items, money: 0 };
+  let money = 0;
+  const kept = items.filter((slot) => {
+    if (!(slot.itemId in BALL_REFUND)) return true;
+    money += BALL_REFUND[slot.itemId] * (slot.quantity || 1);
+    return false;
+  });
+  return { items: kept, money };
+}
 
 /**
  * Lleva una partida a SAVE_VERSION aplicando las migraciones que falten.

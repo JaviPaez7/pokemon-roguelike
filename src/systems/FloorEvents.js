@@ -213,15 +213,15 @@ export function createMerchantNPC(game, x, y, presetItems = null) {
     loaded: false
   });
 
-  // Catálogo útil: comida, curación, balls, ether… (evitar basura)
+  // Catálogo útil: comida, curación, ether… (evitar basura)
   const preferredTypes = new Set([
-    'heal', 'food', 'pp_restore', 'pp_restore_full', 'capture',
+    'heal', 'food', 'pp_restore', 'pp_restore_full',
     'seed', 'evolution_stone', 'stat_boost', 'gummi', 'status_cure',
     'escape', 'revive', 'full_heal'
   ]);
   const preferredIds = new Set([
     'apple', 'big_apple', 'oran_berry', 'ether', 'max_elixir',
-    'potion', 'super_potion', 'reviver_seed', 'pokeball', 'great_ball',
+    'potion', 'super_potion', 'reviver_seed',
     'escape_rope', 'antidote', 'paralyze_heal', 'burn_heal', 'awakening', 'full_heal'
   ]);
   const pool = game.itemsData.filter(i =>
@@ -238,7 +238,7 @@ export function createMerchantNPC(game, x, y, presetItems = null) {
     if (!item || used.has(item.id)) return;
     used.add(item.id);
     let base = Math.max(10, Math.floor(18 / (item.rarity || 0.1)));
-    if ((game._currentFloor || 1) <= 5 && (item.id === 'pokeball' || item.id === 'apple' || item.id === 'potion' || item.id === 'ether' || item.id === 'oran_berry')) {
+    if ((game._currentFloor || 1) <= 5 && (item.id === 'apple' || item.id === 'potion' || item.id === 'ether' || item.id === 'oran_berry')) {
       base = Math.floor(base * 0.65);
     }
     const price = Math.min(250, Math.max(8, Math.floor(base * floorMult)));
@@ -251,7 +251,7 @@ export function createMerchantNPC(game, x, y, presetItems = null) {
   };
 
   // Siempre algo útil de supervivencia
-  const must = ['apple', 'potion', 'pokeball'];
+  const must = ['apple', 'potion', 'oran_berry'];
   if ((game._currentFloor || 1) <= 8) must.push('ether');
   if ((game._currentFloor || 1) >= 10) must.push('reviver_seed');
   for (const mustId of must) {

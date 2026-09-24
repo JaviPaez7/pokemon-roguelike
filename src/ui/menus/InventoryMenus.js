@@ -1,6 +1,5 @@
 import { openPauseMenu } from './PauseMenu.js';
-import { getCaptureChance } from '../../systems/CaptureSystem.js';
-import { GAME_STATES, MAX_PARTY_SIZE } from '../../constants.js';
+import { GAME_STATES } from '../../constants.js';
 
 /** Confirmación Sí/No (no usa diálogo, para poder cancelar). */
 function openYesNoConfirm(ui, title, body, onYes, onNo) {
@@ -25,56 +24,9 @@ function openYesNoConfirm(ui, title, body, onYes, onNo) {
 }
 
 
-/** Busca un salvaje en la dirección de mirada (8 dirs) o adyacente. */
-function findWildCaptureTarget(game) {
-  const playerId = game.getPlayerId();
-  const pPos = game.entityManager.getComponent(playerId, 'position');
-  if (!pPos) return null;
-
-  let dx = pPos.facingDx ?? 0;
-  let dy = pPos.facingDy ?? 0;
-  if (dx === 0 && dy === 0) {
-    if (pPos.facing === 'up') dy = -1;
-    else if (pPos.facing === 'down') dy = 1;
-    else if (pPos.facing === 'left') dx = -1;
-    else if (pPos.facing === 'right') dx = 1;
-  }
-
-  const isWild = (entId) => {
-    if (!entId) return false;
-    const hasFighter = game.entityManager.hasComponent(entId, 'fighter');
-    const isParty = game.entityManager.hasComponent(entId, 'partyMember');
-    const isMerchant = game.entityManager.hasComponent(entId, 'npcMerchant');
-    const isFriendly = game.entityManager.hasComponent(entId, 'npcFriendly');
-    return hasFighter && !isParty && !isMerchant && !isFriendly;
-  };
-
-  if (dx !== 0 || dy !== 0) {
-    for (let dist = 1; dist <= 5; dist++) {
-      const tx = pPos.x + dx * dist;
-      const ty = pPos.y + dy * dist;
-      if (!game.tileMap.isInBounds(tx, ty) || !game.tileMap.isWalkable(tx, ty)) break;
-      const entId = game.entityManager.getEntityAt(tx, ty, false);
-      if (isWild(entId)) return entId;
-      if (entId) break;
-    }
-  }
-
-  // Fallback: adyacentes (incluye diagonal) — tras acercarse en diagonal
-  for (let oy = -1; oy <= 1; oy++) {
-    for (let ox = -1; ox <= 1; ox++) {
-      if (ox === 0 && oy === 0) continue;
-      const entId = game.entityManager.getEntityAt(pPos.x + ox, pPos.y + oy, false);
-      if (isWild(entId)) return entId;
-    }
-  }
-  return null;
-}
-
-/** @param {import('../UIManager.js').UIManager} ui */
 const INV_TYPE_ORDER = {
   food: 0, heal: 1, heal_percent: 1, pp_restore: 2, pp_restore_full: 2,
-  capture: 3, seed: 4, revive: 4, status_cure: 5, full_heal: 5,
+  seed: 4, revive: 4, status_cure: 5, full_heal: 5,
   evolution_stone: 6, stat_boost: 7, gummi: 8, escape: 9
 };
 
@@ -164,10 +116,9 @@ export function updateItemDetails(ui, itemId) {
       food: 'Comida (restaura Tripa)',
       heal: 'Curación',
       heal_percent: 'Curación',
-      capture: 'Captura — mira a un salvaje (o adyacente) y usa; Lanzar también captura',
       status_cure: 'Cura estados',
       evolution_stone: 'Evolución',
-      escape: 'Guarda y vuelve al menú (mapa regenerado al continuar)',
+      escape: 'Sales de la mazmorra y vuelves al pueblo con todo lo que llevas',
       pp_restore: 'Restaura PP',
       pp_restore_full: 'Restaura PP',
       revive: 'Resucita debilitados',
@@ -207,40 +158,15 @@ export function openItemActionsMenu(ui) {
 
   ui.menuOptions = [
     () => {
-      if (item.type === 'capture' || item.type === 'escape') {
+      if (item.type === 'escape') {
         ui.closeMenu();
-        if (item.type === 'capture') {
-          const targetId = findWildCaptureTarget(ui.game);
-          
-          if (targetId) {
-            const tInfo = ui.game.entityManager.getComponent(targetId, 'pokemonInfo');
-            const tFighter = ui.game.entityManager.getComponent(targetId, 'fighter');
-            const chance = (tInfo && tFighter)
-              ? getCaptureChance(tFighter, tInfo, item, ui.game.pokemonData)
-              : 0;
-            const partyCount = ui.game.entityManager.getEntitiesWithComponents('partyMember').length;
-            const fullHint = partyCount >= MAX_PARTY_SIZE
-              ? `\n\nEquipo lleno (${MAX_PARTY_SIZE}): si capturas, se liberará (+Poké).`
-              : '';
-            openYesNoConfirm(
-              ui,
-              '¿Capturar?',
-              `¿Lanzar ${item.name} a ${tInfo ? tInfo.name : 'el Pokémon'}?\nProbabilidad aprox.: ${chance}%${fullHint}`,
-              () => ui.game.useInventoryItem(item.id, targetId),
-              () => openInventoryMenu(ui)
-            );
-          } else {
-            ui.showDialog('No hay ningún Pokémon salvaje en esa dirección para capturar.', () => openInventoryMenu(ui));
-          }
-        } else if (item.type === 'escape') {
-          openYesNoConfirm(
-            ui,
-            '¿Escapar?',
-            '¿Usar Cuerda Huida?\nSaldrás al menú. Se guarda equipo, mochila y piso (el mapa se regenera al continuar).',
-            () => ui.game.useInventoryItem(item.id, ui.game.getPlayerId()),
-            () => openInventoryMenu(ui)
-          );
-        }
+        openYesNoConfirm(
+          ui,
+          '¿Escapar?',
+          '¿Usar Cuerda Huida?\nSalís de la mazmorra y volvéis al pueblo con todo lo que lleváis.',
+          () => ui.game.useInventoryItem(item.id, ui.game.getPlayerId()),
+          () => openInventoryMenu(ui)
+        );
       } else if (item.type === 'slumber_orb' || item.type === 'petrify_orb'
           || item.id === 'slumber_orb' || item.id === 'petrify_orb') {
         // Efecto de sala: se usa desde el líder, sin elegir aliado

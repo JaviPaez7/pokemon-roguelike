@@ -94,7 +94,8 @@ test('una partida de la versión 2 (carrera de 50 pisos) se convierte en un perf
       coins: 77,
       currentFloor: 12,
       party: v3.run.party,
-      inventory: v3.bag,
+      // Las Poké Balls ya no existen (v4): se cambian por dinero
+      inventory: [...v3.bag, { itemId: 'pokeball', quantity: 2 }],
       stats: { turnsPlayed: 321 },
       pokedex: [1, 16],
       floorItems: [],
@@ -105,6 +106,8 @@ test('una partida de la versión 2 (carrera de 50 pisos) se convierte en un perf
 
   const text = await reloadAndContinue(page, 'Equipo Pionero · Rango Normal · Pueblo Raíz');
   expect(text).toContain('¡El juego ha cambiado!');
+  expect(text).toContain('Ya no hay Poké Balls');
+  expect(text).toContain('se han cambiado por 96 Poké');
 
   await expectInTown(page);
   const state = await page.evaluate(() => ({
@@ -120,8 +123,8 @@ test('una partida de la versión 2 (carrera de 50 pisos) se convierte en un perf
   expect(state.team).toBe('Equipo Pionero');
   expect(state.cleared).toEqual(['bosque_verde', 'cueva_oscura']);
   expect(state.party).toEqual(v2.party.map((p) => p.name));
-  expect(state.coins).toBe(77);
-  expect(state.bag).toEqual(v2.inventory);
+  expect(state.coins).toBe(77 + 2 * 48);
+  expect(state.bag).toEqual(v2.inventory.filter((s) => s.itemId !== 'pokeball'));
   expect(state.turns).toBe(321);
   expect(state.backup).toEqual(v2);
   expect(state.noticeSaved).toBe(true);

@@ -112,6 +112,12 @@ export class Game {
     /** @type {number} Semilla del piso actual */
     this.seed = 0;
 
+    /**
+     * Ganchos para depurar desde la consola y para los tests E2E.
+     * `forceRecruit`: true o false fuerza la tirada de reclutamiento; null, tirada normal.
+     */
+    this.debug = { forceRecruit: null };
+
     // Estadísticas acumuladas
     this.stats = {
       pokemonDefeated: 0,
@@ -129,7 +135,6 @@ export class Game {
     // Inventario base (nueva partida lo sustituye en GameSession)
     this.inventory = [
       { itemId: 'potion', quantity: 3 },
-      { itemId: 'pokeball', quantity: 5 },
       { itemId: 'apple', quantity: 4 },
       { itemId: 'ether', quantity: 1 },
       { itemId: 'oran_berry', quantity: 3 },
@@ -1070,65 +1075,72 @@ export class Game {
       return aMem.slot - bMem.slot;
     });
 
-    return partyEntities.map(id => {
-      const info = this.entityManager.getComponent(id, 'pokemonInfo');
-      const fighter = this.entityManager.getComponent(id, 'fighter');
-      const member = this.entityManager.getComponent(id, 'partyMember');
-      const pos = this.entityManager.getComponent(id, 'position');
-      const sprite = this.entityManager.getComponent(id, 'sprite');
-        return {
-        id,
-        facing: pos?.facing || 'down',
-        facingDx: pos?.facingDx ?? 0,
-        facingDy: pos?.facingDy ?? 0,
-        charging: !!(fighter.charging),
-        biding: !!(fighter.biding),
-        chargingState: fighter.charging || null,
-        bidingState: fighter.biding || null,
-        mustRecharge: !!fighter.mustRecharge,
-        reflect: fighter.reflect || 0,
-        lightScreen: fighter.lightScreen || 0,
-        substitute: fighter.substitute || 0,
-        rage: !!fighter.rage,
-        focusEnergy: !!fighter.focusEnergy,
-        _preTransform: fighter._preTransform || null,
-        spriteUrl: sprite?.url || null,
-        lastPhysicalDamageTaken: fighter.lastPhysicalDamageTaken || 0,
-        _intimidatedBy: fighter._intimidatedBy || [],
-        protectStats: fighter.protectStats || 0,
-        _rageTurns: fighter._rageTurns,
-        _focusTurns: fighter._focusTurns,
-        _traced: !!(info._traced),
-        speciesId: info.speciesId,
-        name: info.name,
-        level: info.level,
-        xp: info.xp,
-        ability: info.ability || null,
-        currentLevelXp: Math.floor(Math.pow(info.level, 3)),
-        nextLevelXp: Math.floor(Math.pow(info.level + 1, 3)),
-        currentMoves: info.currentMoves,
-        pendingMovesToLearn: info.pendingMovesToLearn || [],
-        pendingEvolution: info.pendingEvolution || null,
-        evolutionDeclinedAtLevel: info.evolutionDeclinedAtLevel ?? null,
-        types: info.types,
-        hp: fighter.hp,
-        maxHp: fighter.maxHp,
-        belly: fighter.belly,
-        maxBelly: fighter.maxBelly,
-        attack: fighter.attack,
-        defense: fighter.defense,
-        spAtk: fighter.spAtk,
-        spDef: fighter.spDef,
-        speed: fighter.speed,
-        statusEffects: fighter.statusEffects,
-        statModifiers: fighter.statModifiers || {},
-        bonusStats: fighter.bonusStats || null,
-        _statusTick: fighter._statusTick || 0,
-        isLeader: member.isLeader,
-        tactic: member.tactic || 'follow',
-        uid: member.uid ?? null
-      };
-    });
+    return partyEntities.map(id => this.memberData(id));
+  }
+
+  /**
+   * Datos de un Pokémon en el formato de `party` (sirve también para un
+   * recluta que aún no está en el equipo).
+   * @param {number} id
+   */
+  memberData(id) {
+    const info = this.entityManager.getComponent(id, 'pokemonInfo');
+    const fighter = this.entityManager.getComponent(id, 'fighter');
+    const member = this.entityManager.getComponent(id, 'partyMember');
+    const pos = this.entityManager.getComponent(id, 'position');
+    const sprite = this.entityManager.getComponent(id, 'sprite');
+    return {
+      id,
+      facing: pos?.facing || 'down',
+      facingDx: pos?.facingDx ?? 0,
+      facingDy: pos?.facingDy ?? 0,
+      charging: !!(fighter.charging),
+      biding: !!(fighter.biding),
+      chargingState: fighter.charging || null,
+      bidingState: fighter.biding || null,
+      mustRecharge: !!fighter.mustRecharge,
+      reflect: fighter.reflect || 0,
+      lightScreen: fighter.lightScreen || 0,
+      substitute: fighter.substitute || 0,
+      rage: !!fighter.rage,
+      focusEnergy: !!fighter.focusEnergy,
+      _preTransform: fighter._preTransform || null,
+      spriteUrl: sprite?.url || null,
+      lastPhysicalDamageTaken: fighter.lastPhysicalDamageTaken || 0,
+      _intimidatedBy: fighter._intimidatedBy || [],
+      protectStats: fighter.protectStats || 0,
+      _rageTurns: fighter._rageTurns,
+      _focusTurns: fighter._focusTurns,
+      _traced: !!(info._traced),
+      speciesId: info.speciesId,
+      name: info.name,
+      level: info.level,
+      xp: info.xp,
+      ability: info.ability || null,
+      currentLevelXp: Math.floor(Math.pow(info.level, 3)),
+      nextLevelXp: Math.floor(Math.pow(info.level + 1, 3)),
+      currentMoves: info.currentMoves,
+      pendingMovesToLearn: info.pendingMovesToLearn || [],
+      pendingEvolution: info.pendingEvolution || null,
+      evolutionDeclinedAtLevel: info.evolutionDeclinedAtLevel ?? null,
+      types: info.types,
+      hp: fighter.hp,
+      maxHp: fighter.maxHp,
+      belly: fighter.belly,
+      maxBelly: fighter.maxBelly,
+      attack: fighter.attack,
+      defense: fighter.defense,
+      spAtk: fighter.spAtk,
+      spDef: fighter.spDef,
+      speed: fighter.speed,
+      statusEffects: fighter.statusEffects,
+      statModifiers: fighter.statModifiers || {},
+      bonusStats: fighter.bonusStats || null,
+      _statusTick: fighter._statusTick || 0,
+      isLeader: member?.isLeader ?? false,
+      tactic: member?.tactic || 'follow',
+      uid: member?.uid ?? null
+    };
   }
 
   get playerPos() {
