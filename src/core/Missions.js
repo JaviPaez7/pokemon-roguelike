@@ -47,13 +47,29 @@ export const REWARD_ITEMS = ['sitrus_berry', 'super_potion', 'reviver_seed', 'et
  *   itemId: string | null,
  *   difficulty: string,
  *   reward: { money: number, itemId: string | null, rankPoints: number },
- *   status: 'open' | 'accepted' | 'done'
+ *   status: 'open' | 'accepted' | 'done',
+ *   story?: boolean,
+ *   text?: string
  * }} Mission
+ *
+ * Las misiones de historia (`story: true`) las da una escena, no el tablón:
+ * no se pueden abandonar, su cliente no aparece en el piso (lo resuelve la
+ * propia escena) y `text` sustituye a la descripción de siempre.
  */
 
 /** @param {number} globalFloor */
 export function difficultyFor(globalFloor) {
   return DIFFICULTIES.find((d) => globalFloor <= d.upTo) ?? DIFFICULTIES.at(-1);
+}
+
+/**
+ * Dinero que paga un encargo según su tipo y su piso global.
+ * @param {Mission['type']} type
+ * @param {number} globalFloor
+ */
+export function rewardMoney(type, globalFloor) {
+  const bonus = type === 'rescue' ? 0 : 40;
+  return Math.round((80 + globalFloor * 25 + bonus) / 10) * 10;
 }
 
 /** Generador pseudoaleatorio local (LCG), para no tocar el RNG de la partida. */
@@ -88,7 +104,6 @@ export function generateBoard({ day, clearedDungeons, pokemonData, count = BOARD
     const type = pick(['rescue', 'rescue', 'find_item', 'deliver']);
     const itemId = type === 'find_item' ? pick(LOST_ITEMS) : type === 'deliver' ? pick(DELIVERY_ITEMS) : null;
     const difficulty = difficultyFor(globalFloor);
-    const bonus = type === 'rescue' ? 0 : 40;
     missions.push({
       id: `d${day}-${i}`,
       type,
@@ -99,7 +114,7 @@ export function generateBoard({ day, clearedDungeons, pokemonData, count = BOARD
       itemId,
       difficulty: difficulty.rank,
       reward: {
-        money: Math.round((80 + globalFloor * 25 + bonus) / 10) * 10,
+        money: rewardMoney(type, globalFloor),
         itemId: rng() < 0.4 ? pick(REWARD_ITEMS) : null,
         rankPoints: difficulty.points,
       },
@@ -107,6 +122,25 @@ export function generateBoard({ day, clearedDungeons, pokemonData, count = BOARD
     });
   }
   return missions;
+}
+
+/**
+ * Misión de historia ya aceptada, con la recompensa normal de su tipo y piso.
+ * @param {{ id: string, type: Mission['type'], dungeonId: string, floor: number, clientSpeciesId: number, clientName: string, text: string }} spec
+ * @returns {Mission}
+ */
+export function storyMission(spec) {
+  const dungeon = DUNGEONS.find((d) => d.id === spec.dungeonId);
+  const globalFloor = dungeon.floors[0] + spec.floor - 1;
+  const difficulty = difficultyFor(globalFloor);
+  return {
+    ...spec,
+    itemId: null,
+    difficulty: difficulty.rank,
+    reward: { money: rewardMoney(spec.type, globalFloor), itemId: null, rankPoints: difficulty.points },
+    status: 'accepted',
+    story: true,
+  };
 }
 
 /**
@@ -147,7 +181,8 @@ export function acceptMission(profile, missionId) {
 export function abandonMission(profile, missionId) {
   const accepted = profile.missions.accepted;
   const index = accepted.findIndex((m) => m.id === missionId);
-  if (index !== -1) accepted.splice(index, 1);
+  // Las de historia no se abandonan
+  if (index !== -1 && !accepted[index].story) accepted.splice(index, 1);
 }
 
 /**
@@ -234,6 +269,7 @@ function addToStorage(storage, itemId) {
  * @param {{ dungeonName: string, itemName: (id: string) => string }} names
  */
 export function describeMission(mission, { dungeonName, itemName }) {
+  if (mission.story && mission.text) return mission.text;
   const where = `${dungeonName}, piso ${mission.floor}`;
   switch (mission.type) {
     case 'rescue':

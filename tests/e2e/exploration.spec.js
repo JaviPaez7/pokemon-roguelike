@@ -10,6 +10,7 @@ import {
   walk,
   findFreeStep,
   itemQuantity,
+  skipDialogs,
 } from './fixtures.js';
 
 /** @param {import('@playwright/test').Page} page @param {string | RegExp} text */
@@ -30,11 +31,14 @@ test('nueva aventura con el ratón: test, compañero, nombre y llegada al pueblo
   await page.locator('#menu-container .menu-option[data-index="0"]').click();
   await page.locator('#team-name-input').fill('Equipo Ratón');
   await option(page, '¡Empezar la aventura!').click();
-  const welcome = page.locator('.dialog-panel');
-  await expect(welcome).toContainText('¡Bienvenidos a Pueblo Raíz, Equipo Ratón!');
-  await welcome.click();
-  if (await welcome.isVisible()) await welcome.click();
+  // Empieza el prólogo; con el ratón también se avanza
+  const prologue = page.locator('.dialog-panel');
+  await expect(prologue).toContainText('¿Me oyes?');
+  await prologue.click();
+  await prologue.click();
+  await expect(prologue).not.toContainText('¿Me oyes?');
   await page.mouse.move(0, 0);
+  await skipDialogs(page);
 
   await expectInTown(page);
   const run = await page.evaluate(() => ({

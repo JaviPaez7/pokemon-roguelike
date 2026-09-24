@@ -12,6 +12,7 @@ import {
   walk,
   playerPosition,
   itemQuantity,
+  skipDialogs,
 } from './fixtures.js';
 
 /** @param {import('@playwright/test').Page} page @param {string} text */
@@ -31,11 +32,14 @@ const town = (page) =>
     rankPoints: window.game.profile.rankPoints,
   }));
 
-/** Espera a volver al pueblo tras una expedición y devuelve el texto del resumen. */
+/**
+ * Espera a volver al pueblo tras una expedición y devuelve el texto del
+ * resumen. Pasa también la escena de la historia que venga detrás.
+ */
 async function backInTown(page) {
   await expect.poll(() => page.evaluate(() => window.game.getState())).toBe('TOWN');
   const text = await dialogText(page);
-  await dismissDialog(page);
+  await skipDialogs(page);
   await expectInTown(page);
   return text;
 }
@@ -52,6 +56,10 @@ test.describe('servicios del pueblo', () => {
     const coins = (await town(page)).coins;
 
     await page.keyboard.press('ArrowUp'); // choca con Kecleon
+    // La primera vez en el capítulo saluda antes de abrir la tienda
+    expect(await dialogText(page)).toContain('hoy no se fía');
+    await expect(page.locator('.dialog-speaker')).toHaveText('Kecleon');
+    await dismissDialog(page);
     await expect(panelTitle(page)).toHaveText('TIENDA KECLEON');
     await option(page, 'Comprar objetos').click();
     // Solo la Manzana (no la Manzana Grande, que puede estar entre los extras del día)
@@ -250,7 +258,7 @@ test('se puede elegir el protagonista a mano y el compañero no comparte tipo', 
   await expect(option(page, 'Psyduck')).toHaveCount(0); // también de agua
   await option(page, 'Charmander').click();
   await page.keyboard.press('Enter');
-  await dismissDialog(page);
+  await skipDialogs(page);
 
   await expectInTown(page);
   expect((await town(page)).team.map((p) => p.name)).toEqual(['Squirtle', 'Charmander']);

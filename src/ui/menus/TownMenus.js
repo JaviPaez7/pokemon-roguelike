@@ -19,6 +19,7 @@ import {
 import { townShopStock } from '../../core/Shop.js';
 import { startExpedition } from '../../core/Expedition.js';
 import { enterTown, leaveExitTile, BASE_FRONT } from '../../core/TownSession.js';
+import { playStory } from '../../core/StorySession.js';
 import { openMerchantMenu } from './MerchantMenu.js';
 import { openMissionBoardMenu } from './MissionMenus.js';
 
@@ -191,7 +192,10 @@ export function openBaseMenu(ui, selected = 0) {
         action: () => {
           profile.day += 1;
           game.saveGameData();
-          ui.showDialog(`Amanece el día ${profile.day}.\n\nEl tablón y la tienda tienen novedades.`, () => openBaseMenu(ui, 1));
+          ui.showDialog(`Amanece el día ${profile.day}.\n\nEl tablón y la tienda tienen novedades.`, () => {
+            // Si el día nuevo trae escena (el epílogo), después se vuelve al pueblo
+            if (!playStory(game, 'new_day', {}, () => ui.closeMenu())) openBaseMenu(ui, 1);
+          });
         },
       },
       {
@@ -301,7 +305,8 @@ function confirmDungeon(ui, dungeon) {
         label: '¡En marcha!',
         action: () => {
           ui.closeMenu();
-          startExpedition(game, dungeon.id);
+          // Algunas mazmorras tienen escena antes de salir (el sobre, la víspera del laboratorio)
+          playStory(game, 'dungeon_select', { dungeonId: dungeon.id }, () => startExpedition(game, dungeon.id));
         },
       },
       { label: 'Mejor no', action: () => openDungeonSelect(ui) },

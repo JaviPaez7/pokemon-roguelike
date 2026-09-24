@@ -6,6 +6,7 @@ import {
   expectExploring,
   expectInTown,
   dismissDialog,
+  skipDialogs,
   dialogText,
 } from './fixtures.js';
 
@@ -115,7 +116,7 @@ test('con el equipo completo, el recluta se va a la base', async ({ page }) => {
   // Al volver, los cinco están en la plantilla y el equipo sigue siendo el de cuatro
   await page.evaluate(() => window.game.completeDungeon());
   await expect.poll(() => page.evaluate(() => window.game.getState())).toBe('TOWN');
-  await dismissDialog(page);
+  await skipDialogs(page); // resumen y cierre del capítulo 1
   await expectInTown(page);
   const profile = await page.evaluate(() => ({
     roster: window.game.profile.roster.map((p) => p.name),

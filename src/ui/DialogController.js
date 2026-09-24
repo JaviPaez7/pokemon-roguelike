@@ -5,6 +5,7 @@ import { portraitUrl } from '../render/PmdSprites.js';
  * @typedef {Object} DialogOptions
  * @property {string} [speaker] - Quién habla (se muestra encima del texto)
  * @property {{ speciesId: number, emotion?: string }} [portrait] - Retrato de PMDCollab a la izquierda
+ * @property {'black'} [backdrop] - Fondo negro en vez del juego (la voz del prólogo)
  */
 
 /** Diálogos RPG con cola y animación letra a letra. */
@@ -51,6 +52,7 @@ export class DialogController {
     ui.game.inputHandler.setContext('dialog');
     ui.overlay.classList.remove('hidden');
     ui.overlay.classList.add('dialog-mode');
+    ui.overlay.classList.toggle('story-black', options.backdrop === 'black');
 
     const portrait = options.portrait ? portraitUrl(options.portrait.speciesId, options.portrait.emotion) : null;
     const html = `
@@ -135,7 +137,7 @@ export class DialogController {
     const { ui } = this;
     ui.currentMenuType = null;
     this.currentDialogCallback = null;
-    ui.overlay.classList.remove('dialog-mode');
+    ui.overlay.classList.remove('dialog-mode', 'story-black');
     ui.overlay.classList.add('hidden');
     ui.menuContainer.innerHTML = '';
 

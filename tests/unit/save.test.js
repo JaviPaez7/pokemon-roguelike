@@ -104,7 +104,7 @@ function saveV3(overrides = {}) {
 describe('v3 → v4: sin Poké Balls', () => {
   it('las de la mochila pasan a la cartera y las del almacén, al banco', () => {
     const v4 = migrateSave(saveV3());
-    expect(v4.version).toBe(4);
+    expect(v4.version).toBe(SAVE_VERSION);
     expect(v4.bag).toEqual([{ itemId: 'apple', quantity: 1 }]);
     expect(v4.wallet).toBe(5 + 3 * 48);
     expect(v4.profile.storage).toEqual([{ itemId: 'potion', quantity: 1 }]);
@@ -130,6 +130,52 @@ describe('v3 → v4: sin Poké Balls', () => {
     expect(v4.profile.flags).toEqual({});
     expect(v4.wallet).toBe(5);
     expect(v4.profile.bank).toBe(10);
+  });
+});
+
+/** Partida v4 (antes de la historia) con dos mazmorras completadas. */
+function saveV4(overrides = {}) {
+  return {
+    version: 4,
+    timestamp: 1,
+    profile: {
+      teamName: 'Equipo Aurora',
+      roster: [{ uid: 1, name: 'Pikachu' }],
+      heroUid: 1,
+      clearedDungeons: ['bosque_verde', 'cueva_oscura'],
+      flags: {},
+      stash: null,
+    },
+    bag: [],
+    wallet: 0,
+    run: null,
+    ...overrides,
+  };
+}
+
+describe('v4 → v5: la historia', () => {
+  it('sigue desde su capítulo: prólogo y capítulos superados cuentan como vistos', () => {
+    const v5 = migrateSave(saveV4());
+    expect(v5.version).toBe(5);
+    const { seen } = v5.profile.story;
+    for (const id of ['P-1', 'P-3', '1-B', '1-E', '2-D', '2-E']) expect(seen).toContain(id);
+    // El capítulo 3 queda por jugar, con su sobre
+    expect(seen).not.toContain('3-A');
+    expect(seen).not.toContain('3-C');
+  });
+
+  it('sin mazmorras completadas solo se salta el prólogo', () => {
+    const base = saveV4();
+    const v5 = migrateSave(saveV4({ profile: { ...base.profile, clearedDungeons: undefined } }));
+    expect(v5.profile.story).toEqual({ seen: ['P-1', 'P-2', 'P-3'] });
+  });
+
+  it('conserva lo demás y no modifica los datos de entrada', () => {
+    const original = saveV4();
+    const v5 = migrateSave(original);
+    expect(original).toEqual(saveV4());
+    expect(v5.profile.teamName).toBe('Equipo Aurora');
+    expect(v5.profile.clearedDungeons).toEqual(['bosque_verde', 'cueva_oscura']);
   });
 });
 

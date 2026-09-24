@@ -11,6 +11,7 @@ import { ACTIONS, GAME_STATES } from '../constants.js';
 import { TOWN, buildTownMap, isTownExit, townThingAt } from '../map/Town.js';
 import { createProfile, getMember } from './Profile.js';
 import { toSnapshot, restedSnapshot, spawnFromSnapshot } from './PokemonSnapshot.js';
+import { playStory, storyTalk, storyGreet, isNpcAway } from './StorySession.js';
 
 /** Mochila y dinero con los que empieza un equipo nuevo. */
 export const STARTING_BAG = [
@@ -34,7 +35,7 @@ export const BASE_FRONT = (() => {
 
 /**
  * Empieza una aventura nueva: crea el perfil con el protagonista y el
- * compañero y entra en el pueblo.
+ * compañero, entra en el pueblo y empieza el prólogo de la historia.
  * @param {import('./Game.js').Game} game
  * @param {{ heroSpeciesId: number, partnerSpeciesId: number, teamName: string }} choice
  */
@@ -69,13 +70,7 @@ export function startAdventure(game, { heroSpeciesId, partnerSpeciesId, teamName
 
   enterTown(game);
   game.saveGameData();
-  game.eventBus.emit('show_dialog', {
-    text:
-      `¡Bienvenidos a ${TOWN.name}, ${teamName}!\n\n` +
-      'Esta será vuestra base. En el tablón hay encargos de los vecinos, ' +
-      'Kecleon vende provisiones, Kangaskhan os guarda objetos y Persian, el dinero.\n\n' +
-      'Cuando estéis listos, salid por el camino del sur hacia las mazmorras.',
-  });
+  playStory(game, 'adventure_start');
 }
 
 /**
@@ -112,7 +107,7 @@ export function enterTown(game, { arrival = 'start', spot: requestedSpot } = {})
     }
   });
 
-  for (const npc of TOWN.npcs) spawnTownNpc(game, npc);
+  for (const npc of TOWN.npcs) if (!isNpcAway(game, npc.id)) spawnTownNpc(game, npc);
 
   game.floorManager?.preloadVisibleSprites();
   game._updateCamera();
@@ -202,7 +197,7 @@ export function updateTown(game) {
   } else if (action.type === 'confirm') {
     const pos = game.entityManager.getComponent(game._playerId, 'position');
     const [dx, dy] = facingVector(pos);
-    const thing = townThingAt(pos.x + dx, pos.y + dy);
+    const thing = thingAt(game, pos.x + dx, pos.y + dy);
     if (thing) interact(game, thing);
   }
   // Esperar, movimientos y cambiar de líder no hacen nada en el pueblo
@@ -228,7 +223,7 @@ function moveLeader(game, dx, dy) {
 
   const tx = leader.x + dx;
   const ty = leader.y + dy;
-  const thing = townThingAt(tx, ty);
+  const thing = thingAt(game, tx, ty);
   if (thing && thing.kind === 'npc') {
     interact(game, thing);
     return;
@@ -306,6 +301,20 @@ function teamIdsInOrder(game) {
 }
 
 /**
+ * Lo que hay en una casilla del pueblo, sin contar a los vecinos que están fuera.
+ * @param {import('./Game.js').Game} game
+ * @param {number} x
+ * @param {number} y
+ */
+function thingAt(game, x, y) {
+  const thing = townThingAt(x, y);
+  return thing?.kind === 'npc' && isNpcAway(game, thing.id) ? null : thing;
+}
+
+/**
+ * Hablar con un vecino o usar algo del pueblo. Kecleon, Kangaskhan y Persian
+ * saludan antes de abrir su menú si tienen algo nuevo que contar; el tablón
+ * puede tener una escena de la historia.
  * @param {import('./Game.js').Game} game
  * @param {{ kind: string, id: string, role: string, name: string, speciesId?: number }} thing
  */
@@ -314,21 +323,22 @@ function interact(game, thing) {
   if (thing.kind === 'npc') faceTowards(game, thing.id);
   switch (thing.role) {
     case 'shop':
-      ui.openTownShop();
+      storyGreet(game, thing.id, () => ui.openTownShop());
       break;
     case 'storage':
-      ui.openStorageMenu();
+      storyGreet(game, thing.id, () => ui.openStorageMenu());
       break;
     case 'bank':
-      ui.openBankMenu();
+      storyGreet(game, thing.id, () => ui.openBankMenu());
       break;
     case 'base':
       ui.openBaseMenu();
       break;
     case 'board':
-      ui.openMissionBoard();
+      playStory(game, 'board_open', {}, () => ui.openMissionBoard());
       break;
     case 'talk': {
+      if (storyTalk(game, thing.id)) break;
       const line = townLine(thing.id);
       ui.showDialog(line.text, null, false, { speaker: thing.name, portrait: { speciesId: thing.speciesId, emotion: line.emotion } });
       break;
@@ -347,7 +357,7 @@ function faceTowards(game, npcId) {
 }
 
 /**
- * Lo que dice un vecino y con qué cara.
+ * Lo que dice un vecino y con qué cara si la historia no le da frase.
  * @param {string} npcId
  * @returns {{ text: string, emotion: string }}
  */

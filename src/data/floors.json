@@ -58,7 +58,12 @@
         5,
         8
       ],
-      "boss": null
+      "boss": {
+        "id": 17,
+        "level": 6,
+        "name": "Pidgeotto",
+        "hpMultiplier": 1.5
+      }
     },
     {
       "name": "Cueva Oscura",

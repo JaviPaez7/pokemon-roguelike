@@ -1,6 +1,6 @@
 # PokéRogue · H4 Historia: «El Eco del Norte»
 
-> **Borrador 2, pendiente de validar.** No hay nada implementado: esto es solo el guion.
+> **Versión 2, implementada en el juego (H4).** Este documento es la fuente: `npm run story` genera `src/data/story.json` a partir de las secciones 5 a 7. Un test unitario avisa si los dos no coinciden.
 >
 > **Novedades del borrador 2:**
 > - Los capítulos 1 a 3 ya no siguen el mismo molde: rescate (1), malentendido con el viento como enemigo (2) y encargo del tablón con una carta sin remite (3).
@@ -56,7 +56,7 @@ Fundan el **{equipo}** y siguen el Eco hacia el norte, mazmorra a mazmorra, hast
 
 - **Marcadores:** `{héroe}` es la especie del protagonista, `{compañero}` la del compañero y `{equipo}` el nombre del equipo. En el juego se sustituyen por el nombre real.
 - **Formato de cada línea:** **Personaje** · *Emoción* — texto. Cada línea es un cuadro de diálogo, con el retrato de quien habla. *Narración* va sin retrato y **???** es la voz sin cuerpo.
-- **Emociones:** son las de los retratos de PMDCollab (Normal, Happy, Joyous, Inspired, Surprised, Determined, Angry, Shouting, Worried, Sad, Crying, Teary-Eyed, Pain, Sigh…). Hay tres jefes con pocas caras y el guion solo usa las que tienen:
+- **Emociones:** son las de los retratos de PMDCollab (Normal, Happy, Joyous, Inspired, Surprised, Determined, Angry, Shouting, Worried, Sad, Crying, Teary-Eyed, Pain, Sigh…). Un test comprueba que cada una existe para su personaje. Hay tres jefes con pocas caras y el guion solo usa las que tienen:
   - Onix: Normal y Surprised.
   - Pidgeotto: Normal y Worried.
   - Gengar: Normal, Happy, Surprised, Angry, Sad y Pain.
@@ -518,6 +518,7 @@ Jefe: **Mewtwo**. Es el origen del Eco: la soledad.
 - **Kangaskhan** · *Determined* — Con cebolla.
 - **Kecleon** · *Shouting* — ¿¡CON CEBOLLA!?
 - **Slowpoke** · *Normal* — …Yo sin. …Bueno, con. …Me da igual, tengo hambre.
+- **Pidgey** · *Happy* — ¡Y mañana, fiesta en la plaza! Id a dormir, que hay que madrugar.
 
 **F-2 · Epílogo** *(al día siguiente: al dormir en la base o al volver de la siguiente expedición)*
 
@@ -553,7 +554,7 @@ Jefe: **Mewtwo**. Es el origen del Eco: la soledad.
 5. Motor y recursos: rot-js, Press Start 2P y el sonido sintetizado.
 6. «Gracias por jugar».
 
-**Escena tras los créditos** *(después, el juego vuelve al pueblo y se sigue jugando)*
+**F-4 · Tras los créditos** *(después, el juego vuelve al pueblo y se sigue jugando)*
 
 - **Mewtwo** · *Normal* — Cincuenta pisos. Sin ascensor. Os espero arriba.
 - *Narración* — La Torre del Desafío os espera al norte.
@@ -660,43 +661,39 @@ Son frases hechas y memes de toda la vida, cortos y aptos para cualquier edad. N
 
 ---
 
-## 9. Decisiones que necesito que valides
+## 9. Decisiones
 
-1. **Premisa:** protagonista humano, llamado sin querer por la pregunta de Mewtwo. Encaja con el texto actual del test («Tu forma de ser decidirá quién eres en este mundo»). ¿Te vale, o prefieres que el protagonista sea del pueblo?
-2. **Bosque Verde no tiene jefe** en `floors.json`. Propongo **Pidgeotto** (nivel 6, piso 5). La alternativa es un capítulo sin combate: se la encuentra al llegar al piso 5.
-3. **Monte Lunar:** no lo nombraste, pero su jefe en los datos es **Clefable**. La mantengo, como combate de prueba y no como Pokémon bajo el Eco.
-4. **Final sin elección:** el protagonista dice «Todavía no» y la puerta queda abierta. La alternativa es un menú «Quedarme / Volver» en el que las dos opciones dejan seguir jugando. Recomiendo el final sin elección: es más limpio y deja la Torre como continuación natural.
-5. **El protagonista habla poco:** frases cortas y pensamientos entre paréntesis. ¿O lo prefieres mudo del todo, con solo pensamientos?
-6. **La historia no añade bloqueos:** las mazmorras se siguen abriendo al completar la anterior, sin requisitos de rango, y las escenas saltan solas la primera vez.
-7. **Slowpoke desaparece** del pueblo durante el capítulo 5.
-8. **Encargo de historia en el tablón (cap. 3):** es un encargo de entrega (el tipo `deliver` ya existe) con un objeto de historia, el «Sobre sin remite», y la recompensa normal de una entrega. Se apunta solo al ver la escena 3-A, así que no hay que aceptarlo a mano.
-9. **El don del protagonista** (hablar con el viento) es solo narrativo en este borrador. Si quieres que tenga efecto de juego, por ejemplo que los avisos del viento lleguen un poco más tarde, lo vemos aparte.
-10. **Partidas que ya existen (v4):** hará falta guardar el progreso de la historia, así que habrá migración a v5. Quien ya tenga mazmorras completadas empezará en el capítulo que le corresponde, con las escenas anteriores marcadas como vistas. Opcional: un «Diario» en la base para volver a verlas.
-11. **Recompensas:** en este borrador todo es texto y no cambia nada del juego. Ideas opcionales, por separado:
-   - El pañuelo del Equipo Centella como objeto equipable tras el capítulo 6.
-   - Susurros del Eco en los avisos del viento hasta el final.
-   - «Pidgeotto os encontró y os trajo de vuelta» al caer, desde el capítulo 1.
-   - Arcanine y Raichu como vecinos después del final.
-   - Las variantes por especie de la sección 7.
-12. **Créditos:** ¿qué nombre pongo en «Guion y desarrollo»?
+Aplicadas con los valores recomendados. Cualquiera se puede cambiar.
+
+1. **Premisa:** protagonista humano, llamado sin querer por la pregunta de Mewtwo. Encaja con el texto del test («Tu forma de ser decidirá quién eres en este mundo»).
+2. **Bosque Verde:** el jefe es **Pidgeotto**, nivel 6 en el piso 5, con 1,5 veces los PS (`hpMultiplier` en `floors.json`).
+3. **Monte Lunar:** se mantiene **Clefable**, el jefe que ya estaba en los datos, como combate de prueba.
+4. **Final sin elección:** el protagonista dice «Todavía no» y la puerta queda abierta. La Torre del Desafío es la continuación.
+5. **El protagonista habla poco:** frases cortas y pensamientos entre paréntesis.
+6. **Sin bloqueos nuevos:** las mazmorras se abren como antes, al completar la anterior. Cada escena sale una sola vez.
+7. **Slowpoke** no está en el pueblo durante el capítulo 5.
+8. **El sobre del capítulo 3** es una misión de historia de entrega que se apunta sola en la escena 3-A. Sale al mirar el tablón o, si no se ha mirado, antes de ir a la Ruta Eléctrica. Paga lo mismo que una entrega normal en ese piso (500 Poké y 20 puntos), no se puede abandonar y se cumple al derrotar a Raichu. No hay objeto en la mochila: así no se puede perder al caer.
+9. **El don del protagonista** (hablar con el viento) es solo narrativo.
+10. **Partidas de antes (v4):** migran a v5 y siguen desde su capítulo, con las escenas de los capítulos anteriores marcadas como vistas. Quien ya había terminado no ve el final de golpe. No hay «Diario» para volver a verlas.
+11. **Recompensas:** ninguna de juego; todo es texto. Quedan como ideas para más adelante el pañuelo del Equipo Centella, los susurros del Eco en los avisos del viento, «Pidgeotto os trajo de vuelta» al caer y Arcanine y Raichu como vecinos. Las variantes por especie de la sección 7 sí están.
+12. **Créditos:** «Guion y desarrollo: JaviStudio» (`STORY_AUTHOR` en `src/ui/menus/CreditsMenu.js`). Cámbialo si prefieres otro nombre.
 
 ---
 
-## 10. Cómo se implementaría (después de tu OK; nada de esto está hecho)
+## 10. Cómo está implementado
 
-- **Datos:** `src/data/story.json` con las escenas (código, disparador, condiciones y líneas `{ speaker, emotion, text }`, donde `speaker` es una especie, `hero`, `partner` o la narración). El contenido va en JSON, como pide el `CLAUDE.md`.
-- **Lógica pura:** `src/core/Story.js` decide qué escena toca según el perfil y el evento, y sustituye `{héroe}`, `{compañero}` y `{equipo}`. Lleva tests unitarios.
-- **Guardado:** `profile.story` (capítulo y escenas vistas) y `SAVE_VERSION` 5, con la migración en `MIGRATIONS` y su caso en `tests/unit/save.test.js`. Las partidas con mazmorras completadas se ajustan al capítulo que les toca.
-- **Disparadores:**
+- **Datos:** `src/data/story.json`, generado desde este guion con `npm run story` (`scripts/build-story.mjs`). Cada línea es `[hablante, emoción, texto, condición?]`. El convertidor añade lo que el guion no dice en sus líneas: cuándo salta cada escena, sus efectos, las emociones de las frases de los vecinos y dónde entran las variantes.
+- **Lógica pura:** `src/core/Story.js` decide qué escenas tocan con cada evento, filtra las variantes por especie y sustituye `{héroe}`, `{compañero}` y `{equipo}`. Tiene tests en `tests/unit/story.test.js`.
+- **Guardado:** `profile.story.seen`, con las escenas vistas y los saludos de cada capítulo, y `SAVE_VERSION` 5 con su migración. El capítulo no se guarda: sale de las mazmorras completadas.
+- **Disparadores** (`src/core/StorySession.js`):
   - Empezar la aventura.
   - Entrar en una mazmorra.
-  - Llegar al piso del jefe.
+  - Llegar a un piso intermedio o al del jefe.
   - Derrotar al jefe.
   - Volver al pueblo.
-  - Hablar con un vecino.
-- **Reproductor de escenas:** encadena `showDialog(texto, cb, instantáneo, { speaker, portrait })`, con fondo negro para la voz.
-- **Jefe del Bosque Verde,** si lo apruebas: en `floors.json`.
-- **Encargo de historia:** el sobre del capítulo 3 como encargo `deliver` que se añade al ver la escena 3-A, con su objeto en `items.json`.
-- **Final:** la escena, los créditos que van pasando solos (reutilizando lo de `CreditsMenu`) y la vuelta al pueblo.
-- **Tests E2E:** prólogo, una escena de vuelta al pueblo, una de jefe, y el final con los créditos. Usarán ganchos nuevos de `game.debug` para saltar a un capítulo.
-- **Entrega:** un solo PR para el H4, sin fusionar hasta tu OK.
+  - Mirar el tablón.
+  - Elegir mazmorra.
+  - Dormir.
+  - Hablar con los vecinos.
+- **Final:** F-1 al volver del laboratorio. Al día siguiente (durmiendo o tras otra expedición), F-2 y F-3, los créditos sobre negro y F-4.
+- **Tests E2E:** `tests/e2e/story.spec.js` cubre el prólogo, el capítulo 1 con Pidgeotto, Squirtle y el monstersito, el sobre, la ausencia de Slowpoke y el final con los créditos.

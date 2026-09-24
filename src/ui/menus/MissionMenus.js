@@ -185,7 +185,7 @@ function openAcceptedMission(ui, mission, back, index, canAbandon) {
     text: missionDetails(ui, mission) + (mission.status === 'done' ? '<br><br>✔ Cumplida: se cobra en el pueblo.' : ''),
     onCancel: again,
     options: [
-      ...(canAbandon && mission.status !== 'done'
+      ...(canAbandon && mission.status !== 'done' && !mission.story
         ? [
             {
               label: 'Abandonar',

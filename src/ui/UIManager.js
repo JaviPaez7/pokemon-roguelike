@@ -27,6 +27,7 @@ import {
   openMissionBoard,
 } from './menus/TownMenus.js';
 import { openMissionReturnPrompt, openAcceptedList } from './menus/MissionMenus.js';
+import { openEndingCredits } from './menus/CreditsMenu.js';
 
 export class UIManager {
   /**
@@ -145,7 +146,7 @@ export class UIManager {
     });
 
     this.eventBus.on('show_dialog', (data) => {
-      this.showDialog(data.text, data.callback, data.instant, { speaker: data.speaker, portrait: data.portrait });
+      this.showDialog(data.text, data.callback, data.instant, { speaker: data.speaker, portrait: data.portrait, backdrop: data.backdrop });
     });
 
     this.eventBus.on('damage_dealt', () => {
@@ -180,7 +181,7 @@ export class UIManager {
     this.selectedPokemon = null;
     try { document.body.classList.remove('menu-open'); } catch (e) {}
 
-    this.overlay.classList.remove('dialog-mode');
+    this.overlay.classList.remove('dialog-mode', 'story-black');
     this.overlay.classList.add('hidden');
     this.menuContainer.innerHTML = '';
 
@@ -204,7 +205,7 @@ export class UIManager {
     this.game.inputHandler.setContext('menu');
     this.currentMenuType = type;
     this.onCancel = onCancel;
-    this.overlay.classList.remove('hidden', 'dialog-mode');
+    this.overlay.classList.remove('hidden', 'dialog-mode', 'story-black');
     this.menuContainer.innerHTML = htmlContent;
     try { document.body.classList.add('menu-open'); } catch (e) {}
     this.updateSelectionVisuals();
@@ -254,6 +255,8 @@ export class UIManager {
   openMissionBoard() { openMissionBoard(this); }
   openMissionReturnPrompt() { openMissionReturnPrompt(this); }
   openAcceptedMissions(back) { openAcceptedList(this, back); }
+  /** @param {() => void} onContinue */
+  openEndingCredits(onContinue) { openEndingCredits(this, onContinue); }
 
   handleMenuInput(data) { handleMenuInput(this, data); }
   updateSelectionVisuals() { updateSelectionVisuals(this); }

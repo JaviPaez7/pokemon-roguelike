@@ -84,10 +84,11 @@ test('los vecinos del pueblo hablan con su retrato', async ({ page }) => {
     throw new Error('No hay sitio junto a Pidgey');
   });
   await page.keyboard.press(key);
-  expect(await dialogText(page)).toContain('El tablón tiene encargos nuevos cada día');
+  // Capítulo 1: pide que busquéis a su hermana, con cara de preocupación
+  expect(await dialogText(page)).toContain('traed a mi hermana');
   await expect(page.locator('.dialog-speaker')).toHaveText('Pidgey');
   const portrait = page.locator('.dialog-portrait');
-  await expect(portrait).toHaveAttribute('src', /portraits\/0016\/Happy\.png$/);
+  await expect(portrait).toHaveAttribute('src', /portraits\/0016\/Worried\.png$/);
   await expect.poll(() => portrait.evaluate((img) => img.naturalWidth)).toBe(40);
 });
 

@@ -15,7 +15,8 @@ import { missionsHere, getAccepted, markMissionDone } from '../core/Missions.js'
  */
 export function spawnMissionTargets(game) {
   if (!game.profile || !game.dungeonId) return;
-  const missions = missionsHere(game.profile, game.dungeonId, game.getCurrentFloor());
+  // Las misiones de historia las resuelve su escena (la carta la recibe el jefe)
+  const missions = missionsHere(game.profile, game.dungeonId, game.getCurrentFloor()).filter((m) => !m.story);
   if (missions.length === 0) return;
 
   const spots = candidateSpots(game);

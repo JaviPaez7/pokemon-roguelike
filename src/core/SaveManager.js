@@ -6,19 +6,20 @@
  * a la siguiente y sube SAVE_VERSION. Antes de sobrescribir una partida
  * migrada se guarda una copia de la original.
  *
- * Formato (v3 y v4; la v4 solo quitó las Poké Balls):
- * - `profile`: el equipo de exploración (core/Profile.js), con la Pokédex y
- *   las estadísticas.
+ * Formato (v3 a v5; la v4 quitó las Poké Balls y la v5 añadió la historia):
+ * - `profile`: el equipo de exploración (core/Profile.js), con la Pokédex,
+ *   las estadísticas y las escenas de la historia ya vistas (`story`).
  * - `bag` y `wallet`: lo que lleva encima el equipo ahora mismo.
  * - `run`: la expedición en curso, o null si el equipo está en el pueblo.
  */
 
 import { toSnapshot } from './PokemonSnapshot.js';
 import { DUNGEONS } from './Dungeons.js';
+import { seenForCleared } from './Story.js';
 
 const SAVE_KEY = 'pokerogue_save';
 const BACKUP_PREFIX = 'pokerogue_save_backup_';
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 /** Nombre que reciben los equipos de partidas anteriores a los perfiles. */
 export const MIGRATED_TEAM_NAME = 'Equipo Pionero';
@@ -107,6 +108,18 @@ const MIGRATIONS = {
       run,
     };
   },
+
+  // v4 → v5: llega la historia (core/Story.js). Las partidas de antes siguen
+  // desde su capítulo: las escenas de los capítulos ya superados, prólogo
+  // incluido, cuentan como vistas.
+  4: (data) => ({
+    ...data,
+    version: 5,
+    profile: data.profile && {
+      ...data.profile,
+      story: { seen: seenForCleared(data.profile.clearedDungeons ?? []) },
+    },
+  }),
 };
 
 /** Lo que pagaba Kecleon por cada Poké Ball (migración v3 → v4). */
