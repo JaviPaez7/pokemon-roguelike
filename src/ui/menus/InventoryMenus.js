@@ -1,6 +1,7 @@
 import { openPauseMenu } from './PauseMenu.js';
 import { GAME_STATES } from '../../constants.js';
 import { heldName } from '../../core/HeldItems.js';
+import { isUniqueItem } from '../../core/Items.js';
 
 /** Confirmación Sí/No (no usa diálogo, para poder cancelar). */
 function openYesNoConfirm(ui, title, body, onYes, onNo) {
@@ -179,6 +180,7 @@ export function openItemActionsMenu(ui) {
       }
     },
     () => {
+      if (keepUnique(ui)) return;
       openYesNoConfirm(
         ui,
         '¿Lanzar?',
@@ -191,6 +193,7 @@ export function openItemActionsMenu(ui) {
       );
     },
     () => {
+      if (keepUnique(ui)) return;
       openYesNoConfirm(
         ui,
         '¿Descartar?',
@@ -209,6 +212,18 @@ export function openItemActionsMenu(ui) {
   ];
   ui.selectedIndex = 0;
   ui.updateSelectionVisuals();
+}
+
+/**
+ * Los objetos únicos de la historia no se tiran ni se lanzan: avisa y vuelve
+ * a las acciones del objeto.
+ * @param {import('../UIManager.js').UIManager} ui
+ * @returns {boolean} Si el objeto es único (y ya se ha avisado)
+ */
+function keepUnique(ui) {
+  if (!isUniqueItem(ui.selectedItem)) return false;
+  ui.showDialog('Este objeto es demasiado importante para deshacerse de él.', () => openItemActionsMenu(ui));
+  return true;
 }
 
 /**
@@ -235,6 +250,7 @@ function openTownItemActionsMenu(ui, name) {
   ui.menuOptions = [
     ...(held ? [() => openItemTargetMenu(ui)] : []),
     () => {
+      if (keepUnique(ui)) return;
       openYesNoConfirm(
         ui,
         '¿Descartar?',

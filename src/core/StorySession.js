@@ -13,6 +13,7 @@ import { getMember } from './Profile.js';
 import {
   ensureStory,
   storyChapter,
+  STORY,
   scenesFor,
   sceneLines,
   markSeen,
@@ -20,7 +21,10 @@ import {
   npcTalk,
   npcGreeting,
   npcAbsent,
+  windWhisper,
+  rescueLine,
 } from './Story.js';
+import { MAX_INVENTORY } from '../constants.js';
 
 /**
  * Protagonista, compañero y nombre del equipo de la partida.
@@ -62,10 +66,33 @@ export function playStory(game, event, ctx = {}, onDone = null) {
     return false;
   }
   markSeen(profile, scenes.map((s) => s.id));
-  for (const scene of scenes) for (const effect of scene.effects ?? []) applyStoryEffect(profile, effect);
+  const pack = { bag: game.inventory, maxSlots: game.maxInventorySize || MAX_INVENTORY };
+  for (const scene of scenes) {
+    for (const effect of scene.effects ?? []) {
+      if (applyStoryEffect(profile, effect, pack) === 'storage') {
+        game.eventBus.emit('message', { text: 'La mochila está llena: el regalo espera en el almacén de Kangaskhan.', color: '#ffd166' });
+      }
+    }
+  }
   game.saveGameData();
   playScenes(game, scenes, onDone);
   return true;
+}
+
+/**
+ * Vuelve a mostrar una escena ya vista (el Diario): solo sus líneas, sin
+ * efectos ni créditos.
+ * @param {import('./Game.js').Game} game
+ * @param {string} sceneId
+ * @param {() => void} onDone
+ */
+export function replayScene(game, sceneId, onDone) {
+  const scene = STORY.scenes.find((s) => s.id === sceneId);
+  if (!scene) {
+    onDone();
+    return;
+  }
+  showLines(game, sceneLines(scene, storyCast(game)), onDone, { backdrop: scene.backdrop });
 }
 
 /**
@@ -78,6 +105,8 @@ export function playStory(game, event, ctx = {}, onDone = null) {
 function playScenes(game, scenes, onDone) {
   const [scene, ...rest] = scenes;
   if (!scene) {
+    // Tras la historia, el pueblo pone al día quién está (Arcanine y Raichu llegan en el epílogo)
+    game.eventBus.emit('story_scenes_done');
     onDone?.();
     return;
   }
@@ -153,7 +182,25 @@ export function storyGreet(game, npcId, then) {
  * @param {string} npcId
  */
 export function isNpcAway(game, npcId) {
-  return !!game.profile && npcAbsent(npcId, currentChapter(game));
+  return !!game.profile && npcAbsent(npcId, currentChapter(game), ensureStory(game.profile).seen);
+}
+
+/**
+ * Lo que susurra el viento en su aviso `warning`, o null (tras el final ya no habla).
+ * @param {import('./Game.js').Game} game
+ * @param {number} warning
+ */
+export function storyWhisper(game, warning) {
+  return game.profile ? windWhisper(warning, currentChapter(game)) : null;
+}
+
+/**
+ * Quién trae al equipo de vuelta al caer, si la historia ya lo ha contado.
+ * @param {import('./Game.js').Game} game
+ * @returns {string | null}
+ */
+export function rescueText(game) {
+  return game.profile ? rescueLine(ensureStory(game.profile).seen) : null;
 }
 
 /**

@@ -40,6 +40,7 @@ import { setupGameEventListeners } from './GameEvents.js';
 import { loadSavedGame as loadSavedGameSession } from './GameSession.js';
 import { updateTown } from './TownSession.js';
 import { endExpedition } from './Expedition.js';
+import { storyWhisper } from './StorySession.js';
 import { useInventoryItem as useInventoryItemHandler, throwInventoryItem } from '../systems/InventorySystem.js';
 import { MessageLog } from '../ui/MessageLog.js';
 import { getDungeon, relativeFloor, isLastFloor, WIND } from './Dungeons.js';
@@ -630,8 +631,12 @@ export class Game {
       ];
       const colors = ['#ccccff', '#ffcc88', '#ff8866'];
       this.eventBus.emit('message', { text: texts[warning], color: colors[warning] });
+      // Hasta el final de la historia, en el viento se oye el Eco
+      const whisper = storyWhisper(this, warning);
+      if (whisper) this.eventBus.emit('message', { text: `El viento susurra: «${whisper}»`, color: '#b8a8ff' });
       if (warning === WIND.warnings.length - 1) {
-        this.eventBus.emit('show_dialog', { text: `${texts[warning]}\n\nBuscad la escalera cuanto antes o el viento os echará de la mazmorra.` });
+        const echo = whisper ? `\n\nEl viento susurra: «${whisper}»` : '';
+        this.eventBus.emit('show_dialog', { text: `${texts[warning]}${echo}\n\nBuscad la escalera cuanto antes o el viento os echará de la mazmorra.` });
       }
     }
     if (this._floorTurns >= WIND.limit) this.endExpedition('blown');

@@ -354,6 +354,22 @@ test('el final: la víspera, la vuelta del laboratorio y, al dormir, el epílogo
   await expectInTown(page);
   expect(await seen(page)).toEqual(expect.arrayContaining(['7-A', 'F-1', 'F-2', 'F-3', 'F-4']));
 
+  // Arcanine y Raichu se han mudado al pueblo
+  const neighbours = await page.evaluate(() => {
+    const em = window.game.entityManager;
+    return em.getEntitiesWithComponents('npcTown').map((id) => em.getComponent(id, 'npcTown').id);
+  });
+  expect(neighbours).toEqual(expect.arrayContaining(['arcanine', 'raichu']));
+  await page.evaluate(() => {
+    const game = window.game;
+    const pos = game.entityManager.getComponent(game.getPlayerId(), 'position');
+    Object.assign(pos, { x: 24, y: 7, prevX: 24, prevY: 7, facing: 'up', facingDx: 0, facingDy: -1 });
+  });
+  await page.keyboard.press('z');
+  expect(await dialogText(page)).toContain('¡Ponte las pilas');
+  expect((await speaker(page)).name).toBe('Raichu');
+  await dismissDialog(page);
+
   // Y después del final los vecinos hablan de la torre nueva
   await page.evaluate(() => {
     const game = window.game;
@@ -362,4 +378,73 @@ test('el final: la víspera, la vuelta del laboratorio y, al dormir, el epílogo
   });
   await page.keyboard.press('z');
   expect(await dialogText(page)).toContain('la torre nueva del norte');
+});
+
+test('el Diario de la base deja volver a ver las escenas vistas', async ({ page }) => {
+  await startNewGame(page);
+  await page.evaluate(() => window.game.uiManager.openBaseMenu());
+  await option(page, 'Diario').click();
+  await expect(panelTitle(page)).toHaveText('DIARIO DEL EQUIPO');
+  await expect(page.locator('#options-list .menu-option')).toHaveCount(2); // el prólogo y «Volver»
+  await option(page, 'Prólogo').click();
+  await expect(panelTitle(page)).toHaveText('PRÓLOGO · «ALGUIEN CONTESTÓ»');
+  await option(page, 'La voz').click();
+
+  // La escena vuelve a salir tal cual, a oscuras, y después se vuelve al Diario
+  expect(await dialogText(page)).toBe('…¿Me oyes?');
+  await expect(page.locator('#ui-overlay.story-black')).toBeVisible();
+  await skipDialogs(page);
+  await expect(panelTitle(page)).toHaveText('PRÓLOGO · «ALGUIEN CONTESTÓ»');
+  // Volver a verla no cambia nada de la partida
+  expect(await seen(page)).toEqual(['P-1', 'P-2', 'P-3']);
+
+  await page.keyboard.press('Escape');
+  await expect(panelTitle(page)).toHaveText('DIARIO DEL EQUIPO');
+  await page.keyboard.press('Escape');
+  await expect(panelTitle(page)).toContainText('BASE DE');
+});
+
+test('Arcanine da el Pañuelo Centella: no se vende, no se tira y no se pierde al caer', async ({ page }) => {
+  await startNewGame(page);
+  await loadScenes(page);
+  await atChapter(page, CHAPTERS.slice(0, 5));
+
+  await enterDungeon(page, 5); // Isla Volcánica
+  await toBossFloor(page);
+  await skipDialogs(page);
+  await defeatBoss(page);
+  await advanceTo(page, 'Y llevad esto.');
+  await advanceTo(page, '¡Tenéis el Pañuelo Centella!');
+  const hasScarf = () => page.evaluate(() => window.game.inventory.some((s) => s.itemId === 'centella_scarf'));
+  expect(await hasScarf()).toBe(true);
+  await advanceUntilTown(page);
+  await skipDialogs(page);
+  await expectInTown(page);
+
+  // Kecleon no lo compra
+  await page.evaluate(() => window.game.uiManager.openTownShop());
+  await option(page, 'Vender objetos').click();
+  await expect(panelTitle(page)).toContainText('VENDER');
+  await expect(option(page, 'Pañuelo Centella')).toHaveCount(0);
+  await page.evaluate(() => window.game.uiManager.closeMenu());
+  await expectInTown(page);
+
+  // No se puede tirar
+  await page.keyboard.press('x');
+  await option(page, 'Pañuelo Centella').click();
+  await option(page, 'Tirar objeto').click();
+  expect(await dialogText(page)).toContain('demasiado importante');
+  await dismissDialog(page);
+  await expect(option(page, 'Tirar objeto')).toBeVisible(); // vuelve a las acciones del objeto
+  await page.evaluate(() => window.game.uiManager.closeMenu());
+  await expectInTown(page);
+
+  // Y si el equipo cae, Pidgeotto lo trae de vuelta con el pañuelo
+  await enterDungeon(page, 0);
+  await page.evaluate(() => window.game.gameOver('combate'));
+  await expect.poll(() => page.evaluate(() => window.game.getState())).toBe('TOWN');
+  const summary = await dialogText(page);
+  expect(summary).toContain('Pidgeotto os encontró y os trajo de vuelta al pueblo.');
+  expect(await hasScarf()).toBe(true);
+  await skipDialogs(page);
 });

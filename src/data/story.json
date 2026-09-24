@@ -15,7 +15,11 @@
     "arcanine": {"name": "Arcanine", "speciesId": 59},
     "mewtwo": {"name": "Mewtwo", "speciesId": 150}
   },
-  "absent": {"slowpoke": [5]},
+  "townNpcs": {
+    "slowpoke": {"away": [5]},
+    "arcanine": {"arrivesWith": "F-2"},
+    "raichu": {"arrivesWith": "F-2"}
+  },
   "letterMission": {
     "id": "story_letter",
     "type": "deliver",
@@ -25,10 +29,13 @@
     "clientName": "Raichu",
     "text": "Un sobre cerrado, sin remite. Huele a perfume caro.<br>«Llevad este sobre a Raichu, al final de la Ruta Eléctrica. No lo abráis. Pago: generoso.»"
   },
+  "whispers": ["…¿quién eres?…", "…¿por qué se van todos?…", "…¿te…?…"],
+  "rescue": {"after": "1-E", "text": "Pidgeotto os encontró y os trajo de vuelta al pueblo."},
   "scenes": [
     {
       "id": "P-1",
       "title": "La voz",
+      "part": "Prólogo · «Alguien contestó»",
       "chapter": 0,
       "triggers": [{"on": "adventure_start"}],
       "backdrop": "black",
@@ -43,6 +50,7 @@
     {
       "id": "P-2",
       "title": "El camino del sur",
+      "part": "Prólogo · «Alguien contestó»",
       "chapter": 0,
       "triggers": [{"on": "adventure_start"}],
       "lines": [
@@ -65,6 +73,7 @@
     {
       "id": "P-3",
       "title": "Pueblo Raíz",
+      "part": "Prólogo · «Alguien contestó»",
       "chapter": 0,
       "triggers": [{"on": "adventure_start"}],
       "lines": [
@@ -92,6 +101,7 @@
     {
       "id": "1-B",
       "title": "Entrada",
+      "part": "Capítulo 1 · «La cartera perdida»",
       "chapter": 1,
       "triggers": [{"on": "dungeon_enter", "dungeon": "bosque_verde"}],
       "lines": [
@@ -102,6 +112,7 @@
     {
       "id": "1-C",
       "title": "Antes del jefe (piso 5)",
+      "part": "Capítulo 1 · «La cartera perdida»",
       "chapter": 1,
       "triggers": [{"on": "boss_floor", "dungeon": "bosque_verde"}],
       "lines": [
@@ -114,6 +125,7 @@
     {
       "id": "1-D",
       "title": "Después del jefe",
+      "part": "Capítulo 1 · «La cartera perdida»",
       "chapter": 1,
       "triggers": [{"on": "boss_defeated", "dungeon": "bosque_verde"}],
       "lines": [
@@ -131,6 +143,7 @@
     {
       "id": "1-E",
       "title": "De vuelta",
+      "part": "Capítulo 1 · «La cartera perdida»",
       "chapter": 1,
       "triggers": [{"on": "town_return", "dungeon": "bosque_verde", "outcome": "cleared"}],
       "lines": [
@@ -151,6 +164,7 @@
     {
       "id": "2-B",
       "title": "Entrada",
+      "part": "Capítulo 2 · «Nadie entra, nadie sale»",
       "chapter": 2,
       "triggers": [{"on": "dungeon_enter", "dungeon": "cueva_oscura"}],
       "lines": [
@@ -163,6 +177,7 @@
     {
       "id": "2-C",
       "title": "Antes del jefe (piso 10)",
+      "part": "Capítulo 2 · «Nadie entra, nadie sale»",
       "chapter": 2,
       "triggers": [{"on": "boss_floor", "dungeon": "cueva_oscura"}],
       "lines": [
@@ -177,6 +192,7 @@
     {
       "id": "2-D",
       "title": "Después del jefe",
+      "part": "Capítulo 2 · «Nadie entra, nadie sale»",
       "chapter": 2,
       "triggers": [{"on": "boss_defeated", "dungeon": "cueva_oscura"}],
       "lines": [
@@ -195,6 +211,7 @@
     {
       "id": "2-E",
       "title": "De vuelta",
+      "part": "Capítulo 2 · «Nadie entra, nadie sale»",
       "chapter": 2,
       "triggers": [{"on": "town_return", "dungeon": "cueva_oscura", "outcome": "cleared"}],
       "lines": [
@@ -211,6 +228,7 @@
     {
       "id": "3-A",
       "title": "El sobre del tablón",
+      "part": "Capítulo 3 · «Carta sin remite»",
       "chapter": 3,
       "when": {"chapter": 3},
       "triggers": [{"on": "board_open"}, {"on": "dungeon_select", "dungeon": "ruta_electrica"}],
@@ -227,6 +245,7 @@
     {
       "id": "3-B",
       "title": "Entrada",
+      "part": "Capítulo 3 · «Carta sin remite»",
       "chapter": 3,
       "triggers": [{"on": "dungeon_enter", "dungeon": "ruta_electrica"}],
       "lines": [
@@ -239,6 +258,7 @@
     {
       "id": "3-C",
       "title": "Antes del jefe (piso 15)",
+      "part": "Capítulo 3 · «Carta sin remite»",
       "chapter": 3,
       "triggers": [{"on": "boss_floor", "dungeon": "ruta_electrica"}],
       "effects": ["letter_mission"],
@@ -256,6 +276,7 @@
     {
       "id": "3-D",
       "title": "Después del jefe",
+      "part": "Capítulo 3 · «Carta sin remite»",
       "chapter": 3,
       "triggers": [{"on": "boss_defeated", "dungeon": "ruta_electrica"}],
       "effects": ["deliver_letter"],
@@ -277,6 +298,7 @@
     {
       "id": "3-E",
       "title": "De vuelta",
+      "part": "Capítulo 3 · «Carta sin remite»",
       "chapter": 3,
       "triggers": [{"on": "town_return", "dungeon": "ruta_electrica", "outcome": "cleared"}],
       "lines": [
@@ -296,6 +318,7 @@
     {
       "id": "4-B",
       "title": "Entrada",
+      "part": "Capítulo 4 · «Lo que dice la luna»",
       "chapter": 4,
       "triggers": [{"on": "dungeon_enter", "dungeon": "monte_lunar"}],
       "lines": [
@@ -306,6 +329,7 @@
     {
       "id": "4-C",
       "title": "Antes del jefe (piso 20)",
+      "part": "Capítulo 4 · «Lo que dice la luna»",
       "chapter": 4,
       "triggers": [{"on": "boss_floor", "dungeon": "monte_lunar"}],
       "lines": [
@@ -319,6 +343,7 @@
     {
       "id": "4-D",
       "title": "Después del jefe",
+      "part": "Capítulo 4 · «Lo que dice la luna»",
       "chapter": 4,
       "triggers": [{"on": "boss_defeated", "dungeon": "monte_lunar"}],
       "lines": [
@@ -337,6 +362,7 @@
     {
       "id": "4-E",
       "title": "De vuelta",
+      "part": "Capítulo 4 · «Lo que dice la luna»",
       "chapter": 4,
       "triggers": [{"on": "town_return", "dungeon": "monte_lunar", "outcome": "cleared"}],
       "lines": [
@@ -352,6 +378,7 @@
     {
       "id": "5-B",
       "title": "Entrada",
+      "part": "Capítulo 5 · «La despensa de Gengar»",
       "chapter": 5,
       "triggers": [{"on": "dungeon_enter", "dungeon": "profundidades_oscuras"}],
       "lines": [
@@ -362,6 +389,7 @@
     {
       "id": "5-B2",
       "title": "Piso 25",
+      "part": "Capítulo 5 · «La despensa de Gengar»",
       "chapter": 5,
       "triggers": [{"on": "floor_enter", "dungeon": "profundidades_oscuras", "floor": 5}],
       "lines": [
@@ -371,6 +399,7 @@
     {
       "id": "5-C",
       "title": "Antes del jefe (piso 30)",
+      "part": "Capítulo 5 · «La despensa de Gengar»",
       "chapter": 5,
       "triggers": [{"on": "boss_floor", "dungeon": "profundidades_oscuras"}],
       "lines": [
@@ -387,6 +416,7 @@
     {
       "id": "5-D",
       "title": "Después del jefe",
+      "part": "Capítulo 5 · «La despensa de Gengar»",
       "chapter": 5,
       "triggers": [{"on": "boss_defeated", "dungeon": "profundidades_oscuras"}],
       "lines": [
@@ -405,6 +435,7 @@
     {
       "id": "5-E",
       "title": "De vuelta",
+      "part": "Capítulo 5 · «La despensa de Gengar»",
       "chapter": 5,
       "triggers": [{"on": "town_return", "dungeon": "profundidades_oscuras", "outcome": "cleared"}],
       "lines": [
@@ -419,6 +450,7 @@
     {
       "id": "6-B",
       "title": "Entrada",
+      "part": "Capítulo 6 · «Diez años de guardia»",
       "chapter": 6,
       "triggers": [{"on": "dungeon_enter", "dungeon": "isla_volcanica"}],
       "lines": [
@@ -428,6 +460,7 @@
     {
       "id": "6-C",
       "title": "Antes del jefe (piso 40)",
+      "part": "Capítulo 6 · «Diez años de guardia»",
       "chapter": 6,
       "triggers": [{"on": "boss_floor", "dungeon": "isla_volcanica"}],
       "lines": [
@@ -441,8 +474,10 @@
     {
       "id": "6-D",
       "title": "Después del jefe",
+      "part": "Capítulo 6 · «Diez años de guardia»",
       "chapter": 6,
       "triggers": [{"on": "boss_defeated", "dungeon": "isla_volcanica"}],
+      "effects": ["give:centella_scarf"],
       "lines": [
         ["arcanine", "Pain", "…Sois fuertes. Más que nosotros entonces."],
         ["arcanine", "Surprised", "Y el viento se aparta a tu paso, {héroe}. A nosotros nos tiraba al suelo."],
@@ -451,12 +486,15 @@
         ["arcanine", "Normal", "Persian hizo lo que le pedí. Luego quiso volver a por nosotros, pero el viento no la dejó pasar de la cueva. Me temo que nunca se lo ha perdonado."],
         ["arcanine", "Determined", "Decidle que no fue culpa suya. …Y que su parte del último botín sigue siendo suya."],
         ["arcanine", "Normal", "Y si vais a entrar, no hagáis lo que hicimos. No entréis para vencerlo. Entrad para escucharlo."],
+        ["arcanine", "Normal", "Y llevad esto. Lo he llevado diez años esperando a que alguien volviera. Ya ha vuelto alguien."],
+        ["narration", null, "Arcanine os da su pañuelo quemado, con el rayo bordado. ¡Tenéis el Pañuelo Centella!"],
         ["arcanine", "Normal", "Esa llama de la cola… cuídala. Es lo único que el viento no puede apagar.", {"species": 4}]
       ]
     },
     {
       "id": "6-E",
       "title": "De vuelta",
+      "part": "Capítulo 6 · «Diez años de guardia»",
       "chapter": 6,
       "triggers": [{"on": "town_return", "dungeon": "isla_volcanica", "outcome": "cleared"}],
       "lines": [
@@ -477,6 +515,7 @@
     {
       "id": "7-A",
       "title": "La víspera",
+      "part": "Capítulo 7 · «¿Te quedarías?»",
       "chapter": 7,
       "triggers": [{"on": "dungeon_select", "dungeon": "laboratorio_final"}],
       "lines": [
@@ -491,6 +530,7 @@
     {
       "id": "7-B",
       "title": "Entrada",
+      "part": "Capítulo 7 · «¿Te quedarías?»",
       "chapter": 7,
       "triggers": [{"on": "dungeon_enter", "dungeon": "laboratorio_final"}],
       "lines": [
@@ -502,6 +542,7 @@
     {
       "id": "7-B2",
       "title": "Piso 45",
+      "part": "Capítulo 7 · «¿Te quedarías?»",
       "chapter": 7,
       "triggers": [{"on": "floor_enter", "dungeon": "laboratorio_final", "floor": 5}],
       "lines": [["voice", null, "¿Quién eres?"], ["hero", "Determined", "(Ahora la oigo clara. Está cerca.)"]]
@@ -509,6 +550,7 @@
     {
       "id": "7-C",
       "title": "Antes del jefe (piso 50)",
+      "part": "Capítulo 7 · «¿Te quedarías?»",
       "chapter": 7,
       "triggers": [{"on": "boss_floor", "dungeon": "laboratorio_final"}],
       "lines": [
@@ -525,6 +567,7 @@
     {
       "id": "7-D",
       "title": "Después del jefe",
+      "part": "Capítulo 7 · «¿Te quedarías?»",
       "chapter": 7,
       "triggers": [{"on": "boss_defeated", "dungeon": "laboratorio_final"}],
       "lines": [
@@ -551,6 +594,7 @@
     {
       "id": "F-1",
       "title": "De vuelta",
+      "part": "Final · «Antes de que anochezca»",
       "chapter": 7,
       "triggers": [{"on": "town_return", "dungeon": "laboratorio_final", "outcome": "cleared"}],
       "lines": [
@@ -568,6 +612,7 @@
     {
       "id": "F-2",
       "title": "Epílogo",
+      "part": "Final · «Antes de que anochezca»",
       "chapter": 7,
       "requires": ["F-1"],
       "triggers": [{"on": "new_day"}],
@@ -589,6 +634,7 @@
     {
       "id": "F-3",
       "title": "Esa noche",
+      "part": "Final · «Antes de que anochezca»",
       "chapter": 7,
       "requires": ["F-1"],
       "triggers": [{"on": "new_day"}],
@@ -606,6 +652,7 @@
     {
       "id": "F-4",
       "title": "Tras los créditos",
+      "part": "Final · «Antes de que anochezca»",
       "chapter": 7,
       "triggers": [{"on": "credits_end"}],
       "lines": [
@@ -659,6 +706,16 @@
       ],
       "8": [
         ["pidgey", "Joyous", "¿Habéis visto la torre nueva del norte? Pidgeotto intentó volar hasta arriba y no le vio el final."]
+      ]
+    },
+    "arcanine": {
+      "8": [
+        ["arcanine", "Happy", "Diez años de guardia y ahora no sé qué hacer con las patas. Si subís a la Torre, contadme hasta dónde llegáis."]
+      ]
+    },
+    "raichu": {
+      "8": [
+        ["raichu", "Joyous", "¡Ponte las pilas, que la Torre no se sube sola! …Yo llegué al piso tres. Porque llovía, ¿eh?"]
       ]
     }
   },

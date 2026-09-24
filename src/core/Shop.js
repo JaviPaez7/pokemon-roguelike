@@ -35,7 +35,8 @@ export function buyPrice(item) {
 export function townShopStock(day, itemsData) {
   const toEntry = (item) => ({ id: item.id, name: item.name, price: buyPrice(item), description: item.description || '' });
   const staples = SHOP_STAPLES.map((id) => itemsData.find((i) => i.id === id)).filter(Boolean);
-  const pool = itemsData.filter((i) => ROTATING_TYPES.has(i.type) && !SHOP_STAPLES.includes(i.id));
+  // Los objetos únicos (`unique`, los de la historia) no se venden
+  const pool = itemsData.filter((i) => ROTATING_TYPES.has(i.type) && !SHOP_STAPLES.includes(i.id) && !i.unique);
 
   // Barajado determinista por día (LCG sembrado con el día)
   let state = floorSeed(day, 0, 'tienda') || 1;
