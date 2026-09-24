@@ -1,3 +1,4 @@
+import { random } from '../core/Random.js';
 /**
  * CaptureSystem.js — Sistema de captura de Pokémon
  * Fórmula de captura simplificada basada en Gen 1
@@ -55,7 +56,7 @@ export function attemptCapture(targetFighter, targetInfo, ball, pokemonDB) {
   const shakeThreshold = 65536 / Math.pow(255 / Math.max(1, finalRate), 0.1875);
   
   for (let i = 0; i < 3; i++) {
-    const roll = Math.random() * 65536;
+    const roll = random() * 65536;
     if (roll < shakeThreshold) {
       shakes++;
     } else {

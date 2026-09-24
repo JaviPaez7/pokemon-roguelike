@@ -2,6 +2,7 @@ import { GAME_STATES, MAX_INVENTORY, MAX_PARTY_SIZE } from '../constants.js';
 import { pickupItem } from '../systems/ItemSystem.js';
 import { getAbility } from '../systems/AbilitySystem.js';
 import { revertTransform } from '../systems/CombatSystem.js';
+import { random } from './Random.js';
 
 /**
  * Registra los listeners globales del EventBus en la instancia del juego.
@@ -171,7 +172,7 @@ export function setupGameEventListeners(game) {
             const floorBonus = (game._currentFloor || 1) <= 10 ? 8 : 0;
             const recruitChance = 24 + levelDiff + floorBonus;
             
-            if (Math.random() * 100 < recruitChance) {
+            if (random() * 100 < recruitChance) {
               // Reclutamiento exitoso
               game.eventBus.emit('message', `¡${enemyInfo.name} se ha quedado impresionado por tu fuerza!`);
               game.eventBus.emit('message', `Acércate para que se una al equipo.`);
@@ -202,7 +203,7 @@ export function setupGameEventListeners(game) {
       if (isBoss) {
         const targetInfo = game.entityManager.getComponent(data.entityId, 'pokemonInfo');
         const bossName = targetInfo ? targetInfo.name.replace('JEFE: ', '') : 'Jefe';
-        const bossCoins = 40 + Math.floor(Math.random() * 30) + (game._currentFloor || 1) * 2;
+        const bossCoins = 40 + Math.floor(random() * 30) + (game._currentFloor || 1) * 2;
         game.coins = (game.coins || 0) + bossCoins;
         game.eventBus.emit('message', { text: `¡Botín del jefe: +${bossCoins} Poké!`, color: '#ffd700' });
         if (game.renderer && game.renderer.screenFlash) {
@@ -216,7 +217,7 @@ export function setupGameEventListeners(game) {
 
         // Spawn a high-value reward item
         const pool = ['rare_candy', 'max_revive', 'full_restore', 'fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone', 'golden_apple'];
-        const selectedItem = pool[Math.floor(Math.random() * pool.length)];
+        const selectedItem = pool[Math.floor(random() * pool.length)];
         
         let dropX = game._stairsPos ? game._stairsPos.x : 10;
         let dropY = game._stairsPos ? game._stairsPos.y + 1 : 10;
@@ -260,9 +261,9 @@ export function setupGameEventListeners(game) {
           const f = game.entityManager.getComponent(id, 'fighter');
           return f && f.hp > 0 && getAbility(inf) === 'pickup';
         });
-        if (picker != null && Math.random() < 0.22 && (game.inventory || []).length < (game.maxInventorySize || 24)) {
+        if (picker != null && random() < 0.22 && (game.inventory || []).length < (game.maxInventorySize || 24)) {
           const pool = ['oran_berry', 'apple', 'potion', 'ether', 'pokeball', 'antidote'];
-          const itemId = pool[Math.floor(Math.random() * pool.length)];
+          const itemId = pool[Math.floor(random() * pool.length)];
           const existing = game.inventory.find(s => s.itemId === itemId);
           if (existing) existing.quantity = (existing.quantity || 1) + 1;
           else game.inventory.push({ itemId, quantity: 1 });
@@ -282,7 +283,7 @@ export function setupGameEventListeners(game) {
           || data.attackerId === game._playerId;
         if (attackerIsParty) {
           const lvl = defeatedInfo.level || 1;
-          const coins = Math.max(3, Math.floor(lvl * (Math.random() * 2 + 2)));
+          const coins = Math.max(3, Math.floor(lvl * (random() * 2 + 2)));
           game.coins = (game.coins || 0) + coins;
           game.eventBus.emit('message', { text: `+${coins} Poké`, color: '#ffd700' });
         }
@@ -290,7 +291,7 @@ export function setupGameEventListeners(game) {
 
       // Reclutamiento Post-Combate
       const party = game.entityManager.getEntitiesWithComponents('partyMember');
-      if (data.attackerId === game._playerId && Math.random() < 0.15 && party.length < MAX_PARTY_SIZE) {
+      if (data.attackerId === game._playerId && random() < 0.15 && party.length < MAX_PARTY_SIZE) {
         const targetInfo = game.entityManager.getComponent(data.entityId, 'pokemonInfo');
         const targetFighter = game.entityManager.getComponent(data.entityId, 'fighter');
         

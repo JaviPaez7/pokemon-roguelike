@@ -1,3 +1,4 @@
+import { random } from '../core/Random.js';
 /**
  * AbilitySystem.js
  * Sistema de habilidades pasivas de Pokémon.
@@ -176,29 +177,29 @@ export function applyPostAttackAbilities(attackerAbility, attackerFighter, defen
     messages.push(msg);
   };
 
-  if (defAbility === 'static' && Math.random() < 0.30) {
+  if (defAbility === 'static' && random() < 0.30) {
     pushStatus('paralyze', 3, '¡Elec. Estática paralizó al atacante!');
   }
-  if (defAbility === 'poison_point' && Math.random() < 0.30) {
+  if (defAbility === 'poison_point' && random() < 0.30) {
     pushStatus('poison', 5, '¡Punto Tóxico envenenó al atacante!');
   }
-  if (defAbility === 'flame_body' && Math.random() < 0.30) {
+  if (defAbility === 'flame_body' && random() < 0.30) {
     pushStatus('burn', 5, '¡Cuerpo Llama quemó al atacante!');
   }
-  if (defAbility === 'effect_spore' && Math.random() < 0.30) {
-    const roll = Math.random();
+  if (defAbility === 'effect_spore' && random() < 0.30) {
+    const roll = random();
     if (roll < 0.33) pushStatus('poison', 5, '¡Efecto Espora envenenó al atacante!');
     else if (roll < 0.66) pushStatus('paralyze', 3, '¡Efecto Espora paralizó al atacante!');
     else pushStatus('sleep', 2, '¡Efecto Espora durmió al atacante!');
   }
-  if (defAbility === 'cute_charm' && Math.random() < 0.30) {
+  if (defAbility === 'cute_charm' && random() < 0.30) {
     if (!attackerFighter.statusEffects) attackerFighter.statusEffects = [];
     if (!attackerFighter.statusEffects.some(s => s.type === 'confuse')) {
       attackerFighter.statusEffects.push({ type: 'confuse', turnsLeft: 3 });
       messages.push('¡Gran Encanto confunde al atacante!');
     }
   }
-  if (defAbility === 'stench' && Math.random() < 0.20) {
+  if (defAbility === 'stench' && random() < 0.20) {
     attackerFighter.flinched = true;
     messages.push('¡Hedor hizo retroceder al atacante!');
   }

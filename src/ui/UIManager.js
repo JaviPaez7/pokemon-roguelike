@@ -190,7 +190,13 @@ export class UIManager {
     }
   }
 
+  /**
+   * Muestra un menú y le da el teclado.
+   * @param {string} type - Identificador del menú (lo usa handleCancelAction)
+   * @param {string} htmlContent
+   */
   showMenu(type, htmlContent) {
+    this.game.inputHandler.setContext('menu');
     this.currentMenuType = type;
     this.overlay.classList.remove('hidden', 'dialog-mode');
     this.menuContainer.innerHTML = htmlContent;

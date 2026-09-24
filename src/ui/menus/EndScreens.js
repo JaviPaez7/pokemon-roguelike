@@ -1,5 +1,6 @@
 import { GAME_STATES } from '../../constants.js';
 import { saveLifetimeStats } from './StatsMenu.js';
+import { deleteSave } from '../../core/SaveManager.js';
 
 /** @param {import('../UIManager.js').UIManager} ui */
 export function openGameOverScreen(ui) {
@@ -60,7 +61,7 @@ export function openGameOverScreen(ui) {
 
   const goTitle = () => {
     ensureLifetime();
-    localStorage.removeItem('pokerogue_save');
+    deleteSave();
     ui.game.changeState(GAME_STATES.TITLE);
   };
 
@@ -68,7 +69,7 @@ export function openGameOverScreen(ui) {
     ? [
         () => {
           ensureLifetime();
-          localStorage.removeItem('pokerogue_save');
+          deleteSave();
           const starter = ui.game._lastStarterId;
           ui.closeMenu();
           ui.game.startNewGame(starter);
@@ -126,7 +127,7 @@ export function openVictoryScreen(ui) {
           ui.game._lifetimeStatsSaved = true;
           saveLifetimeStats(ui.game, true);
         }
-        localStorage.removeItem('pokerogue_save');
+        deleteSave();
       } catch (e) {}
       ui.game.changeState(GAME_STATES.TITLE);
     }

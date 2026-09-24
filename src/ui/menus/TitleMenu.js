@@ -1,42 +1,30 @@
 import { GAME_STATES } from '../../constants.js';
 import { openStatsMenu } from './StatsMenu.js';
-import { SAVE_VERSION } from '../../core/SaveManager.js';
+import { inspectSave, setAsideCorruptSave } from '../../core/SaveManager.js';
+
+/** El aviso de partida más nueva se da una vez por carga, no cada vez que se vuelve al título. */
+let newerSaveNoticeShown = false;
 
 /** @param {import('../UIManager.js').UIManager} ui */
 export function openTitleScreen(ui) {
-  let hasSave = false;
+  const save = inspectSave();
+  const hasSave = save.status === 'ok';
   let saveHint = '';
-  try {
-    const raw = localStorage.getItem('pokerogue_save');
-    if (raw) {
-      try {
-        const data = JSON.parse(raw);
-        if (!data || data.version !== SAVE_VERSION || !Array.isArray(data.party) || !data.party.length) {
-          localStorage.removeItem('pokerogue_save');
-          if (data && data.version != null && data.version !== SAVE_VERSION) {
-            try { sessionStorage.setItem('pokerogue_save_wiped', '1'); } catch (e) {}
-          }
-        } else {
-          hasSave = true;
-          const leader = data.party.find(p => p.isLeader) || data.party[0];
-          if (leader) {
-            const nItems = Array.isArray(data.floorItems) ? data.floorItems.length : 0;
-            saveHint = `Piso ${data.currentFloor || '?'} · ${leader.name} Nv.${leader.level || '?'} · ${data.coins != null ? data.coins : '?'} Poké${nItems ? ` · ${nItems} obj.` : ''}`;
-          }
-        }
-      } catch (parseErr) {
-        localStorage.removeItem('pokerogue_save');
-        hasSave = false;
-      }
-    }
-    if (sessionStorage.getItem('pokerogue_save_wiped') === '1') {
-      sessionStorage.removeItem('pokerogue_save_wiped');
-      setTimeout(() => {
-        ui.showDialog('La partida guardada era de una versión antigua y se ha borrado.', () => openTitleScreen(ui));
-      }, 100);
-    }
-  } catch (e) {
-    console.warn('localStorage no está disponible:', e);
+  if (hasSave) {
+    const data = save.data;
+    const leader = data.party.find(p => p.isLeader) || data.party[0];
+    const nItems = Array.isArray(data.floorItems) ? data.floorItems.length : 0;
+    saveHint = `Piso ${data.currentFloor || '?'} · ${leader.name} Nv.${leader.level || '?'} · ${data.coins ?? '?'} Poké${nItems ? ` · ${nItems} obj.` : ''}`;
+  } else if (save.status === 'corrupt') {
+    setAsideCorruptSave();
+    setTimeout(() => {
+      ui.showDialog('La partida guardada no se podía leer. Se ha apartado una copia y puedes empezar otra.', () => openTitleScreen(ui));
+    }, 100);
+  } else if (save.status === 'newer' && !newerSaveNoticeShown) {
+    newerSaveNoticeShown = true;
+    setTimeout(() => {
+      ui.showDialog('Hay una partida guardada con una versión más nueva del juego. Recarga la página para actualizar; no se ha tocado.', () => openTitleScreen(ui));
+    }, 100);
   }
 
   const html = `

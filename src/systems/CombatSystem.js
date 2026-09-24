@@ -5,6 +5,7 @@
 
 import { COLORS } from '../constants.js';
 import { getAbility, applyPostAttackAbilities, tryTraceAbility } from './AbilitySystem.js';
+import { random } from '../core/Random.js';
 
 /**
  * Calcula el daño de un movimiento
@@ -72,7 +73,7 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
     const stage = Math.max(-6, Math.min(6, accStage - evaStage));
     const stageMult = stage >= 0 ? (3 + stage) / 3 : 3 / (3 - stage);
     acc = Math.max(1, Math.min(100, Math.floor(acc * stageMult)));
-    const hitRoll = Math.random() * 100;
+    const hitRoll = random() * 100;
     if (hitRoll > acc) {
       result.messages.push('¡El ataque falló!');
       result.missed = true;
@@ -173,7 +174,7 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
       return result;
     }
     if (move.effect === 'random_damage') {
-      result.damage = 1 + Math.floor(Math.random() * (attackerInfo.level || 20) * 1.5);
+      result.damage = 1 + Math.floor(random() * (attackerInfo.level || 20) * 1.5);
       result.hit = true;
       return result;
     }
@@ -327,7 +328,7 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
   if (defAbCrit === 'shell_armor' || defAbCrit === 'battle_armor') {
     critRate = 0;
   }
-  if (Math.random() < critRate) {
+  if (random() < critRate) {
     damage = Math.floor(damage * 1.5);
     result.isCritical = true;
     result.messages.push('¡Golpe crítico!');
@@ -369,7 +370,7 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
   }
 
   // Variación aleatoria (85% - 100%)
-  const randomFactor = 0.85 + Math.random() * 0.15;
+  const randomFactor = 0.85 + random() * 0.15;
   damage = Math.max(1, Math.floor(damage * randomFactor));
 
   if (isPhysical && defender.reflect > 0) {
@@ -538,7 +539,7 @@ export function executeMove(params) {
   if (move.effect === 'random_move' && game && game.movesData) {
     const pool = game.movesData.filter(m => m && m.power && m.power > 0 && m.effect !== 'random_move' && m.effect !== 'self_destruct');
     if (pool.length) {
-      const picked = pool[Math.floor(Math.random() * pool.length)];
+      const picked = pool[Math.floor(random() * pool.length)];
       messages.push(`¡Metrónomo eligió ${picked.name}!`);
       const nested = executeMove({ ...params, move: picked });
       nested.messages = [...messages, ...(nested.messages || [])];
@@ -586,7 +587,7 @@ export function executeMove(params) {
       entityManager.setComponent(attackerId, 'pokemonInfo', attackerInfo);
       return { success: true, damage: 0, effectiveness: 1, isCritical: false, isSTAB: false, messages, defenderFainted: false };
     }
-    const picked = pool[Math.floor(Math.random() * pool.length)];
+    const picked = pool[Math.floor(random() * pool.length)];
     const slot = attackerInfo.currentMoves.find(m => m && (m.moveId === move.id || m._mimicOriginal === move.id));
     if (slot) {
       if (slot._mimicOriginal == null) slot._mimicOriginal = move.id;
@@ -655,7 +656,7 @@ export function executeMove(params) {
   if (move.effect === 'multi_hit_2') {
     hits = 2;
   } else if (move.effect === 'multi_hit') {
-    const rand = Math.random();
+    const rand = random();
     if (rand < 0.35) hits = 2;
     else if (rand < 0.70) hits = 3;
     else if (rand < 0.85) hits = 4;
@@ -749,7 +750,7 @@ export function executeMove(params) {
         defenderFighter.statusEffects = defenderFighter.statusEffects.filter(s => s.type !== 'freeze');
         messages.push(`¡${defenderInfo.name} se liberó del hielo al recibir el golpe!`);
       }
-      if (defenderFighter.statusEffects && defenderFighter.statusEffects.some(s => s.type === 'sleep') && Math.random() < 0.55) {
+      if (defenderFighter.statusEffects && defenderFighter.statusEffects.some(s => s.type === 'sleep') && random() < 0.55) {
         defenderFighter.statusEffects = defenderFighter.statusEffects.filter(s => s.type !== 'sleep');
         messages.push(`¡${defenderInfo.name} se despertó al recibir el golpe!`);
       }
@@ -929,8 +930,8 @@ export function executeMove(params) {
       if (aPos) {
         let warped = false;
         for (let tries = 0; tries < 24 && !warped; tries++) {
-          const ang = Math.random() * Math.PI * 2;
-          const dist = 3 + Math.floor(Math.random() * 3);
+          const ang = random() * Math.PI * 2;
+          const dist = 3 + Math.floor(random() * 3);
           const nx = aPos.x + Math.round(Math.cos(ang) * dist);
           const ny = aPos.y + Math.round(Math.sin(ang) * dist);
           if (!game.tileMap.isInBounds(nx, ny) || !game.tileMap.isWalkable(nx, ny)) continue;
@@ -959,8 +960,8 @@ export function executeMove(params) {
       if (dPos) {
         let warped = false;
         for (let tries = 0; tries < 24 && !warped; tries++) {
-          const ang = Math.random() * Math.PI * 2;
-          const dist = 3 + Math.floor(Math.random() * 3);
+          const ang = random() * Math.PI * 2;
+          const dist = 3 + Math.floor(random() * 3);
           const nx = dPos.x + Math.round(Math.cos(ang) * dist);
           const ny = dPos.y + Math.round(Math.sin(ang) * dist);
           if (!game.tileMap.isInBounds(nx, ny) || !game.tileMap.isWalkable(nx, ny)) continue;
@@ -1028,7 +1029,7 @@ function syncTransformSprite(entityManager, attackerId, defenderId, attackerFigh
 
 function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFighter, attackerInfo, damageDealt = 0, isBoss = false) {
   const chance = move.effectChance || 100;
-  if (Math.random() * 100 > chance) return false;
+  if (random() * 100 > chance) return false;
 
   // Polvo Escudo: bloquea efectos secundarios (no el daño principal)
   const secondaryOnly = move.effectChance != null && move.effectChance < 100;
@@ -1053,7 +1054,7 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFight
   switch (move.effect) {
     case 'burn':
       if (!hasMajorStatus(targetFighter) && !(targetInfo.types || []).includes('fire')) {
-        targetFighter.statusEffects.push({ type: 'burn', turnsLeft: isBoss ? 1 : (4 + Math.floor(Math.random() * 3)) });
+        targetFighter.statusEffects.push({ type: 'burn', turnsLeft: isBoss ? 1 : (4 + Math.floor(random() * 3)) });
         messages.push(`¡${targetInfo.name} se quemó!`);
         applied = true;
         syncedStatus = 'burn';
@@ -1065,7 +1066,7 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFight
         return false;
       }
       if (!hasMajorStatus(targetFighter) && !(targetInfo.types || []).includes('electric')) {
-        targetFighter.statusEffects.push({ type: 'paralyze', turnsLeft: isBoss ? 1 : (3 + Math.floor(Math.random() * 2)) });
+        targetFighter.statusEffects.push({ type: 'paralyze', turnsLeft: isBoss ? 1 : (3 + Math.floor(random() * 2)) });
         messages.push(`¡${targetInfo.name} está paralizado!`);
         applied = true;
         syncedStatus = 'paralyze';
@@ -1074,7 +1075,7 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFight
     case 'poison':
       if (!hasMajorStatus(targetFighter) && 
           !(targetInfo.types || []).includes('poison') && !(targetInfo.types || []).includes('steel')) {
-        targetFighter.statusEffects.push({ type: 'poison', turnsLeft: isBoss ? 1 : (4 + Math.floor(Math.random() * 3)) });
+        targetFighter.statusEffects.push({ type: 'poison', turnsLeft: isBoss ? 1 : (4 + Math.floor(random() * 3)) });
         messages.push(`¡${targetInfo.name} fue envenenado!`);
         applied = true;
         syncedStatus = 'poison';
@@ -1083,7 +1084,7 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFight
     case 'freeze':
       if (!hasMajorStatus(targetFighter) && !(targetInfo.types || []).includes('ice')) {
         // Duración finita (como sueño): evita softlock con -1
-        targetFighter.statusEffects.push({ type: 'freeze', turnsLeft: isBoss ? 2 : (Math.floor(Math.random() * 2) + 1) });
+        targetFighter.statusEffects.push({ type: 'freeze', turnsLeft: isBoss ? 2 : (Math.floor(random() * 2) + 1) });
         messages.push(`¡${targetInfo.name} fue congelado!`);
         return true;
       }
@@ -1101,7 +1102,7 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFight
         }
       }
       if (!hasMajorStatus(targetFighter)) {
-        let turns = isBoss ? 2 : (Math.floor(Math.random() * 3) + 1);
+        let turns = isBoss ? 2 : (Math.floor(random() * 3) + 1);
         if (getAbility(targetInfo) === 'early_bird') turns = Math.max(1, Math.ceil(turns / 2));
         targetFighter.statusEffects.push({ type: 'sleep', turnsLeft: turns });
         messages.push(`¡${targetInfo.name} se durmió!`);
@@ -1114,7 +1115,7 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFight
         return false;
       }
       if (!targetFighter.statusEffects.some(s => s.type === 'confuse')) {
-        targetFighter.statusEffects.push({ type: 'confuse', turnsLeft: isBoss ? 2 : (Math.floor(Math.random() * 3) + 2) });
+        targetFighter.statusEffects.push({ type: 'confuse', turnsLeft: isBoss ? 2 : (Math.floor(random() * 3) + 2) });
         messages.push(`¡${targetInfo.name} está confuso!`);
         return true;
       }
@@ -1264,7 +1265,7 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFight
       if (attackerFighter) {
         if (!attackerFighter.statusEffects) attackerFighter.statusEffects = [];
         if (!attackerFighter.statusEffects.some(s => s.type === 'confuse')) {
-          attackerFighter.statusEffects.push({ type: 'confuse', turnsLeft: 2 + Math.floor(Math.random() * 2) });
+          attackerFighter.statusEffects.push({ type: 'confuse', turnsLeft: 2 + Math.floor(random() * 2) });
           messages.push(`¡${attackerInfo.name} se confundió por el movimiento!`);
           return true;
         }
@@ -1273,7 +1274,7 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFight
     case 'trap':
       if (isBoss) return false;
       if (!targetFighter.statusEffects.some(s => s.type === 'bound')) {
-        targetFighter.statusEffects.push({ type: 'bound', turnsLeft: 3 + Math.floor(Math.random() * 2) });
+        targetFighter.statusEffects.push({ type: 'bound', turnsLeft: 3 + Math.floor(random() * 2) });
         messages.push(`¡${targetInfo.name} quedó atrapado!`);
         return true;
       }
@@ -1322,7 +1323,7 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFight
       if (targetInfo.currentMoves && targetInfo.currentMoves.length) {
         const usable = targetInfo.currentMoves.filter(m => m && m.currentPP > 0 && m.enabled !== false);
         if (usable.length) {
-          const pick = usable[Math.floor(Math.random() * usable.length)];
+          const pick = usable[Math.floor(random() * usable.length)];
           pick.enabled = false;
           pick._disableTurns = isBoss ? 2 : 4;
           messages.push(`¡Un movimiento de ${targetInfo.name} fue anulado (${pick._disableTurns} turnos)!`);
@@ -1497,7 +1498,7 @@ export function processStatusEffects(entityId, entityManager) {
   }
 
   // Mudar: 30% de curar un estado mayor
-  if (getAbility(info) === 'shed_skin' && fighter.statusEffects.length && Math.random() < 0.3) {
+  if (getAbility(info) === 'shed_skin' && fighter.statusEffects.length && random() < 0.3) {
     const major = fighter.statusEffects.find(s => ['burn','poison','paralyze','freeze','sleep'].includes(s.type));
     if (major) {
       fighter.statusEffects = fighter.statusEffects.filter(s => s !== major);
@@ -1553,7 +1554,7 @@ export function processStatusEffects(entityId, entityManager) {
         fighter.statusEffects = fighter.statusEffects.filter(s => s.type !== 'burn');
         messages.push(`¡La quemadura de ${info.name} se curó!`);
       }
-    } else if (burn.turnsLeft === -1 && Math.random() < 0.08) {
+    } else if (burn.turnsLeft === -1 && random() < 0.08) {
       fighter.statusEffects = fighter.statusEffects.filter(s => s.type !== 'burn');
       messages.push(`¡La quemadura de ${info.name} se curó!`);
     }
@@ -1578,7 +1579,7 @@ export function processStatusEffects(entityId, entityManager) {
         fighter.statusEffects = fighter.statusEffects.filter(s => s.type !== 'poison');
         messages.push(`¡El veneno de ${info.name} se curó!`);
       }
-    } else if (poison.turnsLeft === -1 && Math.random() < 0.08) {
+    } else if (poison.turnsLeft === -1 && random() < 0.08) {
       fighter.statusEffects = fighter.statusEffects.filter(s => s.type !== 'poison');
       messages.push(`¡El veneno de ${info.name} se curó!`);
     }
@@ -1590,7 +1591,7 @@ export function processStatusEffects(entityId, entityManager) {
     if (paralyze.turnsLeft == null || paralyze.turnsLeft <= 0 || paralyze.turnsLeft === -1) {
       paralyze.turnsLeft = 3;
     }
-    if (Math.random() < 0.20) {
+    if (random() < 0.20) {
       canAct = false;
       messages.push(`¡${info.name} está paralizado y no puede moverse!`);
     }
@@ -1605,7 +1606,7 @@ export function processStatusEffects(entityId, entityManager) {
   const freeze = fighter.statusEffects.find(s => s.type === 'freeze');
   if (freeze) {
     if (freeze.turnsLeft === -1) freeze.turnsLeft = 2; // legacy saves
-    if (Math.random() < 0.2) {
+    if (random() < 0.2) {
       fighter.statusEffects = fighter.statusEffects.filter(s => s.type !== 'freeze');
       messages.push(`¡${info.name} se descongeló!`);
     } else {
@@ -1625,7 +1626,7 @@ export function processStatusEffects(entityId, entityManager) {
   const sleep = fighter.statusEffects.find(s => s.type === 'sleep');
   if (sleep) {
     if (sleep.turnsLeft === -1 || sleep.turnsLeft == null) {
-      sleep.turnsLeft = 2 + Math.floor(Math.random() * 2);
+      sleep.turnsLeft = 2 + Math.floor(random() * 2);
     }
     if (sleep.turnsLeft > 0) {
       sleep.turnsLeft--;
@@ -1708,7 +1709,7 @@ export function processStatusEffects(entityId, entityManager) {
   if (confuse) {
     if (confuse.turnsLeft > 0) {
       messages.push(`${info.name} está confuso...`);
-      if (Math.random() < 0.28) {
+      if (random() < 0.28) {
         const selfDamage = Math.max(1, Math.floor(fighter.attack / 6));
         fighter.hp = Math.max(0, fighter.hp - selfDamage);
         messages.push(`¡Se hirió a sí mismo! (-${selfDamage} PS)`);
@@ -1832,7 +1833,7 @@ export function selectBestMove(attackerInfo, defenderInfo, movesData, typeChart,
     }
 
     // Añadir algo de aleatoriedad para variedad
-    score *= (0.8 + Math.random() * 0.4);
+    score *= (0.8 + random() * 0.4);
 
     if (score > bestScore) {
       bestScore = score;

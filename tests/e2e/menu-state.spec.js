@@ -60,6 +60,29 @@ test('Escape y «Continuar» cierran la pausa y devuelven el control', async ({ 
   expect(await stateChanges(page)).toEqual(['MENU', 'EXPLORING', 'MENU', 'EXPLORING']);
 });
 
+test('changeState es idempotente: pedir el estado actual no emite nada', async ({ page }) => {
+  await startNewGame(page);
+  await recordStateChanges(page);
+
+  await page.evaluate(() => window.game.changeState('EXPLORING'));
+
+  expect(await stateChanges(page)).toEqual([]);
+  await expectExploring(page);
+});
+
+test('Escape en la selección de inicial vuelve al título y se puede volver a entrar', async ({ page }) => {
+  await openTitleScreen(page);
+  await page.keyboard.press('z');
+  await expect(panelTitle(page)).toHaveText('ELIGE TU COMPAÑERO INICIAL');
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.menu-option', { hasText: 'Nueva Partida' })).toBeVisible();
+  expect((await gameStatus(page)).state).toBe('TITLE');
+
+  await page.keyboard.press('z');
+  await expect(panelTitle(page)).toHaveText('ELIGE TU COMPAÑERO INICIAL');
+});
+
 test('changeState rechaza que quien reacciona a state_changed vuelva a cambiar el estado', async ({ page, pageErrors }) => {
   await openTitleScreen(page);
 

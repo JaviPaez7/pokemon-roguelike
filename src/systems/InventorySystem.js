@@ -3,6 +3,7 @@ import { attemptCapture } from './CaptureSystem.js';
 import { useItem } from './ItemSystem.js';
 import { checkEvolution, evolve } from './EvolutionSystem.js';
 import { getAbility } from './AbilitySystem.js';
+import { random } from '../core/Random.js';
 
 /**
  * Usa un objeto del inventario sobre un objetivo.
@@ -386,7 +387,7 @@ export function throwInventoryItem(game, itemId) {
     }
   } else {
     // Cae al suelo
-    if (Math.random() < 0.8 && itemData.type !== 'throwable') {
+    if (random() < 0.8 && itemData.type !== 'throwable') {
       game.entityManager.createItemEntity(itemId, 1, currentX, currentY, itemData.spriteUrl);
       game.eventBus.emit('message', `El objeto cayó al suelo.`);
     } else {
