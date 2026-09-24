@@ -121,6 +121,8 @@ export async function loadSavedGame(game) {
   game._currentFloor--;
   const savedTurnCount = data.turnCount || data.stats?.turnsPlayed || 0;
   await game.floorManager.changeFloor('down');
+  // El piso se regenera, pero el viento sigue donde estaba
+  game._floorTurns = data.floorTurns ?? 0;
   // changeFloor hace reset() del TurnManager: restaurar contador después
   if (typeof game.turnManager.setTurnCount === 'function') {
     game.turnManager.setTurnCount(savedTurnCount);

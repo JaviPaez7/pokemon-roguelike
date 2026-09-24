@@ -213,6 +213,7 @@ function collectRun(gameState) {
     floorTraps: collectFloorTraps(gameState),
     floorMerchants: collectFloorMerchants(gameState),
     fovRadiusModifier: gameState.fovRadiusModifier || 0,
+    floorTurns: gameState._floorTurns || 0,
   };
 }
 

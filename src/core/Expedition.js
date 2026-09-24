@@ -6,6 +6,8 @@
  * - `defeated`: el equipo cae. Se pierde el dinero y lo que había en la mochila.
  * - `escaped`: se sale con una Cuerda Huida. Se conserva todo.
  * - `mission`: se vuelve tras cumplir una misión. Se conserva todo.
+ * - `blown`: el viento expulsa al equipo por pasar demasiado tiempo en un
+ *   piso. Mismas pérdidas que caer.
  * Salvo al caer, se cobran las misiones cumplidas; al caer vuelven a quedar
  * pendientes. En todos los casos el equipo vuelve curado, los reclutados pasan
  * a la base y empieza un día nuevo.
@@ -131,12 +133,13 @@ function challengeCopy(game, member) {
 /**
  * Termina la expedición y vuelve al pueblo con un resumen.
  * @param {import('./Game.js').Game} game
- * @param {'cleared' | 'defeated' | 'escaped' | 'mission'} outcome
+ * @param {'cleared' | 'defeated' | 'escaped' | 'mission' | 'blown'} outcome
  */
 export function endExpedition(game, outcome) {
   const profile = game.profile;
   const dungeon = game.dungeon;
   const challenge = !!dungeon.challenge;
+  const lost = outcome === 'defeated' || outcome === 'blown';
   const lines = [];
 
   if (challenge) {
@@ -146,7 +149,7 @@ export function endExpedition(game, outcome) {
     profile.stash = null;
   } else {
     lines.push(...bringTeamHome(game));
-    if (outcome === 'defeated') {
+    if (lost) {
       const { lostMoney, lostItems } = defeatLosses(game.inventory, game.coins);
       game.inventory = [];
       game.coins = 0;
@@ -155,9 +158,9 @@ export function endExpedition(game, outcome) {
   }
 
   let missionPoints = 0;
-  if (outcome === 'defeated') {
-    const lost = revertDoneMissions(profile);
-    if (lost) lines.push(`${lost === 1 ? 'La misión cumplida queda' : `Las ${lost} misiones cumplidas quedan`} pendiente${lost === 1 ? '' : 's'}: el cliente no llegó al pueblo.`);
+  if (lost) {
+    const reverted = revertDoneMissions(profile);
+    if (reverted) lines.push(`${reverted === 1 ? 'La misión cumplida queda' : `Las ${reverted} misiones cumplidas quedan`} pendiente${reverted === 1 ? '' : 's'}: el cliente no llegó al pueblo.`);
   } else {
     const itemName = (id) => game.itemsData.find((i) => i.id === id)?.name ?? id;
     const claimed = claimRewards(profile, {
@@ -197,8 +200,9 @@ export function endExpedition(game, outcome) {
     defeated: '¡El equipo ha caído!',
     escaped: 'Habéis vuelto al pueblo.',
     mission: '¡Misión cumplida! Volvéis al pueblo.',
+    blown: '¡El viento os ha expulsado de la mazmorra!',
   }[outcome];
-  const subtitle = outcome === 'defeated' ? 'Os rescataron y os llevaron de vuelta al pueblo.' : '';
+  const subtitle = lost ? 'Os rescataron y os llevaron de vuelta al pueblo.' : '';
 
   enterTown(game, { arrival: 'return' });
   game.saveGameData();

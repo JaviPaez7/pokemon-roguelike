@@ -42,7 +42,7 @@ import { updateTown } from './TownSession.js';
 import { endExpedition } from './Expedition.js';
 import { useInventoryItem as useInventoryItemHandler, throwInventoryItem } from '../systems/InventorySystem.js';
 import { MessageLog } from '../ui/MessageLog.js';
-import { getDungeon, relativeFloor, isLastFloor } from './Dungeons.js';
+import { getDungeon, relativeFloor, isLastFloor, WIND } from './Dungeons.js';
 import { setSeed, newRunSeed } from './Random.js';
 import { roomAt } from '../systems/MoveTargeting.js';
 
@@ -91,7 +91,7 @@ export class Game {
     this.expedition = null;
 
     /**
-     * @type {'cleared'|'defeated'|'escaped'|'mission'|null} Fin de expedición pendiente. Se
+     * @type {'cleared'|'defeated'|'escaped'|'mission'|'blown'|null} Fin de expedición pendiente. Se
      * procesa al principio del siguiente fotograma para no vaciar las entidades
      * en mitad de un turno.
      */
@@ -433,7 +433,7 @@ export class Game {
 
   /**
    * Termina la expedición al principio del siguiente fotograma.
-   * @param {'cleared'|'defeated'|'escaped'|'mission'} outcome
+   * @param {'cleared'|'defeated'|'escaped'|'mission'|'blown'} outcome
    */
   endExpedition(outcome) {
     if (!this.dungeonId || this._pendingExpeditionEnd) return;
@@ -608,6 +608,29 @@ export class Game {
   }
 
   /**
+   * Viento: cuenta los turnos del piso, avisa al acercarse al límite y, al
+   * llegar, expulsa al equipo de la mazmorra.
+   */
+  _tickWind() {
+    if (!this.dungeonId) return;
+    this._floorTurns = (this._floorTurns || 0) + 1;
+    const warning = WIND.warnings.indexOf(this._floorTurns);
+    if (warning !== -1) {
+      const texts = [
+        'Algo se agita a lo lejos…',
+        'Se levanta un viento extraño. Algo se acerca…',
+        '¡El viento sopla con fuerza! ¡Hay que dejar este piso ya!',
+      ];
+      const colors = ['#ccccff', '#ffcc88', '#ff8866'];
+      this.eventBus.emit('message', { text: texts[warning], color: colors[warning] });
+      if (warning === WIND.warnings.length - 1) {
+        this.eventBus.emit('show_dialog', { text: `${texts[warning]}\n\nBuscad la escalera cuanto antes o el viento os echará de la mazmorra.` });
+      }
+    }
+    if (this._floorTurns >= WIND.limit) this.endExpedition('blown');
+  }
+
+  /**
    * Empieza a correr en una dirección.
    * @param {number} dx
    * @param {number} dy
@@ -681,6 +704,7 @@ export class Game {
 
     if (results.playerResult && results.playerResult.success) {
       this.stats.turnsPlayed++;
+      this._tickWind();
       // Alinear con TurnManager (incluye fallos previos de bump)
       if (typeof this.turnManager.getTurnCount === 'function') {
         this.stats.turnsPlayed = Math.max(this.stats.turnsPlayed, this.turnManager.getTurnCount());

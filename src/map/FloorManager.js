@@ -335,6 +335,7 @@ export class FloorManager {
     game._bagAlmostFullWarned = false;
     game._autoStatusCureUsedThisFloor = false;
     game._lowPpWarnedThisFloor = false;
+    game._floorTurns = 0;
 
     game.entityManager.clear(true);
     game.turnManager.reset();
