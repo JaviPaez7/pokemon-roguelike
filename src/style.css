@@ -187,6 +187,32 @@ html, body {
   -webkit-backdrop-filter: blur(4px);
 }
 
+/* La voz del prólogo habla a oscuras, y los créditos finales pasan sobre negro */
+#ui-overlay.story-black {
+  background: #000;
+}
+
+/* Créditos del final: pasan solos de abajo arriba */
+.credits-roll {
+  height: 240px;
+  overflow: hidden;
+  padding: 0 6px;
+}
+
+.credits-roll-inner {
+  animation: creditsRoll 40s linear forwards;
+}
+
+@keyframes creditsRoll {
+  from { transform: translateY(240px); }
+  to { transform: translateY(calc(-100% + 200px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .credits-roll { overflow-y: auto; }
+  .credits-roll-inner { animation: none; }
+}
+
 .hidden {
   display: none !important;
 }

@@ -7,6 +7,7 @@ import {
   expectExploring,
   expectInTown,
   dismissDialog,
+  skipDialogs,
   dialogText,
   itemQuantity,
 } from './fixtures.js';
@@ -76,7 +77,7 @@ test('el objeto equipado se guarda con la partida y vuelve con el equipo al pueb
 
   await page.evaluate(() => window.game.completeDungeon());
   await expect.poll(() => page.evaluate(() => window.game.getState())).toBe('TOWN');
-  await dismissDialog(page);
+  await skipDialogs(page); // resumen y cierre del capítulo 1
   await expectInTown(page);
   const hero = await page.evaluate(() => {
     const { roster, heroUid } = window.game.profile;

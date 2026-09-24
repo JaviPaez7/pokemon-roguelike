@@ -81,7 +81,8 @@ export async function openTitleScreen(page, { seed = SEED } = {}) {
 /**
  * Nueva aventura solo con el teclado: responde siempre la primera opción del
  * test de personalidad, acepta el Pokémon propuesto y el primer compañero, deja
- * el nombre de equipo por defecto y cierra la bienvenida. Acaba en el pueblo.
+ * el nombre de equipo por defecto y pasa el prólogo de la historia. Acaba en
+ * el pueblo.
  * @param {import('@playwright/test').Page} page
  * @param {{ seed?: number }} [options]
  */
@@ -103,14 +104,16 @@ export async function startNewGame(page, options) {
   await page.keyboard.press('z');
   await expect(page.locator('#team-name-input')).toBeFocused();
   await page.keyboard.press('Enter');
-  await expect(page.locator('.dialog-panel')).toContainText('Bienvenidos');
-  await dismissDialog(page);
+  // El prólogo empieza con la voz, a oscuras (lo comprueba story.spec.js)
+  await expect(page.locator('#ui-overlay.story-black .dialog-panel')).toBeVisible();
+  await skipDialogs(page);
   await expectInTown(page);
 }
 
 /**
- * Sale del pueblo hacia una mazmorra por el menú de la salida y cierra el
- * diálogo de entrada. Acaba explorando el piso 1.
+ * Sale del pueblo hacia una mazmorra por el menú de la salida y cierra la
+ * presentación (y la escena de la historia, la primera vez). Acaba explorando
+ * el piso 1.
  * @param {import('@playwright/test').Page} page
  * @param {number} [index=0] - Posición de la mazmorra en la lista de desbloqueadas
  */
@@ -122,7 +125,7 @@ export async function enterDungeon(page, index = 0) {
   await page.keyboard.press('z'); // ¡En marcha!
   await expect(page.locator('.dialog-panel')).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.game.getState())).toBe('EXPLORING');
-  await dismissDialog(page);
+  await skipDialogs(page);
   await expectExploring(page);
 }
 
@@ -167,6 +170,21 @@ export async function dismissDialog(page) {
   const dialog = page.locator('.dialog-panel');
   await expect(dialog).toBeVisible();
   for (let i = 0; i < 3 && (await dialog.isVisible()); i++) {
+    await page.keyboard.press('z');
+  }
+  await expect(dialog).toBeHidden();
+}
+
+/**
+ * Pasa con Z todos los diálogos seguidos (una escena entera de la historia,
+ * por ejemplo) hasta que no queda ninguno.
+ * @param {import('@playwright/test').Page} page
+ * @param {number} [max=400] - Pulsaciones como mucho (cada cuadro animado pide dos)
+ */
+export async function skipDialogs(page, max = 400) {
+  const dialog = page.locator('.dialog-panel');
+  await expect(dialog).toBeVisible();
+  for (let i = 0; i < max && (await dialog.isVisible()); i++) {
     await page.keyboard.press('z');
   }
   await expect(dialog).toBeHidden();

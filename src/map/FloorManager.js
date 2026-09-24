@@ -9,6 +9,7 @@ import { getAbility } from '../systems/AbilitySystem.js';
 import { floorSeed } from '../core/Random.js';
 import { relativeFloor } from '../core/Dungeons.js';
 import { spawnMissionTargets } from '../systems/MissionSystem.js';
+import { onFloorEntered } from '../core/StorySession.js';
 
 /**
  * Generación de pisos, spawn de enemigos y pre-carga de sprites.
@@ -173,13 +174,13 @@ export class FloorManager {
         game.entityManager.setComponent(bossId, 'isBoss', true);
         game.entityManager.setComponent(bossId, 'boss', { active: true });
         
-        // Boost de PS para el jefe (Mewtwo un poco menos muro)
+        // Boost de PS para el jefe (Mewtwo un poco menos muro; `hpMultiplier` en floors.json manda)
         const fighter = game.entityManager.getComponent(bossId, 'fighter');
         if (fighter) {
-          const mult = bossInfo.name === 'Mewtwo' ? 1.85
+          const mult = bossInfo.hpMultiplier ?? (bossInfo.name === 'Mewtwo' ? 1.85
             : bossInfo.name === 'Onix' ? 2.0
             : bossInfo.name === 'Gengar' ? 2.1
-            : 2.2;
+            : 2.2);
           fighter.maxHp = Math.floor(fighter.maxHp * mult);
           fighter.hp = fighter.maxHp;
           game.entityManager.setComponent(bossId, 'fighter', fighter);
@@ -611,7 +612,8 @@ export class FloorManager {
       game.eventBus.emit('message', { text: '¡Está cayendo granizo con fuerza!', color: '#ffffff' });
     }
 
-    if (zone && zone.boss && game._currentFloor === zone.floors[1] && zone.boss.name === 'Mewtwo') {
+    // En el laboratorio de la historia lo presenta su escena; en la Torre, este aviso
+    if (zone && zone.boss && game._currentFloor === zone.floors[1] && zone.boss.name === 'Mewtwo' && game.dungeon?.challenge) {
       game.eventBus.emit('show_dialog', {
         text: '¡Una presencia abrumadora te acecha en este laboratorio!\n\n¡Mewtwo bloquea el camino de salida!'
       });
@@ -622,6 +624,9 @@ export class FloorManager {
     if (game.renderer) {
       game.renderer.startFadeIn(300);
     }
+
+    // Escenas de la historia de este piso (intermedio o del jefe)
+    onFloorEntered(game);
   }
 
   preloadVisibleSprites() {

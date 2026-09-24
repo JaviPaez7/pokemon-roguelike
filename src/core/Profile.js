@@ -55,6 +55,7 @@ export function createProfile({ teamName, hero, partner }) {
     clearedDungeons: [],
     missions: { day: 0, board: [], accepted: [], completed: 0 },
     flags: {},
+    story: { seen: [] },
   };
   profile.heroUid = addToRoster(profile, hero);
   profile.partnerUid = addToRoster(profile, partner);

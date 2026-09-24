@@ -5,6 +5,7 @@ import { revertTransform } from '../systems/CombatSystem.js';
 import { random } from './Random.js';
 import { onMissionItemFound } from '../systems/MissionSystem.js';
 import { tryRecruit, acceptRecruit, declineRecruit } from '../systems/RecruitSystem.js';
+import { playStory } from './StorySession.js';
 
 /**
  * Registra los listeners globales del EventBus en la instancia del juego.
@@ -207,8 +208,9 @@ export function setupGameEventListeners(game) {
           text: isFinalBoss
             ? `¡${bossName} ha sido derrotado!\n\n¡Has completado ${game.dungeon?.name ?? 'la mazmorra'}!\n\nObjeto: ¡${itemName}!`
             : `¡El Jefe ${bossName} ha sido derrotado!\n\nLas escaleras han aparecido en el centro de la sala, y ha caído un objeto valioso: ¡${itemName}!`,
+          // Antes de acabar la mazmorra, la escena de la historia (si toca)
           callback: isFinalBoss
-            ? () => { game.completeDungeon(); }
+            ? () => playStory(game, 'boss_defeated', { dungeonId: game.dungeonId }, () => game.completeDungeon())
             : null
         });
         

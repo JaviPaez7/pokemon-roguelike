@@ -25,6 +25,7 @@ import { toSnapshot, restedSnapshot, spawnFromSnapshot } from './PokemonSnapshot
 import { enterTown } from './TownSession.js';
 import { saveLifetimeStats } from '../ui/menus/StatsMenu.js';
 import { claimRewards, revertDoneMissions, MISSION_TYPE_NAMES } from './Missions.js';
+import { playStory } from './StorySession.js';
 
 /** Kit con el que se entra en la Torre del Desafío. */
 export const CHALLENGE_KIT = [
@@ -114,6 +115,8 @@ export async function startExpedition(game, dungeonId) {
     text: `${dungeon.name}\n\n${dungeon.description}${rules}${missions}`,
     instant: true,
   });
+  // La escena de la historia, detrás de la presentación
+  playStory(game, 'dungeon_enter', { dungeonId: dungeon.id });
 }
 
 /**
@@ -209,6 +212,8 @@ export function endExpedition(game, outcome) {
   game.eventBus.emit('show_dialog', {
     text: [title, subtitle, ...lines].filter(Boolean).join('\n\n'),
   });
+  // Tras el resumen, la historia: cierre del capítulo o, si toca, el epílogo del día nuevo
+  playStory(game, ['town_return', 'new_day'], { dungeonId: dungeon.id, outcome });
 }
 
 /**
