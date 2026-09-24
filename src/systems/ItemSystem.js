@@ -6,6 +6,7 @@ import { RNG } from 'rot-js';
 import { grantExperience, expForLevel, calculateStats } from './ExperienceSystem.js';
 import { checkEvolution, evolve } from './EvolutionSystem.js';
 import { getAbility } from './AbilitySystem.js';
+import { gummiIq, newSkills } from '../core/IQ.js';
 
 /**
  * Genera items en un piso
@@ -358,6 +359,14 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
       };
       messages.push(`¡${pokemonInfo.name} se comió la ${itemData.name}!`);
       messages.push(`¡Su ${statNames[stat]} aumentó permanentemente!`);
+      // CI: más si es de su tipo favorito
+      const { gained, favorite } = gummiIq(itemData.id, pokemonInfo.types);
+      const iqBefore = pokemonInfo.iq || 0;
+      pokemonInfo.iq = iqBefore + gained;
+      messages.push(`${favorite ? '¡Es su favorita! ' : ''}CI +${gained} (${pokemonInfo.iq}).`);
+      for (const skill of newSkills(iqBefore, pokemonInfo.iq)) {
+        messages.push(`¡${pokemonInfo.name} aprendió la habilidad de CI ${skill.name}! ${skill.description}`);
+      }
       consumed = true;
       break;
     }

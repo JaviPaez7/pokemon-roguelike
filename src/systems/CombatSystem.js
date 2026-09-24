@@ -7,6 +7,7 @@ import { COLORS } from '../constants.js';
 import { getAbility, applyPostAttackAbilities, tryTraceAbility } from './AbilitySystem.js';
 import { random } from '../core/Random.js';
 import { heldStatMultiplier, heldPreventsStatus, heldName } from '../core/HeldItems.js';
+import { hasIqSkill } from '../core/IQ.js';
 
 /**
  * Calcula el daño de un movimiento
@@ -70,7 +71,8 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
       acc = Math.floor(acc * 0.8);
     }
     const accStage = Math.max(-6, Math.min(6, attacker.statModifiers?.accuracy || 0));
-    const evaStage = Math.max(-6, Math.min(6, defender.statModifiers?.evasion || 0));
+    const dodger = hasIqSkill(defenderInfo, 'quick_dodger') ? 1 : 0; // Esquivador (CI)
+    const evaStage = Math.max(-6, Math.min(6, (defender.statModifiers?.evasion || 0) + dodger));
     const stage = Math.max(-6, Math.min(6, accStage - evaStage));
     const stageMult = stage >= 0 ? (3 + stage) / 3 : 3 / (3 - stage);
     acc = Math.max(1, Math.min(100, Math.floor(acc * stageMult)));
@@ -1039,7 +1041,23 @@ function syncTransformSprite(entityManager, attackerId, defenderId, attackerFigh
   entityManager.setComponent(attackerId, 'sprite', spr);
 }
 
+/**
+ * Aplica el efecto secundario de un movimiento. Con Autocura (CI), los estados
+ * que causa duran la mitad.
+ * @returns {boolean} Si el efecto se aplicó
+ */
 export function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFighter, attackerInfo, damageDealt = 0, isBoss = false) {
+  const before = targetFighter?.statusEffects?.length ?? 0;
+  const applied = applyEffect(move, targetFighter, targetInfo, messages, attackerFighter, attackerInfo, damageDealt, isBoss);
+  if (applied && hasIqSkill(targetInfo, 'self_curer')) {
+    for (const status of targetFighter.statusEffects.slice(before)) {
+      if (status.turnsLeft > 1) status.turnsLeft = Math.ceil(status.turnsLeft / 2);
+    }
+  }
+  return applied;
+}
+
+function applyEffect(move, targetFighter, targetInfo, messages, attackerFighter, attackerInfo, damageDealt = 0, isBoss = false) {
   const chance = move.effectChance || 100;
   if (random() * 100 > chance) return false;
 

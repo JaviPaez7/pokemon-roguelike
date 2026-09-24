@@ -3,6 +3,7 @@ import { checkEvolution } from '../../systems/EvolutionSystem.js';
 import { openEvolutionMenu } from './EvolutionMenu.js';
 import { GAME_STATES, TYPE_NAMES_ES } from '../../constants.js';
 import { heldName } from '../../core/HeldItems.js';
+import { skillsForIq } from '../../core/IQ.js';
 import { takeHeldItem } from '../../systems/InventorySystem.js';
 
 /** @param {import('../UIManager.js').UIManager} ui */
@@ -180,6 +181,7 @@ export function openPokemonActionsMenu(ui) {
         Nivel: ${info.level} | Tipos: ${(info.types || []).map(t => TYPE_NAMES_ES[t] || t).join('/')}<br/>
         Habilidad: <span style="color: #ffcc00;">${abilityLabel}</span><br/>
         Objeto: <span style="color: #ffcc66;">${info.heldItem ? heldName(info.heldItem) : 'ninguno'}</span><br/>
+        CI: ${info.iq || 0}${skillsForIq(info.iq).length ? ` · <span style="color: #99ddff;">${skillsForIq(info.iq).map((sk) => sk.name).join(', ')}</span>` : ''}<br/>
         ATQ: ${fighter.attack} DEF: ${fighter.defense} ESP: ${fighter.spAtk} VEL: ${fighter.speed}
       </div>
       <div id="options-list">

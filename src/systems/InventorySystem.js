@@ -5,6 +5,7 @@ import { getAbility } from './AbilitySystem.js';
 import { random } from '../core/Random.js';
 import { equipItem, unequipItem, heldName } from '../core/HeldItems.js';
 import { getMember } from '../core/Profile.js';
+import { hasIqSkill } from '../core/IQ.js';
 
 /**
  * Usa un objeto del inventario sobre un objetivo.
@@ -218,7 +219,8 @@ export function throwInventoryItem(game, itemId) {
           color: '#aaddff'
         });
       } else if (itemData.type === 'throwable') {
-        const damage = itemData.value || 15;
+        const pitcher = hasIqSkill(pokemonInfo, 'power_pitcher') ? 1.5 : 1; // Gran Lanzador (CI)
+        const damage = Math.floor((itemData.value || 15) * pitcher);
         targetFighter.hp = Math.max(0, targetFighter.hp - damage);
         game.eventBus.emit('message', `¡El objeto golpeó a ${targetInfo.name} infligiendo ${damage} PS de daño!`);
         game.entityManager.setComponent(hitEntityId, 'fighter', targetFighter);

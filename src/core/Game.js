@@ -44,6 +44,7 @@ import { useInventoryItem as useInventoryItemHandler, throwInventoryItem } from 
 import { MessageLog } from '../ui/MessageLog.js';
 import { getDungeon, relativeFloor, isLastFloor, WIND } from './Dungeons.js';
 import { heldBellyDrain } from './HeldItems.js';
+import { hasIqSkill } from './IQ.js';
 import { setSeed, newRunSeed } from './Random.js';
 import { roomAt } from '../systems/MoveTargeting.js';
 
@@ -1035,6 +1036,26 @@ export class Game {
     }
   }
 
+  /** Ojo Trampas (habilidad de CI): si alguien del equipo la tiene, se ven las trampas ocultas a la vista. */
+  _revealTrapsWithTrapSeer() {
+    const em = this.entityManager;
+    const seer = em.getEntitiesWithComponents('partyMember', 'pokemonInfo', 'fighter').find((id) =>
+      em.getComponent(id, 'fighter').hp > 0 && hasIqSkill(em.getComponent(id, 'pokemonInfo'), 'trap_seer'));
+    if (seer == null) return;
+    let found = 0;
+    for (const id of em.getEntitiesWithComponents('trap', 'position')) {
+      const trap = em.getComponent(id, 'trap');
+      const pos = em.getComponent(id, 'position');
+      if (!trap.isHidden || this.tileMap.getVisibility(pos.x, pos.y) !== 2) continue;
+      trap.isHidden = false;
+      found++;
+    }
+    if (found) {
+      const name = em.getComponent(seer, 'pokemonInfo').name;
+      this.eventBus.emit('message', { text: `¡${name} ha visto ${found === 1 ? 'una trampa' : `${found} trampas`}! (Ojo Trampas)`, color: '#ffcc66' });
+    }
+  }
+
   _updateFOV() {
     if (this.fovSystem && this._playerId && this.tileMap) {
       const pos = this.entityManager.getComponent(this._playerId, 'position');
@@ -1045,6 +1066,7 @@ export class Game {
           fovRad -= 1;
         }
         this.fovSystem.update(pos.x, pos.y, this.tileMap, fovRad);
+        this._revealTrapsWithTrapSeer();
 
         // Anunciar escaleras la primera vez que entran en el FOV del piso
         if (!this._stairsAnnounced && this._stairsPos && this.tileMap.getVisibility) {
@@ -1115,6 +1137,7 @@ export class Game {
       _focusTurns: fighter._focusTurns,
       _traced: !!(info._traced),
       heldItem: info.heldItem ?? null,
+      iq: info.iq ?? 0,
       speciesId: info.speciesId,
       name: info.name,
       level: info.level,
