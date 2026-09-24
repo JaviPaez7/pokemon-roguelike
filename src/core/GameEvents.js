@@ -6,6 +6,7 @@ import { random } from './Random.js';
 import { onMissionItemFound } from '../systems/MissionSystem.js';
 import { tryRecruit, acceptRecruit, declineRecruit } from '../systems/RecruitSystem.js';
 import { playStory } from './StorySession.js';
+import { refreshTownNpcs } from './TownSession.js';
 
 /**
  * Registra los listeners globales del EventBus en la instancia del juego.
@@ -265,6 +266,8 @@ export function setupGameEventListeners(game) {
       game.needsRender = true;
     }
   });
+
+  game.eventBus.on('story_scenes_done', () => refreshTownNpcs(game));
 
   game.eventBus.on('recruit_pokemon', (data) => {
     if (data.accepted) acceptRecruit(game, data.entityId);

@@ -20,6 +20,7 @@ import { townShopStock } from '../../core/Shop.js';
 import { startExpedition } from '../../core/Expedition.js';
 import { enterTown, leaveExitTile, BASE_FRONT } from '../../core/TownSession.js';
 import { playStory } from '../../core/StorySession.js';
+import { openDiary } from './DiaryMenu.js';
 import { openMerchantMenu } from './MerchantMenu.js';
 import { openMissionBoardMenu } from './MissionMenus.js';
 
@@ -205,6 +206,7 @@ export function openBaseMenu(ui, selected = 0) {
           ui.showDialog(ok ? 'Partida guardada.' : 'No se pudo guardar (¿almacenamiento lleno?).', () => openBaseMenu(ui, 2));
         },
       },
+      { label: 'Diario', hint: 'volver a ver escenas', action: () => openDiary(ui, () => openBaseMenu(ui, 3)) },
       { label: 'Salir', action: () => ui.closeMenu() },
     ],
   });

@@ -135,7 +135,8 @@ function openSellMenu(ui, merchantId) {
 
   inventory.forEach((slot) => {
     const itemData = ui.game.itemsData.find(i => i.id === slot.itemId);
-    if (!itemData) return;
+    // Los objetos únicos de la historia no se venden
+    if (!itemData || itemData.unique) return;
 
     // Calcular precio de venta (50% del valor de compra teórico)
     // Mejor recompra: comida/cura básica venden bien; rarezas altas también

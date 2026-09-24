@@ -12,6 +12,9 @@ import {
   npcTalk,
   npcGreeting,
   npcAbsent,
+  windWhisper,
+  rescueLine,
+  diaryParts,
   markSeen,
   applyStoryEffect,
   seenForCleared,
@@ -232,6 +235,15 @@ describe('vecinos', () => {
     expect(npcAbsent('pidgey', 5)).toBe(false);
   });
 
+  it('Arcanine y Raichu se mudan al pueblo en el epílogo', () => {
+    for (const npc of ['arcanine', 'raichu']) {
+      expect(npcAbsent(npc, AFTER_ENDING, ['F-1'])).toBe(true);
+      expect(npcAbsent(npc, AFTER_ENDING, ['F-1', 'F-2'])).toBe(false);
+      expect(npcTalk(npc, AFTER_ENDING)).not.toBeNull();
+    }
+    expect(npcTalk('raichu', AFTER_ENDING)[0][2]).toContain('¡Ponte las pilas');
+  });
+
   it('Kecleon, Kangaskhan y Persian saludan una vez por capítulo', () => {
     const first = npcGreeting('kecleon', 1, []);
     expect(first.id).toBe('saludo:kecleon:1');
@@ -241,7 +253,46 @@ describe('vecinos', () => {
   });
 });
 
+describe('el mundo durante la historia', () => {
+  it('el viento susurra hasta el final y después calla', () => {
+    expect(windWhisper(0, 1)).toBe('…¿quién eres?…');
+    expect(windWhisper(2, 7)).toBe('…¿te…?…');
+    expect(windWhisper(0, AFTER_ENDING)).toBeNull();
+    expect(windWhisper(5, 1)).toBeNull();
+  });
+
+  it('desde que Pidgeotto lo promete, es ella quien os trae de vuelta al caer', () => {
+    expect(rescueLine(['P-1', '1-D'])).toBeNull();
+    expect(rescueLine(['1-E'])).toBe('Pidgeotto os encontró y os trajo de vuelta al pueblo.');
+  });
+
+  it('el Diario agrupa las escenas vistas por partes, en orden', () => {
+    expect(diaryParts([])).toEqual([]);
+    const parts = diaryParts(['1-C', 'P-1', 'P-2', '1-B']);
+    expect(parts).toEqual([
+      { part: 'Prólogo · «Alguien contestó»', scenes: [{ id: 'P-1', title: 'La voz' }, { id: 'P-2', title: 'El camino del sur' }] },
+      {
+        part: 'Capítulo 1 · «La cartera perdida»',
+        scenes: [{ id: '1-B', title: 'Entrada' }, { id: '1-C', title: 'Antes del jefe (piso 5)' }],
+      },
+    ]);
+    expect(diaryParts(ids(STORY.scenes)).at(-1).part).toBe('Final · «Antes de que anochezca»');
+  });
+});
+
 describe('efectos', () => {
+  it('Arcanine da el Pañuelo Centella: a la mochila o, si no cabe, al almacén', () => {
+    expect(STORY.scenes.find((s) => s.id === '6-D').effects).toEqual(['give:centella_scarf']);
+    const profile = newProfile();
+    const bag = [{ itemId: 'apple', quantity: 1 }];
+    expect(applyStoryEffect(profile, 'give:centella_scarf', { bag, maxSlots: 24 })).toBe('bag');
+    expect(bag).toContainEqual({ itemId: 'centella_scarf', quantity: 1 });
+    const full = [{ itemId: 'apple', quantity: 1 }];
+    expect(applyStoryEffect(profile, 'give:centella_scarf', { bag: full, maxSlots: 1 })).toBe('storage');
+    expect(profile.storage).toContainEqual({ itemId: 'centella_scarf', quantity: 1 });
+    expect(full).toEqual([{ itemId: 'apple', quantity: 1 }]);
+  });
+
   it('el sobre sin remite: se apunta una vez, no se abandona y se cobra al entregarlo', () => {
     const profile = newProfile();
     applyStoryEffect(profile, 'letter_mission');

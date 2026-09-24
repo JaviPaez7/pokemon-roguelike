@@ -33,7 +33,7 @@ Trabaja en una rama y fusiona en `master` por PR con la CI en verde y el cambio 
 ## Cómo se juega (estructura)
 
 - **Título → nueva aventura** (`STARTER_SELECT`, `ui/menus/QuizMenu.js`): test de personalidad (`core/Personality.js`, `data/personality.json`), protagonista, compañero que no comparte tipo y nombre del equipo. Crea el perfil y entra en el pueblo.
-- **Pueblo** (`TOWN`, `core/TownSession.js`, mapa en `data/town.json`): sin turnos ni enemigos; el equipo sigue al líder en fila. Kecleon (tienda, `core/Shop.js`), Kangaskhan (almacén), Persian (banco), base (formación, dormir = día siguiente, guardar), tablón de misiones y la salida del sur hacia las mazmorras. Menús en `ui/menus/TownMenus.js` y `MissionMenus.js`.
+- **Pueblo** (`TOWN`, `core/TownSession.js`, mapa en `data/town.json`): sin turnos ni enemigos; el equipo sigue al líder en fila. Kecleon (tienda, `core/Shop.js`), Kangaskhan (almacén), Persian (banco), base (formación, dormir = día siguiente, guardar, Diario), tablón de misiones y la salida del sur hacia las mazmorras. Menús en `ui/menus/TownMenus.js`, `MissionMenus.js` y `DiaryMenu.js`.
 - **Expedición** (`EXPLORING`, `core/Expedition.js`): del pueblo a una mazmorra y vuelta con uno de estos finales: `cleared` (abre la siguiente mazmorra y da rango), `defeated` (se pierden el dinero y la mochila; el banco y el almacén no), `escaped` (Cuerda Huida) `mission` (volver tras cumplir una misión) o `blown` (el viento expulsa al equipo: como caer). Al volver se cobran las misiones cumplidas, los reclutados pasan a la base, el equipo se cura y pasa un día. `Game.endExpedition()` lo aplaza al siguiente fotograma para no vaciar entidades en mitad de un turno.
 - **Mazmorras** (`core/Dungeons.js`, `data/dungeons.json`): cada una es un tramo de los 50 pisos globales de `floors.json`. `game._currentFloor` es el piso global (decide zona, enemigos, jefe y dificultad) y `game.getCurrentFloor()` el que ve el jugador. La Torre del Desafío recorre los 50 con reglas roguelike: copias de nivel 5, kit fijo y lo de fuera guardado en `profile.stash`.
 - **Misiones** (`core/Missions.js`, `systems/MissionSystem.js`): tablón diario determinista (rescate, buscar objeto, entrega). El cliente o el objeto aparece en su piso; al cumplir se pregunta si volver.
@@ -43,7 +43,10 @@ Trabaja en una rama y fusiona en `master` por PR con la CI en verde y el cambio 
   - `core/Story.js` (lógica pura) decide qué escena toca. Cada escena tiene disparadores: `adventure_start`, `dungeon_enter`, `floor_enter`, `boss_floor`, `boss_defeated`, `town_return`, `board_open`, `dungeon_select`, `new_day` y `credits_end`. Sale una sola vez: las vistas se apuntan en `profile.story.seen`.
   - El capítulo no se guarda: es 1 más las mazmorras de la historia completadas (8 tras el final).
   - `core/StorySession.js` las muestra con `showDialog` y retrato. Lo llaman `TownSession` (prólogo, vecinos, tablón), `Expedition` (entrada y vuelta), `FloorManager` (pisos), `GameEvents` (jefe derrotado) y `TownMenus` (elegir mazmorra, dormir).
-  - Variantes por especie en las líneas (`{"species": id}`), la misión de historia del sobre (`story: true`: no se abandona y su cliente no aparece en el piso), Slowpoke fuera del pueblo en el capítulo 5 y los créditos finales (`openEndingCredits`, que también citan a PMDCollab).
+  - Variantes por especie en las líneas (`{"species": id}`), la misión de historia del sobre (`story: true`: no se abandona y su cliente no aparece en el piso) y los créditos finales (`openEndingCredits`, que también citan a PMDCollab).
+  - Vecinos según la historia (`townNpcs` en `story.json`): Slowpoke fuera en el capítulo 5, y Arcanine y Raichu desde el epílogo. Tras cada escena, `refreshTownNpcs` pone al día quién está.
+  - Extras: el Pañuelo Centella (Arcanine lo da en la 6-D con el efecto `give:`), los susurros del Eco en los avisos del viento, «Pidgeotto os trajo de vuelta» al caer y el Diario (`replayScene`, sin efectos).
+- **Objetos únicos** (`unique: true` en `items.json`, `core/Items.js`): los de la historia. No salen en la tienda ni en el suelo, no se venden, no se tiran y no se pierden al caer.
 
 ## Arquitectura (`src/`)
 
@@ -66,7 +69,7 @@ Flujo de estados: `Game.changeState(nuevo)` ejecuta `_onStateExit` y `_onStateEn
 
 Aleatoriedad (`core/Random.js`): todo lo que afecta a la partida usa `random()`, `randomInt()`, `chance()`, `pick()` o `shuffle()`, que salen del RNG de rot-js con semilla. Cada partida tiene `runSeed` (`?seed=N` en la URL la fija) y la semilla de cada piso se deriva de ella con `floorSeed()`. Solo render y audio pueden usar `Math.random`.
 
-La estructura del README está desactualizada (menciona `src/utils` y un sistema de carga en `src/assets` que no existen así). Manda el código.
+El README describe el juego para quien llega al repo. Si no coincide con el código, manda el código.
 
 ## Reglas
 
@@ -78,10 +81,10 @@ La estructura del README está desactualizada (menciona `src/utils` y un sistema
 
 - **Arreglado en la fase 1 del plan:** desde `75eebf4` (28 de julio), abrir la pausa, la mochila o el equipo desde exploración entraba en una recursión (`openPauseMenu` → `changeState(MENU)` → `state_changed` → `openPauseMenu`…). El `EventBus` se tragaba el `RangeError` y el menú salía tras más de mil repintados. Lo cubre `tests/e2e/menu-state.spec.js`.
 - **Arreglados en el hito H0:** el diálogo «se ha unido a tu equipo» que se borraba al reclutar (con `changeState` idempotente) y los diálogos animados que pedían dos Z con el texto ya terminado. Los cubre `tests/e2e/dialogs.spec.js`.
-- **H4 · Historia** implementada en la rama `claude/charming-dirac-edcydf`, pendiente de revisión y de fusionar. Decisiones tomadas con los valores recomendados del guion (sección 9): Pidgeotto como jefe del Bosque Verde, Clefable en el Monte Lunar, final sin elección y «Guion y desarrollo: JaviStudio» en los créditos (`STORY_AUTHOR` en `CreditsMenu.js`).
+- **H4 · Historia** en producción desde el 2026-09-24 (PR #6). Decisiones tomadas con los valores recomendados del guion (sección 9): Pidgeotto como jefe del Bosque Verde, Clefable en el Monte Lunar, final sin elección y «Guion y desarrollo: JaviStudio» en los créditos (`STORY_AUTHOR` en `CreditsMenu.js`).
 - **Licencia de los sprites:** para la 1.ª generación, todo el arte de base de PMDCollab es el oficial de Chunsoft (los 151 figuran con crédito `CHUNSOFT`); lo de la comunidad (animaciones y emociones añadidas) es CC BY-NC 4.0. El juego debe seguir siendo gratuito y sin anuncios, y la pantalla de créditos no se puede quitar.
-- El bundle principal pasa de 500 kB (unos 620 kB; 160 kB con gzip) por los datos del juego, el manifiesto de sprites y el guion. Dividir el código es tarea pendiente.
-- En el pueblo, el equipo son copias de las fichas de la plantilla. Lo que cambie ahí y deba durar hay que apuntarlo también en `profile.roster` (como hace `syncRosterHeldItem` al equipar); cambiar la táctica o el líder en el pueblo aún no se guarda.
+- El build va en trozos (`codeSplitting` en `vite.config.js`): el código del juego (unos 370 kB), los datos, el manifiesto de sprites, la historia y las librerías, y aparte los créditos. Ninguno pasa de 500 kB. Un JSON nuevo en `src/data/` va al trozo del código si no se añade a un grupo.
+- En el pueblo, el equipo son copias de las fichas de la plantilla. Lo que cambie ahí y deba durar hay que apuntarlo también en el perfil: `syncRosterHeldItem` al equipar y `keepInTown` (en `TeamMenus.js`) al cambiar la táctica o el líder. Al volver de una expedición se conserva el orden con el que salió el equipo.
 - La batería E2E completa tarda alrededor de un minuto en local (4 workers): mientras trabajas, ejecuta solo los ficheros afectados.
 
 ## Plan de mejora

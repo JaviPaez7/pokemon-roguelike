@@ -112,6 +112,32 @@ export function setTeam(profile, uids) {
 }
 
 /**
+ * Cambia quién lidera la formación: el elegido pasa al primer puesto y el
+ * líder anterior ocupa el suyo (lo mismo que hace el menú de equipo).
+ * @param {Object} profile
+ * @param {number} uid
+ * @returns {boolean} Si ha cambiado algo
+ */
+export function setLeader(profile, uid) {
+  const team = profile.teamUids;
+  const index = team.indexOf(uid);
+  if (index <= 0) return false;
+  [team[0], team[index]] = [team[index], team[0]];
+  return true;
+}
+
+/**
+ * Apunta en la ficha la táctica de un miembro de la plantilla.
+ * @param {Object} profile
+ * @param {number} uid
+ * @param {string} tactic
+ */
+export function setTactic(profile, uid, tactic) {
+  const member = getMember(profile, uid);
+  if (member) member.tactic = tactic;
+}
+
+/**
  * @param {number} points
  * @returns {typeof RANKS[number]}
  */
@@ -195,13 +221,17 @@ export function transferItem(from, to, itemId, quantity, { maxSlots = Infinity, 
 }
 
 /**
- * Al caer en una mazmorra se pierde el dinero y lo que se llevaba en la mochila.
+ * Al caer en una mazmorra se pierde el dinero y lo que se llevaba en la
+ * mochila, salvo lo que diga `keep` (los objetos únicos de la historia).
  * @param {ItemStack[]} bag
  * @param {number} wallet
- * @returns {{ lostMoney: number, lostItems: number }}
+ * @param {(itemId: string) => boolean} [keep] - Objetos que no se pierden
+ * @returns {{ lostMoney: number, lostItems: number, kept: ItemStack[] }}
  */
-export function defeatLosses(bag, wallet) {
-  return { lostMoney: wallet, lostItems: bag.reduce((n, s) => n + s.quantity, 0) };
+export function defeatLosses(bag, wallet, keep = () => false) {
+  const kept = bag.filter((s) => keep(s.itemId));
+  const lost = bag.filter((s) => !keep(s.itemId));
+  return { lostMoney: wallet, lostItems: lost.reduce((n, s) => n + s.quantity, 0), kept };
 }
 
 /**

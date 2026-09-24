@@ -485,5 +485,17 @@
     "description": "Si la lleva el líder, la tripa baja la mitad de rápido.",
     "sprite": "🟨",
     "spriteUrl": ""
+  },
+  {
+    "id": "centella_scarf",
+    "name": "Pañuelo Centella",
+    "type": "held",
+    "held": { "stats": { "attack": 1.1, "defense": 1.1, "spAtk": 1.1, "spDef": 1.1 }, "preventStatus": ["paralyze"] },
+    "unique": true,
+    "rarity": 0,
+    "price": 2000,
+    "description": "El pañuelo del Equipo Centella, quemado y con un rayo bordado. Quien lo lleva mejora sus estadísticas un 10 % y no puede quedar paralizado.",
+    "sprite": "⚡",
+    "spriteUrl": ""
   }
 ]

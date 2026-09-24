@@ -25,7 +25,8 @@ import { toSnapshot, restedSnapshot, spawnFromSnapshot } from './PokemonSnapshot
 import { enterTown } from './TownSession.js';
 import { saveLifetimeStats } from '../ui/menus/StatsMenu.js';
 import { claimRewards, revertDoneMissions, MISSION_TYPE_NAMES } from './Missions.js';
-import { playStory } from './StorySession.js';
+import { playStory, rescueText } from './StorySession.js';
+import { isUniqueItem } from './Items.js';
 
 /** Kit con el que se entra en la Torre del Desafío. */
 export const CHALLENGE_KIT = [
@@ -153,8 +154,8 @@ export function endExpedition(game, outcome) {
   } else {
     lines.push(...bringTeamHome(game));
     if (lost) {
-      const { lostMoney, lostItems } = defeatLosses(game.inventory, game.coins);
-      game.inventory = [];
+      const { lostMoney, lostItems, kept } = defeatLosses(game.inventory, game.coins, isUniqueItem);
+      game.inventory = kept;
       game.coins = 0;
       if (lostMoney || lostItems) lines.push(`Se perdieron ${lostMoney} Poké y ${lostItems} objetos de la mochila.`);
     }
@@ -205,7 +206,8 @@ export function endExpedition(game, outcome) {
     mission: '¡Misión cumplida! Volvéis al pueblo.',
     blown: '¡El viento os ha expulsado de la mazmorra!',
   }[outcome];
-  const subtitle = lost ? 'Os rescataron y os llevaron de vuelta al pueblo.' : '';
+  // Desde que Pidgeotto lo promete en la historia, es ella quien os trae
+  const subtitle = lost ? (rescueText(game) ?? 'Os rescataron y os llevaron de vuelta al pueblo.') : '';
 
   enterTown(game, { arrival: 'return' });
   game.saveGameData();
@@ -237,9 +239,13 @@ function bringTeamHome(game) {
       lines.push(`${rested.name} se une a la base del equipo.`);
     }
   }
-  // Protagonista y compañero siempre al frente, en ese orden
+  // Se conserva el orden con el que salió el equipo (con el líder elegido en el
+  // pueblo); los cambios de líder dentro de la mazmorra no duran. Los que se han
+  // unido van detrás, y el protagonista y el compañero no se quedan nunca fuera.
   const fixed = [profile.heroUid, profile.partnerUid].filter((uid) => uid != null);
-  profile.teamUids = [...fixed, ...team.filter((uid) => !fixed.includes(uid))].slice(0, 4);
+  const kept = profile.teamUids.filter((uid) => team.includes(uid) || fixed.includes(uid));
+  const joined = team.filter((uid) => !kept.includes(uid));
+  profile.teamUids = [...kept, ...fixed.filter((uid) => !kept.includes(uid)), ...joined].slice(0, 4);
   return lines;
 }
 
