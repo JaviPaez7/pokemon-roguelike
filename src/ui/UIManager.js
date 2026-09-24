@@ -145,7 +145,7 @@ export class UIManager {
     });
 
     this.eventBus.on('show_dialog', (data) => {
-      this.showDialog(data.text, data.callback, data.instant);
+      this.showDialog(data.text, data.callback, data.instant, { speaker: data.speaker, portrait: data.portrait });
     });
 
     this.eventBus.on('damage_dealt', () => {
@@ -258,8 +258,14 @@ export class UIManager {
   handleMenuInput(data) { handleMenuInput(this, data); }
   updateSelectionVisuals() { updateSelectionVisuals(this); }
 
-  showDialog(text, callback = null, instant = false) {
-    this.dialog.showDialog(text, callback, instant);
+  /**
+   * @param {string} text
+   * @param {Function | null} [callback]
+   * @param {boolean} [instant]
+   * @param {import('./DialogController.js').DialogOptions} [options] - Interlocutor y retrato
+   */
+  showDialog(text, callback = null, instant = false, options = {}) {
+    this.dialog.showDialog(text, callback, instant, options);
   }
 
   handleDialogInput(data) {

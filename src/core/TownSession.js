@@ -114,6 +114,7 @@ export function enterTown(game, { arrival = 'start', spot: requestedSpot } = {})
 
   for (const npc of TOWN.npcs) spawnTownNpc(game, npc);
 
+  game.floorManager?.preloadVisibleSprites();
   game._updateCamera();
   game.changeState(GAME_STATES.TOWN);
   try {
@@ -172,7 +173,7 @@ function spawnTownNpc(game, npc) {
     types: species?.types ?? ['normal'],
   });
   em.setComponent(id, 'sprite', {
-    url: species?.sprite ?? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${npc.speciesId}.png`,
+    url: species?.sprite ?? '',
     image: null,
     loaded: false,
   });
@@ -306,7 +307,7 @@ function teamIdsInOrder(game) {
 
 /**
  * @param {import('./Game.js').Game} game
- * @param {{ kind: string, id: string, role: string, name: string }} thing
+ * @param {{ kind: string, id: string, role: string, name: string, speciesId?: number }} thing
  */
 function interact(game, thing) {
   const ui = game.uiManager;
@@ -327,9 +328,11 @@ function interact(game, thing) {
     case 'board':
       ui.openMissionBoard();
       break;
-    case 'talk':
-      ui.showDialog(townLine(thing.id));
+    case 'talk': {
+      const line = townLine(thing.id);
+      ui.showDialog(line.text, null, false, { speaker: thing.name, portrait: { speciesId: thing.speciesId, emotion: line.emotion } });
       break;
+    }
   }
 }
 
@@ -343,13 +346,23 @@ function faceTowards(game, npcId) {
   game.movementSystem._updateFacing(npcPos, leader.x - npcPos.x, leader.y - npcPos.y);
 }
 
-/** @param {string} npcId */
+/**
+ * Lo que dice un vecino y con qué cara.
+ * @param {string} npcId
+ * @returns {{ text: string, emotion: string }}
+ */
 function townLine(npcId) {
   const lines = {
-    slowpoke: '…\n\n……¿Eh? Ah, hola.\n\nDicen que las Bayas Aranja curan un poco. Yo me las como porque están ricas.',
-    pidgey:
-      '¡Hola! El tablón tiene encargos nuevos cada día.\n\n' +
-      'Cuantos más completéis, más subirá el rango de vuestro equipo… ¡y más lejos os dejarán ir!',
+    slowpoke: {
+      text: '…\n\n……¿Eh? Ah, hola.\n\nDicen que las Bayas Aranja curan un poco. Yo me las como porque están ricas.',
+      emotion: 'Normal',
+    },
+    pidgey: {
+      text:
+        '¡Hola! El tablón tiene encargos nuevos cada día.\n\n' +
+        'Cuantos más completéis, más subirá el rango de vuestro equipo… ¡y más lejos os dejarán ir!',
+      emotion: 'Happy',
+    },
   };
-  return lines[npcId] ?? '…';
+  return lines[npcId] ?? { text: '…', emotion: 'Normal' };
 }

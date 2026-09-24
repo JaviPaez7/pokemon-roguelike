@@ -53,6 +53,9 @@ export class TileMap {
      */
     this.rooms = [];
 
+    /** @type {number} Sube con cada cambio de casilla (el render cachea el mapa dibujado) */
+    this.version = 0;
+
     // Inicializar ambos arrays
     for (let y = 0; y < height; y++) {
       this.tiles[y] = new Array(width).fill(TILES.WALL.id);
@@ -87,6 +90,7 @@ export class TileMap {
   setTile(x, y, tileId) {
     if (!this.isInBounds(x, y)) return;
     this.tiles[y][x] = tileId;
+    this.version++;
   }
 
   /**

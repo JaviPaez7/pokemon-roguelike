@@ -63,7 +63,7 @@ export function isTownExit(map, x, y) {
  */
 export function townThingAt(x, y, data = townData) {
   const npc = data.npcs.find((n) => n.x === x && n.y === y);
-  if (npc) return { kind: 'npc', id: npc.id, role: npc.role, name: npc.name };
+  if (npc) return { kind: 'npc', id: npc.id, role: npc.role, name: npc.name, speciesId: npc.speciesId };
   const fixture = data.fixtures.find((f) => f.x === x && f.y === y);
   if (fixture) return { kind: 'fixture', id: fixture.id, role: fixture.role, name: fixture.name };
   return null;

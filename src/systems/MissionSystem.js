@@ -94,11 +94,13 @@ export function talkToMissionClient(game, clientId) {
     return;
   }
   const itemName = (id) => game.itemsData.find((i) => i.id === id)?.name ?? id;
+  /** @param {string} emotion */
+  const client = (emotion) => ({ speaker: mission.clientName, portrait: { speciesId: mission.clientSpeciesId, emotion } });
 
   if (mission.type === 'deliver') {
     const slot = game.inventory.find((s) => s.itemId === mission.itemId);
     if (!slot) {
-      ui.showDialog(`${mission.clientName}: ¿Me traéis ${itemName(mission.itemId)}? Lo necesito de verdad…`);
+      ui.showDialog(`¿Me traéis ${itemName(mission.itemId)}? Lo necesito de verdad…`, null, false, client('Worried'));
       return;
     }
     slot.quantity -= 1;
@@ -106,8 +108,10 @@ export function talkToMissionClient(game, clientId) {
     markMissionDone(game.profile, mission.id);
     em.destroyEntity(clientId);
     ui.showDialog(
-      `${mission.clientName}: ¡Mi ${itemName(mission.itemId)}! Muchísimas gracias.\n\nOs espero en el pueblo con la recompensa.`,
+      `¡Mi ${itemName(mission.itemId)}! Muchísimas gracias.\n\nOs espero en el pueblo con la recompensa.`,
       () => afterMissionDone(game),
+      false,
+      client('Joyous'),
     );
     return;
   }
@@ -116,8 +120,10 @@ export function talkToMissionClient(game, clientId) {
   markMissionDone(game.profile, mission.id);
   em.destroyEntity(clientId);
   ui.showDialog(
-    `${mission.clientName}: ¡Habéis venido a por mí! Gracias, de verdad.\n\nVuelvo al pueblo; allí os daré la recompensa.`,
+    `¡Habéis venido a por mí! Gracias, de verdad.\n\nVuelvo al pueblo; allí os daré la recompensa.`,
     () => afterMissionDone(game),
+    false,
+    client('Teary-Eyed'),
   );
 }
 

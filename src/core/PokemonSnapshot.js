@@ -203,9 +203,7 @@ export function spawnFromSnapshot(game, p, { slot, isLeader }) {
   });
 
   const pokeRef = game.pokemonData.find((poke) => poke.id === p.speciesId || poke.name.toLowerCase() === p.speciesId);
-  const defaultSprite = pokeRef
-    ? pokeRef.sprite
-    : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.speciesId}.png`;
+  const defaultSprite = pokeRef?.sprite ?? '';
   // Si hay transformación activa, conservar el sprite copiado
   const spriteUrl = p._preTransform && p.spriteUrl ? p.spriteUrl : defaultSprite;
   em.setComponent(id, 'sprite', { url: spriteUrl, image: null, loaded: false });

@@ -18,6 +18,7 @@ JavaScript sin framework (módulos ES), Canvas 2D, arquitectura ECS y Vite 8. La
   - Cualquier `console.error` o excepción de la página hace fallar el test (`tests/e2e/fixtures.js`). Las peticiones a otros dominios (Google Fonts, sprites de PokeAPI) se responden en local.
   - Los tests no dependen del mapa de una semilla concreta: eligen casillas libres leyendo el mapa desde `window.game`, no dan pasos a ciegas.
 - `build:ghpages` y `build:itch` solo cambian la `base` (ver `vite.config.js`). Producción no los usa.
+- `npm run sprites:pmd`: vuelve a descargar de PMDCollab/SpriteCollab los sprites animados y los retratos (151 especies más Kecleon) y regenera `src/data/pmd-sprites.json` y `pmd-credits.json`. Los ficheros están en el repo (unos 13 MB), así que solo hace falta para actualizarlos o añadir especies (`EXTRA_SPECIES` en el script).
 
 ## CI y despliegue: `master` va a producción
 
@@ -45,11 +46,13 @@ Trabaja en una rama y fusiona en `master` por PR con la CI en verde y el cambio 
 - `entities/`: `EntityManager`, `Components` (ECS; un componente nuevo hay que declararlo ahí o se descarta) y `EnemyAI`.
 - `systems/`: sistemas ECS (combate, alcance de movimientos, movimiento, FOV, habilidades, reclutamiento, evolución, experiencia, inventario, objetos, trampas, clima, acciones, estadísticas, eventos de piso y misiones).
 - `map/`: generación de mazmorras (`DungeonGenerator`), `FloorManager`, `TileMap`, `TileTypes` (las casillas del pueblo son los ids 20+), `Biomes` y `Town`.
-- `render/`: `Renderer`, `MapRenderer`, `EntityRenderer`, `Camera`, `SpriteManager` y `ParticleSystem`.
-- `ui/`: `UIManager` más `ui/menus/*` (menús en HTML sobre el canvas), `HUD`, `MessageLog` y `DialogController`.
+- `render/`: `Renderer`, `MapRenderer`, `EntityRenderer`, `Camera`, `SpriteManager` y `ParticleSystem`, más:
+  - `PmdSprites.js`: hojas animadas de PMDCollab (8 direcciones; Idle, Walk, Attack, Shoot, Hurt y Sleep) y retratos. `EntityRenderer` elige la animación según lo que pasa (andar, `move_used`, `damage_dealt`, dormido) y, si una hoja aún no ha cargado, dibuja el sprite estático local.
+  - `TilesetPainter.js`: casillas procedurales con el tema de cada mazmorra (`data/tilesets.json`; cada mazmorra dice el suyo en `dungeons.json`). `MapRenderer` pinta el piso una vez en un lienzo aparte y solo lo rehace si cambia una casilla (`TileMap.setTile` sube `tileMap.version`): no modifiques `tileMap.tiles` a mano.
+- `ui/`: `UIManager` más `ui/menus/*` (menús en HTML sobre el canvas), `HUD`, `MessageLog` y `DialogController`. `showDialog(texto, callback, instantáneo, { speaker, portrait: { speciesId, emotion } })` pone el nombre y el retrato de quien habla. `CreditsMenu` (desde el título) cita a PMDCollab y a sus artistas: la licencia lo exige.
 - `audio/`: `MusicManager` y `SfxManager` (sonido sintetizado).
 - `data/`: JSON de Pokémon, movimientos, objetos, tipos, evoluciones, pisos, mazmorras, pueblo y test de personalidad.
-- `public/sprites/`: sprites. `download_sprites.cjs` baja los 151 de PokeAPI a `public/sprites/pokemon/`.
+- `public/sprites/`: `pmd/` (PMDCollab, con su `LICENSE.md` y `CREDITS.txt`) y `pokemon/` (sprites estáticos locales, de reserva mientras cargan las hojas; `download_sprites.cjs` los bajó de PokeAPI). El juego ya no pide nada a PokeAPI en tiempo de ejecución.
 
 Flujo de estados: `Game.changeState(nuevo)` ejecuta `_onStateExit` y `_onStateEnter`, y emite `state_changed`. `UIManager.handleStateChange` reacciona: abre el título o la nueva aventura, y cierra la UI al volver a `EXPLORING` o `TOWN`. `closeMenu()` vuelve a `game.homeState` (el pueblo o la mazmorra, según el mapa). **`MENU` no abre nada:** cada menú llama a `changeState(MENU)` al abrirse, y quien quiere un menú llama a su función `open*` (Escape, X, C y el botón táctil emiten `ui_action` y `UIManager` abre el menú). Quien reacciona a `state_changed` no puede llamar a `changeState`: `Game` lo ignora y registra un `console.error`, que hace fallar los tests.
 
@@ -69,7 +72,9 @@ La estructura del README está desactualizada (menciona `src/utils` y un sistema
 
 - **Arreglado en la fase 1 del plan:** desde `75eebf4` (28 de julio), abrir la pausa, la mochila o el equipo desde exploración entraba en una recursión (`openPauseMenu` → `changeState(MENU)` → `state_changed` → `openPauseMenu`…). El `EventBus` se tragaba el `RangeError` y el menú salía tras más de mil repintados. Lo cubre `tests/e2e/menu-state.spec.js`.
 - **Arreglados en el hito H0:** el diálogo «se ha unido a tu equipo» que se borraba al reclutar (con `changeState` idempotente) y los diálogos animados que pedían dos Z con el texto ya terminado. Los cubre `tests/e2e/dialogs.spec.js`.
-- **Pendiente según el plan MM** (no son fallos): sprites estáticos de PokeAPI (H3); sin historia (H4).
+- **Pendiente según el plan MM** (no son fallos): sin historia (H4).
+- **Licencia de los sprites:** para la 1.ª generación, todo el arte de base de PMDCollab es el oficial de Chunsoft (los 151 figuran con crédito `CHUNSOFT`); lo de la comunidad (animaciones y emociones añadidas) es CC BY-NC 4.0. El juego debe seguir siendo gratuito y sin anuncios, y la pantalla de créditos no se puede quitar.
+- El bundle principal pasa de 500 kB (unos 580 kB; 145 kB con gzip) por los datos del juego y el manifiesto de sprites. Dividir el código es tarea pendiente.
 - En el pueblo, el equipo son copias de las fichas de la plantilla. Lo que cambie ahí y deba durar hay que apuntarlo también en `profile.roster` (como hace `syncRosterHeldItem` al equipar); cambiar la táctica o el líder en el pueblo aún no se guarda.
 - La batería E2E completa tarda alrededor de un minuto en local (4 workers): mientras trabajas, ejecuta solo los ficheros afectados.
 

@@ -80,7 +80,14 @@ export class Renderer {
    * @private
    */
   _setupEventListeners(eventBus) {
+    eventBus.on('move_used', (data) => {
+      const melee = data.range === 'front' || data.range === 'around';
+      this.entityRenderer.playAnimation(data.attackerId, melee ? 'Attack' : 'Shoot');
+      this._onRenderRequested();
+    });
+
     eventBus.on('damage_dealt', (data) => {
+      this.entityRenderer.playAnimation(data.defenderId, 'Hurt');
       this.entityRenderer.spawnFloatingDamage(
         data.defenderId,
         data.damage,
@@ -122,8 +129,8 @@ export class Renderer {
     });
 
     eventBus.on('pokemon_fainted', (data) => {
-      if (data.pos && data.spriteUrl) {
-        this.entityRenderer.spawnFaintAnimation(data.entityId, data.pos, data.spriteUrl);
+      if (data.pos && (data.spriteUrl || data.speciesId != null)) {
+        this.entityRenderer.spawnFaintAnimation(data.entityId, data.pos, data.spriteUrl, data.speciesId ?? null);
         this._onRenderRequested();
       }
     });

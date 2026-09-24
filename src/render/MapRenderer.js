@@ -2,8 +2,11 @@
  * MapRenderer.js
  * 
  * Renderizador del mapa de tiles de la mazmorra.
- * Dibuja los tiles del mapa usando rectángulos coloreados con bordes sutiles,
- * aplicando el sistema de visibilidad (FOV) para crear niebla de guerra.
+ *
+ * El piso entero se pinta una vez en un lienzo aparte (con el tema de la
+ * mazmorra, render/TilesetPainter.js) y solo se vuelve a pintar si cambia una
+ * casilla (`tileMap.version`). En cada fotograma se copia ese lienzo y encima
+ * se dibujan el agua y la lava animadas y la niebla de guerra.
  * 
  * Niveles de visibilidad:
  * - VISIBLE (2): Se dibuja a brillo completo
@@ -17,14 +20,12 @@
  * - Degradado sutil en los bordes del FOV
  */
 
-import { TILES, TILE_BY_ID } from '../map/TileTypes.js';
+import { TILES } from '../map/TileTypes.js';
+import { paintDungeonTile } from './TilesetPainter.js';
+import tilesets from '../data/tilesets.json';
 
-/** Opacidad para tiles recordados pero fuera del FOV actual */
-const OPACIDAD_SEEN = 0.4;
-
-/** Color y ancho de las líneas de cuadrícula entre tiles */
-const COLOR_GRID = 'rgba(255, 255, 255, 0.04)';
-const ANCHO_GRID = 0.5;
+/** Oscurecimiento de las casillas recordadas pero fuera del FOV actual */
+const NIEBLA_SEEN = 'rgba(0, 0, 0, 0.6)';
 
 /** Velocidad de animación de las olas de agua */
 const VELOCIDAD_OLAS = 0.003;
@@ -42,6 +43,13 @@ export class MapRenderer {
      * @type {number}
      */
     this._tiempo = 0;
+
+    /** @type {HTMLCanvasElement | null} Piso dibujado */
+    this._capa = null;
+    /** @type {Object | null} Mapa de la capa */
+    this._capaMapa = null;
+    /** @type {string} Versión del mapa, tema y tamaño con que se dibujó */
+    this._capaClave = '';
   }
 
   /**
@@ -53,37 +61,44 @@ export class MapRenderer {
    * @param {import('./Camera.js').Camera} camera - Cámara/viewport actual
    */
   render(ctx, tileMap, camera) {
-    // Incrementar el temporizador de animaciones
     this._tiempo = performance.now();
-
-    // Obtener el rango de tiles visibles en el viewport
-    const { startCol, endCol, startRow, endRow } = camera.getVisibleRange();
     const tileSize = camera.tileSize;
 
-    // Iterar solo sobre los tiles visibles en la cámara (viewport culling)
+    const capa = this._obtenerCapa(tileMap, tileSize);
+    const origen = camera.worldToScreen(0, 0);
+    if (capa) ctx.drawImage(capa, origen.x, origen.y);
+
+    const { startCol, endCol, startRow, endRow } = camera.getVisibleRange();
+    const tema = tileMap.biome ?? {};
+    const colorVacio = tema.void ?? '#000000';
+
     for (let y = startRow; y <= endRow; y++) {
       for (let x = startCol; x <= endCol; x++) {
-        // Verificar que esté dentro de los límites del mapa
         if (!tileMap.isInBounds(x, y)) continue;
-
+        const { x: sx, y: sy } = camera.worldToScreen(x, y);
         const visibilidad = tileMap.getVisibility(x, y);
 
-        // Los tiles desconocidos no se dibujan (el fondo negro se muestra)
-        if (visibilidad === 0) continue;
+        // Sin descubrir: se tapa
+        if (visibilidad === 0) {
+          ctx.fillStyle = colorVacio;
+          ctx.fillRect(sx, sy, tileSize, tileSize);
+          continue;
+        }
 
-        // Obtener datos del tile
-        const tile = tileMap.getTile(x, y);
+        // Agua y lava se mueven
+        const id = tileMap.tiles[y][x];
+        if (!tileMap.isTown && (id === TILES.WATER.id || id === TILES.LAVA.id)) {
+          const base = id === TILES.WATER.id ? (tema.water ?? TILES.WATER.colors.floor) : (tema.lava ?? '#ff5500');
+          ctx.fillStyle = this._calcularColorOla(base, x, y);
+          ctx.globalAlpha = 0.45;
+          ctx.fillRect(sx, sy, tileSize, tileSize);
+          ctx.globalAlpha = 1;
+        }
 
-        // Convertir coordenadas de mundo a pantalla
-        const screenPos = camera.worldToScreen(x, y);
-        const sx = screenPos.x;
-        const sy = screenPos.y;
-
-        // Dibujar el tile según su tipo
-        this._dibujarTile(ctx, tile, sx, sy, tileSize, visibilidad, x, y, tileMap);
-
-        // Dibujar líneas de cuadrícula sutiles
-        this._dibujarGrid(ctx, sx, sy, tileSize, tileMap);
+        if (visibilidad === 1) {
+          ctx.fillStyle = NIEBLA_SEEN;
+          ctx.fillRect(sx, sy, tileSize, tileSize);
+        }
       }
     }
 
@@ -92,118 +107,47 @@ export class MapRenderer {
   }
 
   /**
-   * Dibuja un tile individual con su color y efectos.
-   * 
-   * @param {CanvasRenderingContext2D} ctx - Contexto del canvas
-   * @param {Object} tile - Objeto tile con propiedades de color
-   * @param {number} sx - Posición X en pantalla (píxeles)
-   * @param {number} sy - Posición Y en pantalla (píxeles)
-   * @param {number} size - Tamaño del tile en píxeles
-   * @param {number} visibilidad - Estado de visibilidad (1 o 2)
-   * @param {number} worldX - Coordenada X en el mundo (para animaciones)
-   * @param {number} worldY - Coordenada Y en el mundo (para animaciones)
-   * @param {import('../map/TileMap.js').TileMap} tileMap - Mapa de tiles para chequear vecinos
+   * El piso entero dibujado en un lienzo aparte; se rehace si cambia el mapa.
+   * @param {import('../map/TileMap.js').TileMap} tileMap
+   * @param {number} tileSize
+   * @returns {HTMLCanvasElement | null}
    * @private
    */
-  _dibujarTile(ctx, tile, sx, sy, size, visibilidad, worldX, worldY, tileMap) {
-    if (tile.id >= TILES.TOWN_GRASS.id) {
-      this._dibujarTilePueblo(ctx, tile, sx, sy, size, worldX, worldY);
-      return;
-    }
+  _obtenerCapa(tileMap, tileSize) {
+    const clave = `${tileMap.version ?? 0}|${tileMap.isTown ? 'pueblo' : tileMap.biome?.id ?? ''}|${tileSize}`;
+    if (this._capa && this._capaMapa === tileMap && this._capaClave === clave) return this._capa;
+    if (typeof document === 'undefined') return null;
 
-    // Guardar estado del contexto para aplicar opacidad
-    ctx.save();
+    const capa = this._capa ?? document.createElement('canvas');
+    capa.width = tileMap.width * tileSize;
+    capa.height = tileMap.height * tileSize;
+    const c = capa.getContext('2d');
+    c.imageSmoothingEnabled = false;
+    c.clearRect(0, 0, capa.width, capa.height);
 
-    // Aplicar opacidad reducida para tiles recordados (fuera del FOV)
-    if (visibilidad === 1) {
-      ctx.globalAlpha = OPACIDAD_SEEN;
-    }
-
-    // Color base del tile (fallback a colores originales si no hay bioma)
-    let colorSuelo = tile.colors.floor;
-    let colorBorde = tile.colors.wall;
-
-    if (tileMap && tileMap.biome) {
-      if (tile.id === 0) { // WALL (0)
-        colorSuelo = tileMap.biome.wall;
-        colorBorde = tileMap.biome.void;
-      } else if (tile.id === 4) { // WATER
-        colorSuelo = tileMap.biome.water;
-        colorBorde = tileMap.biome.wall;
-      } else if (tile.id === 6) { // LAVA
-        colorSuelo = tileMap.biome.lava || '#ff4400';
-        colorBorde = tileMap.biome.wall;
-      } else if (tile.id === 3) { // STAIRS
-        colorSuelo = tileMap.biome.stairs || tileMap.biome.floor;
-        colorBorde = tileMap.biome.wall;
-      } else if (tile.id === 8) { // WONDER_TILE
-        colorSuelo = '#c9a0ff';
-        colorBorde = tileMap.biome.wall;
-      } else { // FLOOR (1), CORRIDOR (2), TRAPS
-        colorSuelo = tileMap.biome.floor;
-        colorBorde = tileMap.biome.wall;
+    const tema = tileMap.biome?.deco ? tileMap.biome : { id: 'bosque', ...tilesets.bosque };
+    for (let y = 0; y < tileMap.height; y++) {
+      for (let x = 0; x < tileMap.width; x++) {
+        const tile = tileMap.getTile(x, y);
+        const px = x * tileSize;
+        const py = y * tileSize;
+        if (tile.id >= TILES.TOWN_GRASS.id) {
+          this._dibujarTilePueblo(c, tile, px, py, tileSize, x, y);
+          continue;
+        }
+        paintDungeonTile(c, tileMap, x, y, px, py, tileSize, tema);
+        if (tile.id === TILES.STAIRS_DOWN.id) {
+          c.fillStyle = tema.stairs;
+          c.fillRect(px + 2, py + 2, tileSize - 4, tileSize - 4);
+          this._dibujarEscaleras(c, px, py, tileSize);
+        }
       }
     }
 
-    let isRestRoom = false;
-    if (tileMap && tileMap.rooms && tile.walkable && typeof tileMap.isRestRoom === 'function') {
-        isRestRoom = tileMap.isRestRoom(worldX, worldY);
-    }
-
-    // Efecto especial para agua: animación de olas
-    if (tile.id === 4) { // 4 es WATER
-      colorSuelo = this._calcularColorOla(tile.colors.floor, worldX, worldY);
-    } else if (isRestRoom && tile.id !== 2) { // Si no es WALL (2)
-      // Tintar un poco la sala de descanso, combinándolo con el bioma si queremos, 
-      // pero por ahora lo dejamos verde claro.
-      colorSuelo = '#3d5c4d'; 
-      colorBorde = '#2c4538';
-    }
-
-    // Rellenar el tile con el color base
-    ctx.fillStyle = colorSuelo;
-    ctx.fillRect(sx, sy, size, size);
-
-    // Decoraciones en el suelo usando aritmética simple para el seudo-random (mucho más rápido que Math.sin)
-    if (tile.id === TILES.FLOOR.id) {
-        // Hash ultra rápido usando bits
-        const n = (worldX * 31337 + worldY * 31337) ^ (worldX | worldY);
-        const dec = n % 100;
-        
-        if (dec < 5) {
-            // Dibujar una piedrita
-            ctx.fillStyle = 'rgba(0,0,0,0.3)';
-            ctx.fillRect(sx + size*0.7, sy + size*0.2, 3, 2);
-            ctx.fillStyle = 'rgba(150,150,150,0.6)';
-            ctx.fillRect(sx + size*0.7, sy + size*0.2 - 1, 2, 1);
-        } else if (dec < 10) {
-            // Dibujar una brizna de hierba
-            ctx.fillStyle = 'rgba(50, 150, 50, 0.4)';
-            ctx.fillRect(sx + size*0.2, sy + size*0.8, 2, -4);
-            ctx.fillRect(sx + size*0.3, sy + size*0.8, 1, -2);
-        }
-    }
-
-    // Sombras de pared (si es FLOOR o TRAP y hay WALL arriba)
-    if ((tile.id === TILES.FLOOR.id || tile.id === TILES.TRAP_HIDDEN.id || tile.id === TILES.TRAP_REVEALED.id) && tileMap && tileMap.isInBounds(worldX, worldY - 1)) {
-        const topTile = tileMap.getTile(worldX, worldY - 1);
-        if (topTile.id === TILES.WALL.id) {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-            ctx.fillRect(sx, sy, size, 4); // Sombra en la parte superior del tile
-        }
-    }
-
-    // Dibujar borde sutil (1px más oscuro) para definir los tiles
-    ctx.strokeStyle = colorBorde;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(sx + 0.5, sy + 0.5, size - 1, size - 1);
-
-    // Efectos especiales según tipo de tile
-    if (tile.id === TILES.STAIRS_DOWN.id) {
-      this._dibujarEscaleras(ctx, sx, sy, size);
-    }
-
-    ctx.restore();
+    this._capa = capa;
+    this._capaMapa = tileMap;
+    this._capaClave = clave;
+    return capa;
   }
 
   /**
@@ -370,32 +314,6 @@ export class MapRenderer {
     // Redibujar el texto encima de la sombra
     ctx.fillStyle = '#ffcc00';
     ctx.fillText('>', sx + size / 2, sy + size / 2);
-  }
-
-  /**
-   * Dibuja líneas de cuadrícula sutiles entre tiles.
-   * 
-   * @param {CanvasRenderingContext2D} ctx - Contexto del canvas
-   * @param {number} sx - Posición X en pantalla
-   * @param {number} sy - Posición Y en pantalla
-   * @param {number} size - Tamaño del tile
-   * @private
-   */
-  _dibujarGrid(ctx, sx, sy, size, tileMap) {
-    ctx.strokeStyle = tileMap && tileMap.biome && tileMap.biome.gridLines ? tileMap.biome.gridLines : COLOR_GRID;
-    ctx.lineWidth = ANCHO_GRID;
-
-    // Línea derecha del tile
-    ctx.beginPath();
-    ctx.moveTo(sx + size, sy);
-    ctx.lineTo(sx + size, sy + size);
-    ctx.stroke();
-
-    // Línea inferior del tile
-    ctx.beginPath();
-    ctx.moveTo(sx, sy + size);
-    ctx.lineTo(sx + size, sy + size);
-    ctx.stroke();
   }
 
   /**

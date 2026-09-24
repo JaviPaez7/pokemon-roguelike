@@ -79,6 +79,8 @@ export function tryRecruit(game, defeatedId, attackerId) {
   game.uiManager.showDialog(
     `¡${info.name} se ha levantado!\n\nParece que quiere unirse a vuestro equipo.`,
     () => game.uiManager.openRecruitMenu(defeatedId, info),
+    false,
+    { speaker: info.name, portrait: { speciesId: info.speciesId, emotion: 'Inspired' } },
   );
   return true;
 }
@@ -98,6 +100,7 @@ export function acceptRecruit(game, id) {
   }
   em.removeComponent(id, 'npcFriendly');
 
+  const joyful = { speaker: info.name, portrait: { speciesId: info.speciesId, emotion: 'Joyous' } };
   if (partySize(game) < MAX_PARTY_SIZE) {
     em.setComponent(id, 'partyMember', { slot: partySize(game), isLeader: false, tactic: 'follow' });
     em.setComponent(id, 'aiControlled', { behavior: 'follower' });
@@ -107,12 +110,12 @@ export function acceptRecruit(game, id) {
     em.setComponent(id, 'fighter', fighter);
     game.turnManager.addEntity(id, fighter.speed || 50, false);
     const onlyThisRun = game.dungeon?.challenge ? '\n\nSolo os acompañará durante esta subida a la torre.' : '';
-    game.uiManager.showDialog(`¡${info.name} se ha unido a vuestro equipo!${onlyThisRun}`);
+    game.uiManager.showDialog(`¡${info.name} se ha unido a vuestro equipo!${onlyThisRun}`, null, false, joyful);
   } else if (hasBase(game)) {
     addToRoster(game.profile, restedSnapshot(toSnapshot(game.memberData(id)), game.movesData));
     game.turnManager.removeEntity(id);
     em.destroyEntity(id);
-    game.uiManager.showDialog(`¡${info.name} se ha unido a vuestro equipo!\n\nComo ya sois cuatro, os esperará en la base.`);
+    game.uiManager.showDialog(`¡${info.name} se ha unido a vuestro equipo!\n\nComo ya sois cuatro, os esperará en la base.`, null, false, joyful);
   } else {
     game.turnManager.removeEntity(id);
     em.destroyEntity(id);

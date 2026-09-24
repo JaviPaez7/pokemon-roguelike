@@ -953,6 +953,8 @@ export class CombatHandler {
       }
       if (range === 'line') this._emitLineProjectile(attackerId, primary, moveSelected);
     }
+    // Para la animación: golpe cuerpo a cuerpo o a distancia
+    game.eventBus.emit('move_used', { attackerId, range, moveId: moveSelected.id });
 
     // Explosión: golpear a los demás antes de que el usuario se debilite
     if (moveSelected.effect === 'self_destruct') {
