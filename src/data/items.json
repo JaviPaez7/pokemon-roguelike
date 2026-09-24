@@ -66,36 +66,6 @@
     "spriteUrl": "/sprites/items/pokeball.png"
   },
   {
-    "id": "pokeball",
-    "name": "Poké Ball",
-    "type": "capture",
-    "captureBonus": 1.15,
-    "rarity": 0.25,
-    "description": "Atrapa Pokémon debilitados",
-    "sprite": "🔴",
-    "spriteUrl": "/sprites/items/pokeball.png"
-  },
-  {
-    "id": "great_ball",
-    "name": "Super Ball",
-    "type": "capture",
-    "captureBonus": 1.6,
-    "rarity": 0.1,
-    "description": "Mejor ratio de captura",
-    "sprite": "🔵",
-    "spriteUrl": "/sprites/items/great_ball.png"
-  },
-  {
-    "id": "ultra_ball",
-    "name": "Ultra Ball",
-    "type": "capture",
-    "captureBonus": 2,
-    "rarity": 0.05,
-    "description": "Excelente ratio de captura",
-    "sprite": "⚫",
-    "spriteUrl": "/sprites/items/ultra_ball.png"
-  },
-  {
     "id": "oran_berry",
     "name": "Baya Aranja",
     "type": "heal",
@@ -426,6 +396,94 @@
     "rarity": 0.2,
     "description": "Lánzala para infligir daño fijo a distancia.",
     "sprite": "📌",
+    "spriteUrl": ""
+  },
+  {
+    "id": "friend_bow",
+    "name": "Lazo Amigo",
+    "type": "held",
+    "held": { "recruit": true },
+    "rarity": 0.02,
+    "price": 600,
+    "description": "Si lo lleva el líder, a los Pokémon que derrota les cuesta menos unirse al equipo.",
+    "sprite": "🎀",
+    "spriteUrl": ""
+  },
+  {
+    "id": "power_band",
+    "name": "Banda Poder",
+    "type": "held",
+    "held": { "stats": { "attack": 1.2 } },
+    "rarity": 0.03,
+    "price": 400,
+    "description": "Quien la lleva pega más fuerte con los ataques físicos (Ataque +20 %).",
+    "sprite": "🟥",
+    "spriteUrl": ""
+  },
+  {
+    "id": "special_band",
+    "name": "Banda Especial",
+    "type": "held",
+    "held": { "stats": { "spAtk": 1.2 } },
+    "rarity": 0.03,
+    "price": 400,
+    "description": "Quien la lleva pega más fuerte con los ataques especiales (At. Esp. +20 %).",
+    "sprite": "🟪",
+    "spriteUrl": ""
+  },
+  {
+    "id": "defense_scarf",
+    "name": "Pañuelo Defensa",
+    "type": "held",
+    "held": { "stats": { "defense": 1.2 } },
+    "rarity": 0.03,
+    "price": 400,
+    "description": "Quien lo lleva aguanta mejor los ataques físicos (Defensa +20 %).",
+    "sprite": "🟫",
+    "spriteUrl": ""
+  },
+  {
+    "id": "zinc_band",
+    "name": "Banda Zinc",
+    "type": "held",
+    "held": { "stats": { "spDef": 1.2 } },
+    "rarity": 0.03,
+    "price": 400,
+    "description": "Quien la lleva aguanta mejor los ataques especiales (Def. Esp. +20 %).",
+    "sprite": "🟦",
+    "spriteUrl": ""
+  },
+  {
+    "id": "pecha_scarf",
+    "name": "Pañuelo Meloc",
+    "type": "held",
+    "held": { "preventStatus": ["poison"] },
+    "rarity": 0.04,
+    "price": 300,
+    "description": "Quien lo lleva no puede ser envenenado.",
+    "sprite": "🧣",
+    "spriteUrl": ""
+  },
+  {
+    "id": "insomniscope",
+    "name": "Insomniscopio",
+    "type": "held",
+    "held": { "preventStatus": ["sleep"] },
+    "rarity": 0.04,
+    "price": 300,
+    "description": "Quien lo lleva no puede quedarse dormido.",
+    "sprite": "🔭",
+    "spriteUrl": ""
+  },
+  {
+    "id": "stamina_band",
+    "name": "Banda Aguante",
+    "type": "held",
+    "held": { "bellyDrain": 0.5 },
+    "rarity": 0.03,
+    "price": 450,
+    "description": "Si la lleva el líder, la tripa baja la mitad de rápido.",
+    "sprite": "🟨",
     "spriteUrl": ""
   }
 ]

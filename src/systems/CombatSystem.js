@@ -6,6 +6,8 @@
 import { COLORS } from '../constants.js';
 import { getAbility, applyPostAttackAbilities, tryTraceAbility } from './AbilitySystem.js';
 import { random } from '../core/Random.js';
+import { heldStatMultiplier, heldPreventsStatus, heldName } from '../core/HeldItems.js';
+import { hasIqSkill } from '../core/IQ.js';
 
 /**
  * Calcula el daño de un movimiento
@@ -69,7 +71,8 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
       acc = Math.floor(acc * 0.8);
     }
     const accStage = Math.max(-6, Math.min(6, attacker.statModifiers?.accuracy || 0));
-    const evaStage = Math.max(-6, Math.min(6, defender.statModifiers?.evasion || 0));
+    const dodger = hasIqSkill(defenderInfo, 'quick_dodger') ? 1 : 0; // Esquivador (CI)
+    const evaStage = Math.max(-6, Math.min(6, (defender.statModifiers?.evasion || 0) + dodger));
     const stage = Math.max(-6, Math.min(6, accStage - evaStage));
     const stageMult = stage >= 0 ? (3 + stage) / 3 : 3 / (3 - stage);
     acc = Math.max(1, Math.min(100, Math.floor(acc * stageMult)));
@@ -253,6 +256,9 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
       : (defender.statModifiers.spDef || 0);
     def = applyStatModifier(def, defStage);
   }
+  // Objetos equipados (Banda Poder, Pañuelo Defensa…)
+  atk = Math.floor(atk * heldStatMultiplier(attackerInfo, isPhysical ? 'attack' : 'spAtk'));
+  def = Math.max(1, Math.floor(def * heldStatMultiplier(defenderInfo, isPhysical ? 'defense' : 'spDef')));
   // Sebo (Thick Fat): reduce daño de Fuego/Hielo
   {
     const defAbThick = getAbility(defenderInfo);
@@ -450,8 +456,14 @@ function applyStatModifier(baseStat, stage) {
  * @param {Object} params.game - Objeto Game
  * @returns {Object} { success, damage, effectiveness, messages, defenderFainted }
  */
+/**
+ * Ejecuta un movimiento contra un objetivo.
+ * Con `extraTarget` (segundo y siguientes objetivos de un movimiento de área)
+ * no vuelve a gastar PP, ni a anunciar el movimiento, ni a gestionar carga o
+ * Venganza, y la Explosión no debilita al usuario (lo hace el objetivo principal).
+ */
 export function executeMove(params) {
-  const { attackerId, defenderId, move, entityManager, typeChart, eventBus, game, currentWeather } = params;
+  const { attackerId, defenderId, move, entityManager, typeChart, eventBus, game, currentWeather, extraTarget = false } = params;
   const activeWeather = currentWeather || (game ? game.currentWeather : 'normal');
   
   const attackerFighter = entityManager.getComponent(attackerId, 'fighter');
@@ -471,7 +483,9 @@ export function executeMove(params) {
   const messages = [];
 
   // Movimientos de carga: 1er turno prepara, 2º golpea
-  if (move.effect === 'charge') {
+  if (extraTarget) {
+    // El movimiento ya se anunció y se pagó con el objetivo principal
+  } else if (move.effect === 'charge') {
     if (!attackerFighter.charging || attackerFighter.charging.moveId !== move.id) {
       const n = String(move.name || '').toLowerCase();
       attackerFighter.charging = {
@@ -521,7 +535,7 @@ export function executeMove(params) {
   }
 
   // Reducir PP (carga y 1er turno de Venganza ya gastaron PP)
-  if (move.effect !== 'charge' && move.effect !== 'bide') {
+  if (!extraTarget && move.effect !== 'charge' && move.effect !== 'bide') {
     const moveSlot = attackerInfo.currentMoves.find(m => m.moveId === move.id);
     if (moveSlot) {
       if (moveSlot.currentPP <= 0) {
@@ -826,7 +840,7 @@ export function executeMove(params) {
   }
 
   // Autodestrucción / Explosión: el usuario se debilita (Humedad lo anula)
-  if (move.effect === 'self_destruct' && totalDamage > 0 && attackerFighter.hp > 0) {
+  if (move.effect === 'self_destruct' && totalDamage > 0 && attackerFighter.hp > 0 && !extraTarget) {
     const dampNear = getAbility(defenderInfo) === 'damp';
     if (dampNear) {
       messages.push('¡La habilidad Humedad impidió la explosión!');
@@ -1027,7 +1041,23 @@ function syncTransformSprite(entityManager, attackerId, defenderId, attackerFigh
   entityManager.setComponent(attackerId, 'sprite', spr);
 }
 
-function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFighter, attackerInfo, damageDealt = 0, isBoss = false) {
+/**
+ * Aplica el efecto secundario de un movimiento. Con Autocura (CI), los estados
+ * que causa duran la mitad.
+ * @returns {boolean} Si el efecto se aplicó
+ */
+export function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFighter, attackerInfo, damageDealt = 0, isBoss = false) {
+  const before = targetFighter?.statusEffects?.length ?? 0;
+  const applied = applyEffect(move, targetFighter, targetInfo, messages, attackerFighter, attackerInfo, damageDealt, isBoss);
+  if (applied && hasIqSkill(targetInfo, 'self_curer')) {
+    for (const status of targetFighter.statusEffects.slice(before)) {
+      if (status.turnsLeft > 1) status.turnsLeft = Math.ceil(status.turnsLeft / 2);
+    }
+  }
+  return applied;
+}
+
+function applyEffect(move, targetFighter, targetInfo, messages, attackerFighter, attackerInfo, damageDealt = 0, isBoss = false) {
   const chance = move.effectChance || 100;
   if (random() * 100 > chance) return false;
 
@@ -1040,6 +1070,12 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFight
   const mn = String(move.name || '').toLowerCase();
   if (getAbility(targetInfo) === 'soundproof' && (move.sound || mn.includes('canto') || mn.includes('chirrido') || mn.includes('gruñido') || mn.includes('ronquido') || mn.includes('ultralido') || mn.includes('chillido') || mn.includes('eco') || mn.includes('voz'))) {
     messages.push('¡Insonorizar anuló el movimiento de sonido!');
+    return false;
+  }
+
+  // Objeto equipado que protege de ese estado (Pañuelo Meloc, Insomniscopio)
+  if (heldPreventsStatus(targetInfo, move.effect)) {
+    messages.push(`¡${heldName(targetInfo.heldItem)} protege a ${targetInfo.name}!`);
     return false;
   }
 

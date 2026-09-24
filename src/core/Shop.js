@@ -11,17 +11,18 @@ import { floorSeed } from './Random.js';
 export const SHOP_STAPLES = ['apple', 'oran_berry', 'potion', 'reviver_seed', 'escape_rope', 'antidote'];
 
 /** Tipos de objeto que pueden aparecer como novedad del día. */
-const ROTATING_TYPES = new Set(['heal', 'heal_percent', 'food', 'status_cure', 'pp_restore', 'pp_restore_full', 'gummi', 'seed', 'revive']);
+const ROTATING_TYPES = new Set(['heal', 'heal_percent', 'food', 'status_cure', 'pp_restore', 'pp_restore_full', 'gummi', 'seed', 'revive', 'held']);
 
 /** Novedades del día además de lo básico. */
 export const SHOP_DAILY_EXTRAS = 3;
 
 /**
  * Precio de compra en el pueblo: los objetos raros cuestan más.
- * @param {{ rarity?: number }} item
+ * @param {{ rarity?: number, price?: number }} item - `price` fija el precio (equipables)
  * @returns {number}
  */
 export function buyPrice(item) {
+  if (item.price != null) return item.price;
   return Math.min(250, Math.max(8, Math.floor(18 / Math.max(0.05, item.rarity || 0.1))));
 }
 

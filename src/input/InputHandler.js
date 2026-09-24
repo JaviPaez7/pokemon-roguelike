@@ -11,6 +11,8 @@
  * - 1-4                  → Usar movimiento (consume PP)
  * - M                    → Alternar minimapa
  * - Escape               → Menú de pausa
+ * - Mayús + dirección    → Correr (hasta que pase algo interesante)
+ * - Ctrl/Alt + dirección → Girarse sin moverse ni gastar turno
  *
  * Contextos de entrada: 'exploration', 'menu', 'dialog'
  * Cada contexto puede interpretar las teclas de forma distinta.
@@ -202,6 +204,25 @@ export class InputHandler {
     return null;
   }
 
+  /**
+   * Dirección de una tecla de movimiento.
+   * @param {string} code
+   * @returns {[number, number] | null}
+   */
+  _directionFromCode(code) {
+    const table = {
+      ArrowUp: [0, -1], KeyW: [0, -1], Numpad8: [0, -1], KeyK: [0, -1],
+      ArrowDown: [0, 1], KeyS: [0, 1], Numpad2: [0, 1], KeyJ: [0, 1],
+      ArrowLeft: [-1, 0], KeyA: [-1, 0], Numpad4: [-1, 0], KeyH: [-1, 0],
+      ArrowRight: [1, 0], KeyD: [1, 0], Numpad6: [1, 0], KeyL: [1, 0],
+      Home: [-1, -1], Numpad7: [-1, -1], KeyY: [-1, -1],
+      PageUp: [1, -1], Numpad9: [1, -1], KeyU: [1, -1],
+      End: [-1, 1], Numpad1: [-1, 1], KeyB: [-1, 1],
+      PageDown: [1, 1], Numpad3: [1, 1], KeyN: [1, 1],
+    };
+    return table[code] ?? null;
+  }
+
   _createMovementActionFromKeys() {
     let dx = 0;
     let dy = 0;
@@ -230,6 +251,19 @@ export class InputHandler {
 
     if (event.repeat) return; // Ignorar repeticiones del SO
     if (this._keysDown.has(event.code)) return; // Prevenir duplicados
+
+    // Girarse (Ctrl/Alt) o correr (Mayús): una acción, sin repetición por tecla mantenida
+    if (this._context === 'exploration' && this._isMovementKey(event.code)
+        && (event.ctrlKey || event.altKey || event.shiftKey)) {
+      event.preventDefault();
+      const step = this._directionFromCode(event.code);
+      if (step) {
+        this._actionQueue = event.shiftKey && !event.ctrlKey && !event.altKey
+          ? { type: ACTIONS.MOVE, dx: step[0], dy: step[1], run: true }
+          : { type: 'turn', dx: step[0], dy: step[1] };
+      }
+      return;
+    }
     
     this._keysDown.add(event.code);
 

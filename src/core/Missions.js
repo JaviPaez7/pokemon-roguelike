@@ -34,7 +34,7 @@ export const DIFFICULTIES = [
 /** Objetos que se pierden (buscar) y que se piden (entregar: se venden en el pueblo). */
 export const LOST_ITEMS = ['moon_stone', 'fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'big_apple', 'max_elixir'];
 export const DELIVERY_ITEMS = ['apple', 'oran_berry', 'potion', 'antidote'];
-export const REWARD_ITEMS = ['sitrus_berry', 'super_potion', 'reviver_seed', 'ether', 'red_gummi', 'blue_gummi', 'full_heal', 'big_apple'];
+export const REWARD_ITEMS = ['sitrus_berry', 'super_potion', 'reviver_seed', 'ether', 'red_gummi', 'blue_gummi', 'full_heal', 'big_apple', 'friend_bow', 'pecha_scarf', 'power_band', 'defense_scarf'];
 
 /**
  * @typedef {{

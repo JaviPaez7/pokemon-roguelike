@@ -125,27 +125,6 @@ export class SfxManager {
     } catch (e) {}
   }
 
-  playCaptureShakeSound(shakeIndex) {
-    try {
-      const audioEnv = this._getAudioContext();
-      if (!audioEnv) return;
-      const { ctx, master } = audioEnv;
-      const t = ctx.currentTime;
-      const freq = 440 + shakeIndex * 80;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(freq, t);
-      osc.frequency.linearRampToValueAtTime(freq + 60, t + 0.3);
-      gain.gain.setValueAtTime(0.025, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
-      osc.connect(gain);
-      gain.connect(master);
-      osc.start(t);
-      osc.stop(t + 0.35);
-    } catch (e) {}
-  }
-
   playHealSound() {
     try {
       const audioEnv = this._getAudioContext();
@@ -158,7 +137,7 @@ export class SfxManager {
     } catch (e) {}
   }
 
-  playCaptureSuccessSound() {
+  playRecruitSound() {
     try {
       const audioEnv = this._getAudioContext();
       if (!audioEnv) return;
@@ -167,17 +146,6 @@ export class SfxManager {
       this._playTone(523, t, 0.1, 'square', 0.03);
       this._playTone(659, t + 0.1, 0.1, 'square', 0.03);
       this._playTone(784, t + 0.2, 0.3, 'square', 0.03);
-    } catch (e) {}
-  }
-
-  playCaptureEscapeSound() {
-    try {
-      const audioEnv = this._getAudioContext();
-      if (!audioEnv) return;
-      const { ctx } = audioEnv;
-      const t = ctx.currentTime;
-      this._playTone(300, t, 0.15, 'sawtooth', 0.03);
-      this._playTone(250, t + 0.15, 0.2, 'sawtooth', 0.03);
     } catch (e) {}
   }
 

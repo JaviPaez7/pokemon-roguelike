@@ -20,7 +20,7 @@
  * - TileMap:         Datos del mapa actual
  */
 
-import { MAX_INVENTORY, GAME_STATES, TILE_SIZE, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, MAP_WIDTH, MAP_HEIGHT, FOV_RADIUS } from '../constants.js';
+import { ACTIONS, MAX_INVENTORY, GAME_STATES, TILE_SIZE, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, MAP_WIDTH, MAP_HEIGHT, FOV_RADIUS } from '../constants.js';
 import { EventBus } from './EventBus.js';
 import { TurnManager } from './TurnManager.js';
 import { WeatherSystem } from '../systems/WeatherSystem.js';
@@ -42,8 +42,11 @@ import { updateTown } from './TownSession.js';
 import { endExpedition } from './Expedition.js';
 import { useInventoryItem as useInventoryItemHandler, throwInventoryItem } from '../systems/InventorySystem.js';
 import { MessageLog } from '../ui/MessageLog.js';
-import { getDungeon, relativeFloor, isLastFloor } from './Dungeons.js';
+import { getDungeon, relativeFloor, isLastFloor, WIND } from './Dungeons.js';
+import { heldBellyDrain } from './HeldItems.js';
+import { hasIqSkill } from './IQ.js';
 import { setSeed, newRunSeed } from './Random.js';
+import { roomAt } from '../systems/MoveTargeting.js';
 
 // Importar JSONs estáticos directamente para empaquetarlos con Vite
 import pokemonData from '../data/pokemon.json';
@@ -90,7 +93,7 @@ export class Game {
     this.expedition = null;
 
     /**
-     * @type {'cleared'|'defeated'|'escaped'|'mission'|null} Fin de expedición pendiente. Se
+     * @type {'cleared'|'defeated'|'escaped'|'mission'|'blown'|null} Fin de expedición pendiente. Se
      * procesa al principio del siguiente fotograma para no vaciar las entidades
      * en mitad de un turno.
      */
@@ -111,6 +114,12 @@ export class Game {
     /** @type {number} Semilla del piso actual */
     this.seed = 0;
 
+    /**
+     * Ganchos para depurar desde la consola y para los tests E2E.
+     * `forceRecruit`: true o false fuerza la tirada de reclutamiento; null, tirada normal.
+     */
+    this.debug = { forceRecruit: null };
+
     // Estadísticas acumuladas
     this.stats = {
       pokemonDefeated: 0,
@@ -128,7 +137,6 @@ export class Game {
     // Inventario base (nueva partida lo sustituye en GameSession)
     this.inventory = [
       { itemId: 'potion', quantity: 3 },
-      { itemId: 'pokeball', quantity: 5 },
       { itemId: 'apple', quantity: 4 },
       { itemId: 'ether', quantity: 1 },
       { itemId: 'oran_berry', quantity: 3 },
@@ -432,7 +440,7 @@ export class Game {
 
   /**
    * Termina la expedición al principio del siguiente fotograma.
-   * @param {'cleared'|'defeated'|'escaped'|'mission'} outcome
+   * @param {'cleared'|'defeated'|'escaped'|'mission'|'blown'} outcome
    */
   endExpedition(outcome) {
     if (!this.dungeonId || this._pendingExpeditionEnd) return;
@@ -522,7 +530,10 @@ export class Game {
       updateTown(this);
       return;
     }
-    if (this._state !== GAME_STATES.EXPLORING) return;
+    if (this._state !== GAME_STATES.EXPLORING) {
+      this._run = null;
+      return;
+    }
     // Si el input quedó en "dialog" sin diálogo visible, recuperar exploración
     if (this.inputHandler && this.inputHandler._context === 'dialog' && !this.uiManager.hasOpenDialog()) {
       this.inputHandler.setContext('exploration');
@@ -571,7 +582,24 @@ export class Game {
     }
 
     let action = this.inputHandler.getAction();
-    
+
+    if (action?.type === 'turn') {
+      // Girarse no gasta turno
+      const pos = this.entityManager.getComponent(this._playerId, 'position');
+      if (pos) this.movementSystem._updateFacing(pos, action.dx, action.dy);
+      this._run = null;
+      this.needsRender = true;
+      return;
+    }
+    if (action?.type === ACTIONS.MOVE && action.run) {
+      this._run = this._startRun(action.dx, action.dy);
+      action = { type: ACTIONS.MOVE, dx: action.dx, dy: action.dy };
+    } else if (action) {
+      this._run = null;
+    } else if (this._run) {
+      action = this._nextRunStep();
+    }
+
     if (!action && this.inputHandler.enabled) {
       action = this.inputHandler.getHeldMovementAction();
     }
@@ -584,6 +612,88 @@ export class Game {
     }
 
     this._processPlayerAction(action);
+  }
+
+  /**
+   * Viento: cuenta los turnos del piso, avisa al acercarse al límite y, al
+   * llegar, expulsa al equipo de la mazmorra.
+   */
+  _tickWind() {
+    if (!this.dungeonId) return;
+    this._floorTurns = (this._floorTurns || 0) + 1;
+    const warning = WIND.warnings.indexOf(this._floorTurns);
+    if (warning !== -1) {
+      const texts = [
+        'Algo se agita a lo lejos…',
+        'Se levanta un viento extraño. Algo se acerca…',
+        '¡El viento sopla con fuerza! ¡Hay que dejar este piso ya!',
+      ];
+      const colors = ['#ccccff', '#ffcc88', '#ff8866'];
+      this.eventBus.emit('message', { text: texts[warning], color: colors[warning] });
+      if (warning === WIND.warnings.length - 1) {
+        this.eventBus.emit('show_dialog', { text: `${texts[warning]}\n\nBuscad la escalera cuanto antes o el viento os echará de la mazmorra.` });
+      }
+    }
+    if (this._floorTurns >= WIND.limit) this.endExpedition('blown');
+  }
+
+  /**
+   * Empieza a correr en una dirección.
+   * @param {number} dx
+   * @param {number} dy
+   */
+  _startRun(dx, dy) {
+    const pos = this.entityManager.getComponent(this._playerId, 'position');
+    const fighter = this.entityManager.getComponent(this._playerId, 'fighter');
+    return {
+      dx,
+      dy,
+      steps: 0,
+      hp: fighter?.hp ?? 0,
+      room: pos && this.tileMap ? roomAt(this.tileMap, pos.x, pos.y) : null,
+    };
+  }
+
+  /**
+   * Siguiente paso de la carrera, o null si hay que pararse: rival a la vista,
+   * objeto o escalera cerca, cambio de sala, daño recibido o camino cortado.
+   * @returns {{ type: string, dx: number, dy: number } | null}
+   */
+  _nextRunStep() {
+    const run = this._run;
+    const em = this.entityManager;
+    const pos = em.getComponent(this._playerId, 'position');
+    const fighter = em.getComponent(this._playerId, 'fighter');
+    const stop = () => {
+      this._run = null;
+      return null;
+    };
+    if (!pos || !fighter || !this.tileMap || this.uiManager.hasOpenDialog()) return stop();
+    run.steps++;
+    if (run.steps > 60 || fighter.hp < run.hp) return stop();
+
+    const room = roomAt(this.tileMap, pos.x, pos.y);
+    if (run.steps > 1 && room !== run.room) return stop();
+
+    for (let oy = -1; oy <= 1; oy++) {
+      for (let ox = -1; ox <= 1; ox++) {
+        const x = pos.x + ox;
+        const y = pos.y + oy;
+        if (em.getItemAt(x, y) != null || this.tileMap.isStairs(x, y)) return stop();
+      }
+    }
+    const hostileInSight = em.getEntitiesWithComponents('fighter', 'aiControlled', 'position').some((id) => {
+      if (em.hasComponent(id, 'partyMember')) return false;
+      const f = em.getComponent(id, 'fighter');
+      const p = em.getComponent(id, 'position');
+      return f.hp > 0 && this.tileMap.getVisibility(p.x, p.y) === 2;
+    });
+    if (hostileInSight) return stop();
+
+    const nx = pos.x + run.dx;
+    const ny = pos.y + run.dy;
+    if (!this.tileMap.isWalkable(nx, ny) || em.getEntityAt(nx, ny) != null) return stop();
+    return { type: ACTIONS.MOVE, dx: run.dx, dy: run.dy };
   }
 
   /**
@@ -601,6 +711,7 @@ export class Game {
 
     if (results.playerResult && results.playerResult.success) {
       this.stats.turnsPlayed++;
+      this._tickWind();
       // Alinear con TurnManager (incluye fallos previos de bump)
       if (typeof this.turnManager.getTurnCount === 'function') {
         this.stats.turnsPlayed = Math.max(this.stats.turnsPlayed, this.turnManager.getTurnCount());
@@ -611,7 +722,8 @@ export class Game {
         // Consumir tripa (0.2 por turno = 1 tripa cada 5 turnos)
         const fl = this._currentFloor || 1;
         const bellyDrain = fl <= 3 ? 0.08 : (fl <= 12 ? 0.10 : (fl <= 30 ? 0.12 : 0.13));
-        fighter.belly = Math.max(0, fighter.belly - bellyDrain);
+        const leaderInfo = this.entityManager.getComponent(this._playerId, 'pokemonInfo');
+        fighter.belly = Math.max(0, fighter.belly - bellyDrain * heldBellyDrain(leaderInfo));
 
         if (fighter.belly <= 20 && fighter.belly > 10 && !this._bellyWarned20) {
           this._bellyWarned20 = true;
@@ -924,6 +1036,26 @@ export class Game {
     }
   }
 
+  /** Ojo Trampas (habilidad de CI): si alguien del equipo la tiene, se ven las trampas ocultas a la vista. */
+  _revealTrapsWithTrapSeer() {
+    const em = this.entityManager;
+    const seer = em.getEntitiesWithComponents('partyMember', 'pokemonInfo', 'fighter').find((id) =>
+      em.getComponent(id, 'fighter').hp > 0 && hasIqSkill(em.getComponent(id, 'pokemonInfo'), 'trap_seer'));
+    if (seer == null) return;
+    let found = 0;
+    for (const id of em.getEntitiesWithComponents('trap', 'position')) {
+      const trap = em.getComponent(id, 'trap');
+      const pos = em.getComponent(id, 'position');
+      if (!trap.isHidden || this.tileMap.getVisibility(pos.x, pos.y) !== 2) continue;
+      trap.isHidden = false;
+      found++;
+    }
+    if (found) {
+      const name = em.getComponent(seer, 'pokemonInfo').name;
+      this.eventBus.emit('message', { text: `¡${name} ha visto ${found === 1 ? 'una trampa' : `${found} trampas`}! (Ojo Trampas)`, color: '#ffcc66' });
+    }
+  }
+
   _updateFOV() {
     if (this.fovSystem && this._playerId && this.tileMap) {
       const pos = this.entityManager.getComponent(this._playerId, 'position');
@@ -934,6 +1066,7 @@ export class Game {
           fovRad -= 1;
         }
         this.fovSystem.update(pos.x, pos.y, this.tileMap, fovRad);
+        this._revealTrapsWithTrapSeer();
 
         // Anunciar escaleras la primera vez que entran en el FOV del piso
         if (!this._stairsAnnounced && this._stairsPos && this.tileMap.getVisibility) {
@@ -966,65 +1099,74 @@ export class Game {
       return aMem.slot - bMem.slot;
     });
 
-    return partyEntities.map(id => {
-      const info = this.entityManager.getComponent(id, 'pokemonInfo');
-      const fighter = this.entityManager.getComponent(id, 'fighter');
-      const member = this.entityManager.getComponent(id, 'partyMember');
-      const pos = this.entityManager.getComponent(id, 'position');
-      const sprite = this.entityManager.getComponent(id, 'sprite');
-        return {
-        id,
-        facing: pos?.facing || 'down',
-        facingDx: pos?.facingDx ?? 0,
-        facingDy: pos?.facingDy ?? 0,
-        charging: !!(fighter.charging),
-        biding: !!(fighter.biding),
-        chargingState: fighter.charging || null,
-        bidingState: fighter.biding || null,
-        mustRecharge: !!fighter.mustRecharge,
-        reflect: fighter.reflect || 0,
-        lightScreen: fighter.lightScreen || 0,
-        substitute: fighter.substitute || 0,
-        rage: !!fighter.rage,
-        focusEnergy: !!fighter.focusEnergy,
-        _preTransform: fighter._preTransform || null,
-        spriteUrl: sprite?.url || null,
-        lastPhysicalDamageTaken: fighter.lastPhysicalDamageTaken || 0,
-        _intimidatedBy: fighter._intimidatedBy || [],
-        protectStats: fighter.protectStats || 0,
-        _rageTurns: fighter._rageTurns,
-        _focusTurns: fighter._focusTurns,
-        _traced: !!(info._traced),
-        speciesId: info.speciesId,
-        name: info.name,
-        level: info.level,
-        xp: info.xp,
-        ability: info.ability || null,
-        currentLevelXp: Math.floor(Math.pow(info.level, 3)),
-        nextLevelXp: Math.floor(Math.pow(info.level + 1, 3)),
-        currentMoves: info.currentMoves,
-        pendingMovesToLearn: info.pendingMovesToLearn || [],
-        pendingEvolution: info.pendingEvolution || null,
-        evolutionDeclinedAtLevel: info.evolutionDeclinedAtLevel ?? null,
-        types: info.types,
-        hp: fighter.hp,
-        maxHp: fighter.maxHp,
-        belly: fighter.belly,
-        maxBelly: fighter.maxBelly,
-        attack: fighter.attack,
-        defense: fighter.defense,
-        spAtk: fighter.spAtk,
-        spDef: fighter.spDef,
-        speed: fighter.speed,
-        statusEffects: fighter.statusEffects,
-        statModifiers: fighter.statModifiers || {},
-        bonusStats: fighter.bonusStats || null,
-        _statusTick: fighter._statusTick || 0,
-        isLeader: member.isLeader,
-        tactic: member.tactic || 'follow',
-        uid: member.uid ?? null
-      };
-    });
+    return partyEntities.map(id => this.memberData(id));
+  }
+
+  /**
+   * Datos de un Pokémon en el formato de `party` (sirve también para un
+   * recluta que aún no está en el equipo).
+   * @param {number} id
+   */
+  memberData(id) {
+    const info = this.entityManager.getComponent(id, 'pokemonInfo');
+    const fighter = this.entityManager.getComponent(id, 'fighter');
+    const member = this.entityManager.getComponent(id, 'partyMember');
+    const pos = this.entityManager.getComponent(id, 'position');
+    const sprite = this.entityManager.getComponent(id, 'sprite');
+    return {
+      id,
+      facing: pos?.facing || 'down',
+      facingDx: pos?.facingDx ?? 0,
+      facingDy: pos?.facingDy ?? 0,
+      charging: !!(fighter.charging),
+      biding: !!(fighter.biding),
+      chargingState: fighter.charging || null,
+      bidingState: fighter.biding || null,
+      mustRecharge: !!fighter.mustRecharge,
+      reflect: fighter.reflect || 0,
+      lightScreen: fighter.lightScreen || 0,
+      substitute: fighter.substitute || 0,
+      rage: !!fighter.rage,
+      focusEnergy: !!fighter.focusEnergy,
+      _preTransform: fighter._preTransform || null,
+      spriteUrl: sprite?.url || null,
+      lastPhysicalDamageTaken: fighter.lastPhysicalDamageTaken || 0,
+      _intimidatedBy: fighter._intimidatedBy || [],
+      protectStats: fighter.protectStats || 0,
+      _rageTurns: fighter._rageTurns,
+      _focusTurns: fighter._focusTurns,
+      _traced: !!(info._traced),
+      heldItem: info.heldItem ?? null,
+      iq: info.iq ?? 0,
+      speciesId: info.speciesId,
+      name: info.name,
+      level: info.level,
+      xp: info.xp,
+      ability: info.ability || null,
+      currentLevelXp: Math.floor(Math.pow(info.level, 3)),
+      nextLevelXp: Math.floor(Math.pow(info.level + 1, 3)),
+      currentMoves: info.currentMoves,
+      pendingMovesToLearn: info.pendingMovesToLearn || [],
+      pendingEvolution: info.pendingEvolution || null,
+      evolutionDeclinedAtLevel: info.evolutionDeclinedAtLevel ?? null,
+      types: info.types,
+      hp: fighter.hp,
+      maxHp: fighter.maxHp,
+      belly: fighter.belly,
+      maxBelly: fighter.maxBelly,
+      attack: fighter.attack,
+      defense: fighter.defense,
+      spAtk: fighter.spAtk,
+      spDef: fighter.spDef,
+      speed: fighter.speed,
+      statusEffects: fighter.statusEffects,
+      statModifiers: fighter.statModifiers || {},
+      bonusStats: fighter.bonusStats || null,
+      _statusTick: fighter._statusTick || 0,
+      isLeader: member?.isLeader ?? false,
+      tactic: member?.tactic || 'follow',
+      uid: member?.uid ?? null
+    };
   }
 
   get playerPos() {

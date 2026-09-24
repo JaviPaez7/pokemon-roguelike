@@ -6,6 +6,7 @@ import { RNG } from 'rot-js';
 import { grantExperience, expForLevel, calculateStats } from './ExperienceSystem.js';
 import { checkEvolution, evolve } from './EvolutionSystem.js';
 import { getAbility } from './AbilitySystem.js';
+import { gummiIq, newSkills } from '../core/IQ.js';
 
 /**
  * Genera items en un piso
@@ -48,7 +49,7 @@ function selectRandomItem(itemsDB, floor = 1) {
   if (!itemsDB || itemsDB.length === 0) return null;
 
   const earlyBoostIds = new Set([
-    'apple', 'oran_berry', 'potion', 'ether', 'pokeball',
+    'apple', 'oran_berry', 'potion', 'ether',
     'antidote', 'paralyze_heal', 'awakening', 'burn_heal', 'big_apple', 'full_heal'
   ]);
   const early = floor <= 5;
@@ -306,12 +307,6 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
       break;
     }
 
-    case 'capture': {
-      // La captura se maneja en CaptureSystem, no aquí
-      messages.push('Lanza la Poké Ball hacia un Pokémon salvaje cercano (mirándolo).');
-      break;
-    }
-
     case 'evolution_stone': {
       const evo = checkEvolution(pokemonInfo, game.evolutionsData, itemData.id);
       if (evo) {
@@ -364,6 +359,14 @@ export function useItem(itemId, targetEntityId, entityManager, inventory, itemsD
       };
       messages.push(`¡${pokemonInfo.name} se comió la ${itemData.name}!`);
       messages.push(`¡Su ${statNames[stat]} aumentó permanentemente!`);
+      // CI: más si es de su tipo favorito
+      const { gained, favorite } = gummiIq(itemData.id, pokemonInfo.types);
+      const iqBefore = pokemonInfo.iq || 0;
+      pokemonInfo.iq = iqBefore + gained;
+      messages.push(`${favorite ? '¡Es su favorita! ' : ''}CI +${gained} (${pokemonInfo.iq}).`);
+      for (const skill of newSkills(iqBefore, pokemonInfo.iq)) {
+        messages.push(`¡${pokemonInfo.name} aprendió la habilidad de CI ${skill.name}! ${skill.description}`);
+      }
       consumed = true;
       break;
     }

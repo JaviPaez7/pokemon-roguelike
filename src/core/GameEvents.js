@@ -1,9 +1,10 @@
-import { MAX_INVENTORY, MAX_PARTY_SIZE } from '../constants.js';
+import { MAX_INVENTORY } from '../constants.js';
 import { pickupItem } from '../systems/ItemSystem.js';
 import { getAbility } from '../systems/AbilitySystem.js';
 import { revertTransform } from '../systems/CombatSystem.js';
 import { random } from './Random.js';
 import { onMissionItemFound } from '../systems/MissionSystem.js';
+import { tryRecruit, acceptRecruit, declineRecruit } from '../systems/RecruitSystem.js';
 
 /**
  * Registra los listeners globales del EventBus en la instancia del juego.
@@ -160,42 +161,9 @@ export function setupGameEventListeners(game) {
 
       game.needsRender = true;
     } else {
-      if (game.entityManager.hasComponent(data.entityId, 'aiControlled')) {
-        // --- Lógica de Reclutamiento ---
-        const attackerId = data.attackerId;
-        if (attackerId !== null && attackerId !== undefined && game.entityManager.hasComponent(attackerId, 'partyMember')) {
-          const enemyInfo = game.entityManager.getComponent(data.entityId, 'pokemonInfo');
-          const leaderInfo = game.entityManager.getComponent(game._playerId, 'pokemonInfo');
-          
-          if (enemyInfo && leaderInfo && !enemyInfo.name.includes('JEFE:')) {
-            // Probabilidad base de 15% + 1% por cada nivel de ventaja
-            const levelDiff = Math.max(0, leaderInfo.level - enemyInfo.level);
-            const floorBonus = (game._currentFloor || 1) <= 10 ? 8 : 0;
-            const recruitChance = 24 + levelDiff + floorBonus;
-            
-            if (random() * 100 < recruitChance) {
-              // Reclutamiento exitoso
-              game.eventBus.emit('message', `¡${enemyInfo.name} se ha quedado impresionado por tu fuerza!`);
-              game.eventBus.emit('message', `Acércate para que se una al equipo.`);
-              
-              // Mantener al enemigo vivo con 1 HP
-              const fighter = game.entityManager.getComponent(data.entityId, 'fighter');
-              if (fighter) {
-                fighter.hp = 1;
-                game.entityManager.setComponent(data.entityId, 'fighter', fighter);
-              }
-              
-              // Cambiar de enemigo a NPC amigable
-              game.entityManager.removeComponent(data.entityId, 'aiControlled');
-              game.entityManager.setComponent(data.entityId, 'npcFriendly', {});
-              
-              // Lo sacamos del gestor de turnos, actuará cuando le hablemos
-              game.turnManager.removeEntity(data.entityId);
-              game.needsRender = true;
-              return; // Importante: Salir para no destruir la entidad
-            }
-          }
-        }
+      if (tryRecruit(game, data.entityId, data.attackerId)) {
+        game.needsRender = true;
+        return;
       }
       game.turnManager.removeEntity(data.entityId);
 
@@ -263,7 +231,7 @@ export function setupGameEventListeners(game) {
           return f && f.hp > 0 && getAbility(inf) === 'pickup';
         });
         if (picker != null && random() < 0.22 && (game.inventory || []).length < (game.maxInventorySize || 24)) {
-          const pool = ['oran_berry', 'apple', 'potion', 'ether', 'pokeball', 'antidote'];
+          const pool = ['oran_berry', 'apple', 'potion', 'ether', 'antidote'];
           const itemId = pool[Math.floor(random() * pool.length)];
           const existing = game.inventory.find(s => s.itemId === itemId);
           if (existing) existing.quantity = (existing.quantity || 1) + 1;
@@ -290,88 +258,15 @@ export function setupGameEventListeners(game) {
         }
       }
 
-      // Reclutamiento Post-Combate
-      const party = game.entityManager.getEntitiesWithComponents('partyMember');
-      if (data.attackerId === game._playerId && random() < 0.15 && party.length < MAX_PARTY_SIZE) {
-        const targetInfo = game.entityManager.getComponent(data.entityId, 'pokemonInfo');
-        const targetFighter = game.entityManager.getComponent(data.entityId, 'fighter');
-        
-        if (targetInfo && targetFighter) {
-          game.entityManager.setComponent(data.entityId, 'partyMember', {
-            slot: party.length,
-            isLeader: false,
-            tactic: 'follow'
-          });
-          
-          const ai = game.entityManager.getComponent(data.entityId, 'aiControlled') || {};
-          ai.behavior = 'follower';
-          game.entityManager.setComponent(data.entityId, 'aiControlled', ai);
+      game.entityManager.destroyEntity(data.entityId);
 
-          // Restaurar PS del nuevo aliado
-          targetFighter.hp = Math.floor(targetFighter.maxHp * 0.5);
-
-          // ¡Añadir al TurnManager para que pueda actuar!
-          game.turnManager.addEntity(data.entityId, targetFighter.speed, false);
-
-          game.stats.pokemonCaptured++;
-          
-          game.eventBus.emit('show_dialog', { text: `¡El ${targetInfo.name} enemigo está impresionado por tu fuerza!\n\n¡${targetInfo.name} se ha unido a tu equipo!` });
-          game.eventBus.emit('message', { text: `¡${targetInfo.name} se unió al equipo!`, color: '#00ffcc' });
-          game.saveGameData();
-        } else {
-          game.entityManager.destroyEntity(data.entityId);
-        }
-      } else {
-        game.entityManager.destroyEntity(data.entityId);
-      }
-      
       game.needsRender = true;
     }
   });
 
   game.eventBus.on('recruit_pokemon', (data) => {
-    if (data.accepted) {
-      const npcId = data.entityId;
-      const info = game.entityManager.getComponent(npcId, 'pokemonInfo');
-      const party = game.entityManager.getEntitiesWithComponents('partyMember');
-      if (party.length < MAX_PARTY_SIZE && info) {
-        game.entityManager.setComponent(npcId, 'partyMember', {
-          slot: party.length,
-          isLeader: false,
-          tactic: 'follow'
-        });
-        game.entityManager.setComponent(npcId, 'aiControlled', { behavior: 'follower' });
-        game.entityManager.removeComponent(npcId, 'npcFriendly');
-        
-        const fighter = game.entityManager.getComponent(npcId, 'fighter');
-        if (fighter) {
-          fighter.hp = Math.min(fighter.maxHp, Math.max(fighter.hp, Math.floor(fighter.maxHp * 0.6)));
-          if (fighter.belly != null) {
-            fighter.belly = Math.min(fighter.maxBelly || 100, Math.max(fighter.belly, 50));
-          }
-          fighter.statusEffects = [];
-          game.entityManager.setComponent(npcId, 'fighter', fighter);
-        }
-        game.turnManager.addEntity(npcId, fighter ? fighter.speed : 50, false);
-
-        game.eventBus.emit('show_dialog', {
-          text: `¡${info.name} se ha unido a tu equipo de exploración!\n\n(Recupera un poco de energía al unirse.)`
-        });
-        try { game.saveGameData(); } catch (e) {}
-      } else if (info) {
-        const bonus = 25 + Math.floor((info.level || 1) * 3);
-        game.coins = (game.coins || 0) + bonus;
-        game.entityManager.destroyEntity(npcId);
-        game.eventBus.emit('show_dialog', {
-          text: `¡Equipo lleno! Liberaste a ${info.name} (+${bonus} Poké).`
-        });
-        game.saveGameData();
-      } else {
-        game.entityManager.destroyEntity(npcId);
-      }
-    } else {
-      game.entityManager.destroyEntity(data.entityId);
-    }
+    if (data.accepted) acceptRecruit(game, data.entityId);
+    else declineRecruit(game, data.entityId);
   });
 
   game.eventBus.on('floor_change', (data) => {

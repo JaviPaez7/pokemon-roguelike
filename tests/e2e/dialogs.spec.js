@@ -29,12 +29,12 @@ test('al reclutar, el diálogo «se ha unido» sigue en pantalla hasta cerrarlo'
     game.uiManager.openRecruitMenu(wild, info);
     return info.name;
   });
-  await expect(panelTitle(page)).toContainText(`Reclutar a ${name}`);
+  await expect(panelTitle(page)).toHaveText(`¿RECLUTAR A ${name.toUpperCase()}?`);
 
   await page.keyboard.press('z'); // «Sí»
 
   const dialog = page.locator('.dialog-panel');
-  await expect(dialog).toContainText(`¡${name} se ha unido a tu equipo`);
+  await expect(dialog).toContainText(`¡${name} se ha unido a vuestro equipo`);
   expect(await page.evaluate(() => window.game.party.length)).toBe(3);
   await dismissDialog(page);
   await expectExploring(page);

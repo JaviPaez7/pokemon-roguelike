@@ -37,20 +37,21 @@ export async function loadSavedGame(game) {
   game.coins = save.wallet ?? 0;
   game._messageLog = [];
   game.messageLog?.clear?.();
+  const refundNotice = takeBallRefundNotice(profile);
 
   if (!save.run) {
     enterTown(game);
     const migrated = profile.flags?.migratedFromRun && !profile.flags.migrationNoticeShown;
     if (migrated) profile.flags.migrationNoticeShown = true;
     game.eventBus.emit('show_dialog', {
-      text: migrated
+      text: (migrated
         ? `¡El juego ha cambiado!\n\nAhora tu equipo, ${profile.teamName}, tiene una base en ${TOWN.name}. ` +
           'Tus Pokémon, tu mochila y tu dinero te esperan aquí, y las mazmorras que ya habías atravesado ' +
           'cuentan como completadas.\n\nMira el tablón y sal por el camino del sur para seguir explorando.'
-        : `Partida cargada.\n\n${profile.teamName} está en ${TOWN.name}.`,
+        : `Partida cargada.\n\n${profile.teamName} está en ${TOWN.name}.`) + refundNotice,
       instant: true,
     });
-    if (migrated) game.saveGameData();
+    if (migrated || refundNotice) game.saveGameData();
     return;
   }
 
@@ -121,6 +122,8 @@ export async function loadSavedGame(game) {
   game._currentFloor--;
   const savedTurnCount = data.turnCount || data.stats?.turnsPlayed || 0;
   await game.floorManager.changeFloor('down');
+  // El piso se regenera, pero el viento sigue donde estaba
+  game._floorTurns = data.floorTurns ?? 0;
   // changeFloor hace reset() del TurnManager: restaurar contador después
   if (typeof game.turnManager.setTurnCount === 'function') {
     game.turnManager.setTurnCount(savedTurnCount);
@@ -138,8 +141,23 @@ export async function loadSavedGame(game) {
     .some(id => game.entityManager.getComponent(id, 'pokemonInfo')?.pendingEvolution);
   const evoHint = evoPending ? '\nHay una evolución pendiente al reanudar.' : '';
   game.eventBus.emit('show_dialog', {
-    text: `Partida cargada.\n\nPiso ${game.getCurrentFloor()}: ${game.zoneName}.\nLíder: ${leader ? leader.name : '—'}.\nClima: ${w}.\nObjetos en suelo: ${nObj}. Trampas: ${nTrap}.${evoHint}\n\nEl mapa de este piso se ha regenerado.`,
+    text: `Partida cargada.\n\nPiso ${game.getCurrentFloor()}: ${game.zoneName}.\nLíder: ${leader ? leader.name : '—'}.\nClima: ${w}.\nObjetos en suelo: ${nObj}. Trampas: ${nTrap}.${evoHint}\n\nEl mapa de este piso se ha regenerado.${refundNotice}`,
     instant: true,
     callback: () => {}
   });
+  if (refundNotice) game.saveGameData();
+}
+
+/**
+ * Aviso, una sola vez, de las Poké Balls que la migración v3 → v4 cambió por
+ * dinero. Quita la marca del perfil.
+ * @param {Object} profile
+ * @returns {string} Texto para añadir al diálogo de carga, o ''
+ */
+function takeBallRefundNotice(profile) {
+  const refund = profile.flags?.ballRefund;
+  if (!refund) return '';
+  delete profile.flags.ballRefund;
+  return `\n\nYa no hay Poké Balls: ahora, cuando el líder derrota a un Pokémon, a veces pide unirse al equipo. ` +
+    `Las que teníais se han cambiado por ${refund} Poké (las del almacén, en el banco).`;
 }

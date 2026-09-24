@@ -1,0 +1,16 @@
+{
+  "gummi": { "favorite": 5, "other": 2 },
+  "gummiTypes": {
+    "red_gummi": "fire",
+    "blue_gummi": "water",
+    "yellow_gummi": "electric",
+    "green_gummi": "grass",
+    "clear_gummi": "ice"
+  },
+  "skills": [
+    { "id": "trap_seer", "name": "Ojo Trampas", "iq": 5, "description": "Ve las trampas ocultas que tiene a la vista." },
+    { "id": "self_curer", "name": "Autocura", "iq": 12, "description": "Los estados que le causan los movimientos le duran la mitad." },
+    { "id": "power_pitcher", "name": "Gran Lanzador", "iq": 20, "description": "Lo que lanza hace un 50 % más de daño." },
+    { "id": "quick_dodger", "name": "Esquivador", "iq": 30, "description": "Esquiva mejor los ataques (evasión +1)." }
+  ]
+}

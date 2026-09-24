@@ -285,7 +285,7 @@ export class FloorManager {
     // Botín extra en casa de monstruos
     if (validPoints.length > actualCount && game.itemsData) {
       const lootPool = game.itemsData.filter(i =>
-        ['food', 'heal', 'capture', 'status_cure', 'pp_restore'].includes(i.type) || i.id === 'oran_berry'
+        ['food', 'heal', 'status_cure', 'pp_restore'].includes(i.type) || i.id === 'oran_berry'
       );
       if (lootPool.length) {
         const item = lootPool[Math.floor(RNG.getUniform() * lootPool.length)];
@@ -335,6 +335,7 @@ export class FloorManager {
     game._bagAlmostFullWarned = false;
     game._autoStatusCureUsedThisFloor = false;
     game._lowPpWarnedThisFloor = false;
+    game._floorTurns = 0;
 
     game.entityManager.clear(true);
     game.turnManager.reset();
@@ -532,11 +533,12 @@ export class FloorManager {
       'Consejo: a veces hay claros de descanso que curan PS y tripa.',
       'Consejo: las gomas suben stats de forma permanente (se conservan al guardar).',
       'Consejo: la Bolsa del HUD se pone naranja cuando quedan 2 huecos o menos.',
-      'Consejo: reclutar (captura o amigable) guarda automáticamente la partida.',
+      'Consejo: reclutar guarda automáticamente la partida.',
+      'Consejo: los objetos equipables se dan desde la mochila y se quitan desde el menú de Equipo.',
       'Consejo: derrotar a Mewtwo completa la aventura al instante.',
       'Consejo: Danza Espada y Agilidad te potencian a ti, no al enemigo.',
       'Consejo: Descanso y Recuperación se pueden usar sin enemigo al lado.',
-      'Consejo: Lanzar una Poké Ball en línea recta también captura.',
+      'Consejo: a veces, el Pokémon que derrota tu líder se levanta y pide unirse.',
       'Consejo: Vista Lince hace que tus ataques no fallen por precisión.',
       'Consejo: la quemadura reduce el daño físico (Agallas lo anula).',
       'Consejo: si un objeto no hace efecto (PS llenos), no gastas turno.',

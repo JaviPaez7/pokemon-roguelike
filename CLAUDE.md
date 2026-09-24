@@ -32,17 +32,18 @@ Trabaja en una rama y fusiona en `master` por PR con la CI en verde y el cambio 
 
 - **Título → nueva aventura** (`STARTER_SELECT`, `ui/menus/QuizMenu.js`): test de personalidad (`core/Personality.js`, `data/personality.json`), protagonista, compañero que no comparte tipo y nombre del equipo. Crea el perfil y entra en el pueblo.
 - **Pueblo** (`TOWN`, `core/TownSession.js`, mapa en `data/town.json`): sin turnos ni enemigos; el equipo sigue al líder en fila. Kecleon (tienda, `core/Shop.js`), Kangaskhan (almacén), Persian (banco), base (formación, dormir = día siguiente, guardar), tablón de misiones y la salida del sur hacia las mazmorras. Menús en `ui/menus/TownMenus.js` y `MissionMenus.js`.
-- **Expedición** (`EXPLORING`, `core/Expedition.js`): del pueblo a una mazmorra y vuelta con uno de estos finales: `cleared` (abre la siguiente mazmorra y da rango), `defeated` (se pierden el dinero y la mochila; el banco y el almacén no), `escaped` (Cuerda Huida) o `mission` (volver tras cumplir una misión). Al volver se cobran las misiones cumplidas, los reclutados pasan a la base, el equipo se cura y pasa un día. `Game.endExpedition()` lo aplaza al siguiente fotograma para no vaciar entidades en mitad de un turno.
+- **Expedición** (`EXPLORING`, `core/Expedition.js`): del pueblo a una mazmorra y vuelta con uno de estos finales: `cleared` (abre la siguiente mazmorra y da rango), `defeated` (se pierden el dinero y la mochila; el banco y el almacén no), `escaped` (Cuerda Huida) `mission` (volver tras cumplir una misión) o `blown` (el viento expulsa al equipo: como caer). Al volver se cobran las misiones cumplidas, los reclutados pasan a la base, el equipo se cura y pasa un día. `Game.endExpedition()` lo aplaza al siguiente fotograma para no vaciar entidades en mitad de un turno.
 - **Mazmorras** (`core/Dungeons.js`, `data/dungeons.json`): cada una es un tramo de los 50 pisos globales de `floors.json`. `game._currentFloor` es el piso global (decide zona, enemigos, jefe y dificultad) y `game.getCurrentFloor()` el que ve el jugador. La Torre del Desafío recorre los 50 con reglas roguelike: copias de nivel 5, kit fijo y lo de fuera guardado en `profile.stash`.
 - **Misiones** (`core/Missions.js`, `systems/MissionSystem.js`): tablón diario determinista (rescate, buscar objeto, entrega). El cliente o el objeto aparece en su piso; al cumplir se pregunta si volver.
+- **En la mazmorra:** cada movimiento tiene alcance (`range` en `moves.json`: delante, en línea, alrededor, sala, uno mismo o equipo; `systems/MoveTargeting.js`). Ctrl + dirección gira sin gastar turno y Mayús + dirección corre hasta que pasa algo. Cada piso da `wind.limit` turnos (`dungeons.json`): el viento avisa y al final expulsa al equipo. No hay Poké Balls: si el líder derrota a un salvaje, a veces se levanta y pide unirse (`core/Recruitment.js`, `data/recruitment.json`, `systems/RecruitSystem.js`); con el equipo completo se va a la base, salvo en la Torre. Cada Pokémon puede llevar un objeto equipable (`type: "held"` en `items.json`, efectos en su campo `held`, lógica en `core/HeldItems.js`); va en su ficha y en la Torre no se lleva. Las gominolas suben el CI (`pokemonInfo.iq`, más con las de su tipo favorito) y el CI desbloquea habilidades (Ojo Trampas, Autocura, Gran Lanzador, Esquivador), con los números en `data/iq.json` y la lógica en `core/IQ.js`.
 - **Perfil** (`core/Profile.js`): plantilla de Pokémon (fichas de `core/PokemonSnapshot.js` con `uid`), formación (protagonista y compañero siempre), banco, almacén, rango, día, mazmorras completadas y misiones. La mochila y la cartera en juego son `game.inventory` y `game.coins`.
 
 ## Arquitectura (`src/`)
 
-- `main.js` crea `Game` sobre `#game-canvas`. `window.game` queda expuesto para depurar desde la consola (los E2E lo usan).
+- `main.js` crea `Game` sobre `#game-canvas`. `window.game` queda expuesto para depurar desde la consola (los E2E lo usan). `game.debug` tiene ganchos para los tests, como `forceRecruit`.
 - `core/`: `Game` (máquina de estados `GAME_STATES` y bucle), `EventBus`, `GameEvents`, `GameSession` (cargar partida), `TurnManager`, `SaveManager`, `Random`, más los módulos de la estructura MM de arriba.
 - `entities/`: `EntityManager`, `Components` (ECS; un componente nuevo hay que declararlo ahí o se descarta) y `EnemyAI`.
-- `systems/`: sistemas ECS (combate, movimiento, FOV, habilidades, captura, evolución, experiencia, inventario, objetos, trampas, clima, acciones, estadísticas, eventos de piso y misiones).
+- `systems/`: sistemas ECS (combate, alcance de movimientos, movimiento, FOV, habilidades, reclutamiento, evolución, experiencia, inventario, objetos, trampas, clima, acciones, estadísticas, eventos de piso y misiones).
 - `map/`: generación de mazmorras (`DungeonGenerator`), `FloorManager`, `TileMap`, `TileTypes` (las casillas del pueblo son los ids 20+), `Biomes` y `Town`.
 - `render/`: `Renderer`, `MapRenderer`, `EntityRenderer`, `Camera`, `SpriteManager` y `ParticleSystem`.
 - `ui/`: `UIManager` más `ui/menus/*` (menús en HTML sobre el canvas), `HUD`, `MessageLog` y `DialogController`.
@@ -60,16 +61,17 @@ La estructura del README está desactualizada (menciona `src/utils` y un sistema
 
 ## Reglas
 
-- **Partidas guardadas:** se guardan en `localStorage` con la clave `pokerogue_save` y `SAVE_VERSION` (`core/SaveManager.js`). Formato v3: `profile`, `bag`, `wallet` y `run` (la expedición en curso o `null`). **Nunca se borra la partida de un jugador por cambiar el formato:** añade a `MIGRATIONS` la función pura que pasa de la versión actual a la siguiente, sube `SAVE_VERSION` y añade su caso a `tests/unit/save.test.js`. Al cargar una partida antigua se guarda la original en `pokerogue_save_backup_v<n>`. Una partida ilegible se aparta a `pokerogue_save_backup_corrupt_<fecha>` y una de una versión más nueva no se toca.
+- **Partidas guardadas:** se guardan en `localStorage` con la clave `pokerogue_save` y `SAVE_VERSION` (`core/SaveManager.js`). Formato v4: `profile`, `bag`, `wallet` y `run` (la expedición en curso o `null`); la v4 solo quitó las Poké Balls (se cambiaron por dinero). **Nunca se borra la partida de un jugador por cambiar el formato:** añade a `MIGRATIONS` la función pura que pasa de la versión actual a la siguiente, sube `SAVE_VERSION` y añade su caso a `tests/unit/save.test.js`. Al cargar una partida antigua se guarda la original en `pokerogue_save_backup_v<n>`. Una partida ilegible se aparta a `pokerogue_save_backup_corrupt_<fecha>` y una de una versión más nueva no se toca.
 - El balance y el contenido van en `src/data/*.json`, no metidos en el código.
 - No añadas dependencias sin un motivo claro: el juego solo depende de `rot-js`.
 
-## Estado conocido (2026-09-23)
+## Estado conocido (2026-09-24)
 
 - **Arreglado en la fase 1 del plan:** desde `75eebf4` (28 de julio), abrir la pausa, la mochila o el equipo desde exploración entraba en una recursión (`openPauseMenu` → `changeState(MENU)` → `state_changed` → `openPauseMenu`…). El `EventBus` se tragaba el `RangeError` y el menú salía tras más de mil repintados. Lo cubre `tests/e2e/menu-state.spec.js`.
 - **Arreglados en el hito H0:** el diálogo «se ha unido a tu equipo» que se borraba al reclutar (con `changeState` idempotente) y los diálogos animados que pedían dos Z con el texto ya terminado. Los cubre `tests/e2e/dialogs.spec.js`.
-- **Pendiente según el plan MM** (no son fallos): en las mazmorras siguen las Poké Ball y todos los movimientos atacan solo a la casilla de al lado (hito H2); si el equipo está lleno, un Pokémon amigable no puede unirse en vez de irse a la base (H2); sprites estáticos de PokeAPI (H3); sin historia (H4).
-- La batería E2E completa tarda unos 4 minutos en local: mientras trabajas, ejecuta solo los ficheros afectados.
+- **Pendiente según el plan MM** (no son fallos): sprites estáticos de PokeAPI (H3); sin historia (H4).
+- En el pueblo, el equipo son copias de las fichas de la plantilla. Lo que cambie ahí y deba durar hay que apuntarlo también en `profile.roster` (como hace `syncRosterHeldItem` al equipar); cambiar la táctica o el líder en el pueblo aún no se guarda.
+- La batería E2E completa tarda alrededor de un minuto en local (4 workers): mientras trabajas, ejecuta solo los ficheros afectados.
 
 ## Plan de mejora
 

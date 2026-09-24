@@ -7,6 +7,34 @@ import { ENEMY_DETECT_RANGE } from '../constants.js';
 import { canWalkOnTile } from '../systems/MovementSystem.js';
 import { getAbility } from '../systems/AbilitySystem.js';
 import { random } from '../core/Random.js';
+import { moveRange, lineDirectionTo, inRoomReach } from '../systems/MoveTargeting.js';
+
+/** Probabilidad de que un salvaje use un movimiento a distancia cuando puede. */
+const RANGED_CHANCE = 0.5;
+
+/**
+ * Un movimiento con el que alcanzar al objetivo sin estar al lado: en línea
+ * (alineado y sin muros) o de sala.
+ * @returns {{ type: 'attack', targetId: number, moveId: number } | null}
+ */
+function rangedAttack(entityId, targetId, game) {
+  if (!game?.movesData || targetId == null) return null;
+  const info = game.entityManager.getComponent(entityId, 'pokemonInfo');
+  const usable = (info?.currentMoves || [])
+    .filter(s => s && s.currentPP > 0 && s.enabled !== false)
+    .map(s => game.movesData.find(m => m.id === s.moveId))
+    .filter(m => m && (m.power > 0 || m.effect));
+  for (const move of usable) {
+    const range = moveRange(move);
+    if (range === 'line' && lineDirectionTo(game, entityId, targetId)) {
+      return { type: 'attack', targetId, moveId: move.id };
+    }
+    if (range === 'room' && inRoomReach(game, entityId, targetId)) {
+      return { type: 'attack', targetId, moveId: move.id };
+    }
+  }
+  return null;
+}
 
 /**
  * Determina la acción de un enemigo
@@ -187,8 +215,13 @@ export function getEnemyAction(entityId, entityManager, tileMap, playerPos, play
   entityManager.setComponent(entityId, 'aiControlled', ai);
 
   switch (behavior) {
-    case 'chase':
+    case 'chase': {
+      if (distance > 1 && random() < RANGED_CHANCE) {
+        const ranged = rangedAttack(entityId, focusId, game);
+        if (ranged) return ranged;
+      }
       return chaseAction(entityId, pos, focusPos, focusId, tileMap, entityManager);
+    }
     case 'flee':
       return fleeAction(entityId, pos, focusPos, tileMap, entityManager, focusId);
     case 'wander':

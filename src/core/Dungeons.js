@@ -23,6 +23,13 @@ import dungeonsData from '../data/dungeons.json';
 export const DUNGEONS = dungeonsData.dungeons;
 
 /**
+ * Viento: turnos que se puede pasar en un piso. En cada aviso sopla más
+ * fuerte; al llegar al límite, el viento expulsa al equipo de la mazmorra.
+ * @type {{ limit: number, warnings: number[] }}
+ */
+export const WIND = dungeonsData.wind;
+
+/**
  * @param {string} id
  * @returns {Dungeon}
  */

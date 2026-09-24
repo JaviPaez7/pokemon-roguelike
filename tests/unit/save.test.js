@@ -70,6 +70,66 @@ describe('migrateSave', () => {
     const original = saveV1();
     migrateSave(original);
     expect(original).toEqual(saveV1());
+    const v3 = saveV3();
+    migrateSave(v3);
+    expect(v3).toEqual(saveV3());
+  });
+});
+
+/** Partida v3 con Poké Balls en la mochila, el almacén y el piso en curso. */
+function saveV3(overrides = {}) {
+  return {
+    version: 3,
+    timestamp: 1,
+    profile: {
+      teamName: 'Equipo Aurora',
+      roster: [{ uid: 1, name: 'Pikachu' }],
+      heroUid: 1,
+      bank: 10,
+      storage: [{ itemId: 'great_ball', quantity: 2 }, { itemId: 'potion', quantity: 1 }],
+      flags: {},
+      stash: null,
+    },
+    bag: [{ itemId: 'pokeball', quantity: 3 }, { itemId: 'apple', quantity: 1 }],
+    wallet: 5,
+    run: {
+      dungeonId: 'bosque_verde',
+      floorItems: [{ itemId: 'ultra_ball', quantity: 1, x: 1, y: 1 }, { itemId: 'apple', quantity: 1, x: 2, y: 2 }],
+      floorMerchants: [{ x: 3, y: 3, items: [{ id: 'pokeball', price: 30 }, { id: 'potion', price: 40 }] }],
+    },
+    ...overrides,
+  };
+}
+
+describe('v3 → v4: sin Poké Balls', () => {
+  it('las de la mochila pasan a la cartera y las del almacén, al banco', () => {
+    const v4 = migrateSave(saveV3());
+    expect(v4.version).toBe(4);
+    expect(v4.bag).toEqual([{ itemId: 'apple', quantity: 1 }]);
+    expect(v4.wallet).toBe(5 + 3 * 48);
+    expect(v4.profile.storage).toEqual([{ itemId: 'potion', quantity: 1 }]);
+    expect(v4.profile.bank).toBe(10 + 2 * 120);
+    expect(v4.profile.flags.ballRefund).toBe(3 * 48 + 2 * 120);
+  });
+
+  it('las del suelo y la tienda del piso en curso desaparecen', () => {
+    const { run } = migrateSave(saveV3());
+    expect(run.floorItems).toEqual([{ itemId: 'apple', quantity: 1, x: 2, y: 2 }]);
+    expect(run.floorMerchants[0].items).toEqual([{ id: 'potion', price: 40 }]);
+  });
+
+  it('en la Torre, las de la mochila que espera en el pueblo van a su cartera', () => {
+    const base = saveV3();
+    const v4 = migrateSave(saveV3({ profile: { ...base.profile, stash: { bag: [{ itemId: 'pokeball', quantity: 1 }], wallet: 7 } } }));
+    expect(v4.profile.stash).toEqual({ bag: [], wallet: 7 + 48 });
+  });
+
+  it('sin Poké Balls no hay nada que avisar', () => {
+    const base = saveV3();
+    const v4 = migrateSave(saveV3({ bag: [], profile: { ...base.profile, storage: [] }, run: null }));
+    expect(v4.profile.flags).toEqual({});
+    expect(v4.wallet).toBe(5);
+    expect(v4.profile.bank).toBe(10);
   });
 });
 

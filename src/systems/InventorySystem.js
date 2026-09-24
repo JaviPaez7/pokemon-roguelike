@@ -1,9 +1,11 @@
-import { ACTIONS, GAME_STATES, MAX_PARTY_SIZE } from '../constants.js';
-import { attemptCapture } from './CaptureSystem.js';
+import { ACTIONS, GAME_STATES } from '../constants.js';
 import { useItem } from './ItemSystem.js';
 import { checkEvolution, evolve } from './EvolutionSystem.js';
 import { getAbility } from './AbilitySystem.js';
 import { random } from '../core/Random.js';
+import { equipItem, unequipItem, heldName } from '../core/HeldItems.js';
+import { getMember } from '../core/Profile.js';
+import { hasIqSkill } from '../core/IQ.js';
 
 /**
  * Usa un objeto del inventario sobre un objetivo.
@@ -15,83 +17,12 @@ export function useInventoryItem(game, itemId, targetPokemonId) {
   const itemData = game.itemsData.find(i => i.id === itemId);
   if (!itemData) return;
 
-  if (itemData.type === 'capture') {
-    const targetFighter = game.entityManager.getComponent(targetPokemonId, 'fighter');
-    const targetInfo = game.entityManager.getComponent(targetPokemonId, 'pokemonInfo');
+  if (itemData.type === 'held') {
+    giveHeldItem(game, itemId, targetPokemonId);
+    return;
+  }
 
-    if (!targetFighter || !targetInfo) {
-      game.eventBus.emit('message', 'No hay ningún Pokémon objetivo cerca.');
-      return;
-    }
-    game.stats.itemsUsed = (game.stats.itemsUsed || 0) + 1;
-
-    const captureResult = attemptCapture(targetFighter, targetInfo, itemData, game.pokemonData);
-
-    game.eventBus.emit('capture_attempt', {
-      targetId: targetPokemonId,
-      shakes: captureResult.shakes,
-      success: captureResult.success,
-    });
-
-    const slot = game.inventory.find(s => s.itemId === itemId);
-    if (slot) {
-      slot.quantity--;
-      if (slot.quantity <= 0) {
-        const idx = game.inventory.indexOf(slot);
-        if (idx > -1) game.inventory.splice(idx, 1);
-      }
-    }
-
-    game.eventBus.emit('show_dialog', {
-      text: captureResult.messages.join('\n\n'),
-      callback: () => {
-        if (captureResult.success) {
-          game.stats.pokemonCaptured++;
-
-          const party = game.entityManager.getEntitiesWithComponents('partyMember');
-          if (party.length < MAX_PARTY_SIZE) {
-            game.entityManager.setComponent(targetPokemonId, 'partyMember', {
-              slot: party.length,
-              isLeader: false,
-              tactic: 'follow'
-            });
-            
-            const ai = game.entityManager.getComponent(targetPokemonId, 'aiControlled') || {};
-            ai.behavior = 'follower';
-            game.entityManager.setComponent(targetPokemonId, 'aiControlled', ai);
-
-            // Curar un poco al capturado
-            if (targetFighter) {
-              targetFighter.hp = Math.max(1, Math.floor(targetFighter.maxHp * 0.5));
-              targetFighter.statusEffects = [];
-              game.entityManager.setComponent(targetPokemonId, 'fighter', targetFighter);
-              game.turnManager.addEntity(targetPokemonId, targetFighter.speed || 50, false);
-            }
-
-            game.eventBus.emit('message', `¡${targetInfo.name} se ha unido a tu equipo!`);
-          } else {
-            const bonus = 20 + Math.floor((targetInfo.level || 1) * 3);
-            game.coins = (game.coins || 0) + bonus;
-            game.eventBus.emit('message', {
-              text: `¡Equipo lleno! Liberaste a ${targetInfo.name} (+${bonus} Poké).`,
-              color: '#ffd700'
-            });
-            game.turnManager.removeEntity(targetPokemonId);
-            game.entityManager.destroyEntity(targetPokemonId);
-          }
-          try { game.saveGameData(); } catch (e) {}
-        }
-        // Avanzar turno tras cerrar el diálogo de captura
-        game.turnManager.processTurn(
-          { type: ACTIONS.WAIT },
-          (id, act) => game.combat.executeEntityAction(id, act),
-          (id) => game.combat.getEnemyAIAction(id)
-        );
-        game.needsRender = true;
-      }
-    });
-    return; // No procesar turno hasta cerrar el diálogo
-  } else if (itemData.type === 'evolution_stone') {
+  if (itemData.type === 'evolution_stone') {
     const targetInfo = game.entityManager.getComponent(targetPokemonId, 'pokemonInfo');
     if (!targetInfo) {
       game.eventBus.emit('message', 'No hay un objetivo válido para usar la piedra.');
@@ -236,26 +167,7 @@ export function throwInventoryItem(game, itemId) {
     
     if (targetFighter && targetInfo) {
       if (!targetFighter.statusEffects) targetFighter.statusEffects = [];
-      if (itemData.type === 'capture') {
-        const isParty = game.entityManager.hasComponent(hitEntityId, 'partyMember');
-        const isMerchant = game.entityManager.hasComponent(hitEntityId, 'npcMerchant');
-        const isFriendly = game.entityManager.hasComponent(hitEntityId, 'npcFriendly');
-        if (isParty || isMerchant || isFriendly) {
-          const restored = game.inventory.find(s => s.itemId === itemId);
-          if (restored) restored.quantity++;
-          else game.inventory.push({ itemId, quantity: 1 });
-          game.eventBus.emit('message', 'No puedes capturar a ese Pokémon.');
-          game.needsRender = true;
-          return;
-        } else {
-          // Restaurar slot (useInventoryItem lo consumirá)
-          const restored = game.inventory.find(s => s.itemId === itemId);
-          if (restored) restored.quantity++;
-          else game.inventory.push({ itemId, quantity: 1 });
-          useInventoryItem(game, itemId, hitEntityId);
-          return;
-        }
-      } else if (itemData.type === 'food' && game.entityManager.hasComponent(hitEntityId, 'partyMember')) {
+      if (itemData.type === 'food' && game.entityManager.hasComponent(hitEntityId, 'partyMember')) {
         const value = itemData.value || 20;
         if (itemData.maxBellyBonus) {
           targetFighter.maxBelly = (targetFighter.maxBelly || 100) + itemData.maxBellyBonus;
@@ -307,7 +219,8 @@ export function throwInventoryItem(game, itemId) {
           color: '#aaddff'
         });
       } else if (itemData.type === 'throwable') {
-        const damage = itemData.value || 15;
+        const pitcher = hasIqSkill(pokemonInfo, 'power_pitcher') ? 1.5 : 1; // Gran Lanzador (CI)
+        const damage = Math.floor((itemData.value || 15) * pitcher);
         targetFighter.hp = Math.max(0, targetFighter.hp - damage);
         game.eventBus.emit('message', `¡El objeto golpeó a ${targetInfo.name} infligiendo ${damage} PS de daño!`);
         game.entityManager.setComponent(hitEntityId, 'fighter', targetFighter);
@@ -404,3 +317,55 @@ export function throwInventoryItem(game, itemId) {
   game.needsRender = true;
 }
 
+/**
+ * Da un objeto equipable de la mochila a un Pokémon del equipo. No gasta turno.
+ * @param {import('../core/Game.js').Game} game
+ * @param {string} itemId
+ * @param {number} pokemonId
+ */
+export function giveHeldItem(game, itemId, pokemonId) {
+  const info = game.entityManager.getComponent(pokemonId, 'pokemonInfo');
+  if (!info) return;
+  const result = equipItem(info, game.inventory, itemId, { maxSlots: game.maxInventorySize || 24 });
+  const back = () => game.uiManager.openTeamMenu?.();
+  if (!result.ok) {
+    game.uiManager.showDialog(result.reason === 'bag_full'
+      ? `No hay sitio en la mochila para lo que llevaba ${info.name}.`
+      : 'Ese objeto no se puede equipar.', back);
+    return;
+  }
+  syncRosterHeldItem(game, pokemonId);
+  const swapped = result.previous && result.previous !== itemId ? `\n\n${heldName(result.previous)} vuelve a la mochila.` : '';
+  game.uiManager.showDialog(`${info.name} lleva ahora ${heldName(itemId)}.${swapped}`, back);
+  game.needsRender = true;
+}
+
+/**
+ * Quita el objeto equipado de un Pokémon y lo guarda en la mochila.
+ * @param {import('../core/Game.js').Game} game
+ * @param {number} pokemonId
+ * @returns {string} Mensaje para el jugador
+ */
+export function takeHeldItem(game, pokemonId) {
+  const info = game.entityManager.getComponent(pokemonId, 'pokemonInfo');
+  if (!info) return '';
+  const result = unequipItem(info, game.inventory, { maxSlots: game.maxInventorySize || 24 });
+  if (!result.ok) return result.reason === 'bag_full' ? 'La mochila está llena.' : `${info.name} no lleva nada.`;
+  syncRosterHeldItem(game, pokemonId);
+  game.needsRender = true;
+  return `${heldName(result.itemId)} vuelve a la mochila.`;
+}
+
+/**
+ * En el pueblo, el equipo son copias de las fichas de la plantilla: lo que se
+ * equipa ahí hay que apuntarlo también en la ficha, porque las expediciones
+ * salen de ella. En la mazmorra no hace falta: al volver se copian las fichas.
+ * @param {import('../core/Game.js').Game} game
+ * @param {number} pokemonId
+ */
+function syncRosterHeldItem(game, pokemonId) {
+  if (game.dungeonId || !game.profile) return;
+  const uid = game.entityManager.getComponent(pokemonId, 'partyMember')?.uid;
+  const member = uid != null ? getMember(game.profile, uid) : null;
+  if (member) member.heldItem = game.entityManager.getComponent(pokemonId, 'pokemonInfo')?.heldItem ?? null;
+}

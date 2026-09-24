@@ -105,7 +105,7 @@ export function openStatsMenu(ui, parentMenuType = 'title') {
           <h3 style="color: var(--text-accent); text-align: center; margin-bottom: 8px; font-size: 8px; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;">RUN ACTUAL</h3>
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Piso Alcanzado:</span> <span style="color: #fff;">Piso ${runFloor}</span></div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Pokémon derrotados:</span> <span style="color: #fff;">${current.pokemonDefeated}</span></div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Capturas:</span> <span style="color: #fff;">${current.pokemonCaptured}</span></div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Reclutas:</span> <span style="color: #fff;">${current.pokemonCaptured}</span></div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Daño Causado:</span> <span style="color: #fff;">${current.totalDamageDealt}</span></div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Daño Recibido:</span> <span style="color: #fff;">${current.totalDamageTaken}</span></div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Objetos Usados:</span> <span style="color: #fff;">${current.itemsUsed}</span></div>
@@ -123,7 +123,7 @@ export function openStatsMenu(ui, parentMenuType = 'title') {
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Victorias:</span> <span style="color: #fff; text-shadow: ${lifetime.victories > 0 ? '0 0 4px var(--hp-green)' : 'none'};">${lifetime.victories}</span></div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Piso Máximo:</span> <span style="color: #fff;">Piso ${lifetime.maxFloor}</span></div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Tot. Derrotas:</span> <span style="color: #fff;">${lifetime.pokemonDefeated}</span></div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Tot. Capturas:</span> <span style="color: #fff;">${lifetime.pokemonCaptured}</span></div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Tot. Reclutas:</span> <span style="color: #fff;">${lifetime.pokemonCaptured}</span></div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Tot. Daño Causado:</span> <span style="color: #fff;">${lifetime.totalDamageDealt}</span></div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Tot. Daño Recibido:</span> <span style="color: #fff;">${lifetime.totalDamageTaken}</span></div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>Tot. Obj. Usados:</span> <span style="color: #fff;">${lifetime.itemsUsed}</span></div>
