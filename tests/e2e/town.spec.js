@@ -54,8 +54,10 @@ test.describe('servicios del pueblo', () => {
     await page.keyboard.press('ArrowUp'); // choca con Kecleon
     await expect(panelTitle(page)).toHaveText('TIENDA KECLEON');
     await option(page, 'Comprar objetos').click();
-    const price = Number((await option(page, 'Manzana').textContent()).match(/(\d+) Poké/)[1]);
-    await option(page, 'Manzana').click();
+    // Solo la Manzana (no la Manzana Grande, que puede estar entre los extras del día)
+    const apple = page.locator('#menu-container .menu-option', { hasText: /Manzana\s*\d+ Poké/ });
+    const price = Number((await apple.textContent()).match(/(\d+) Poké/)[1]);
+    await apple.click();
     await dismissDialog(page);
 
     expect(await itemQuantity(page, 'apple')).toBe(apples + 1);

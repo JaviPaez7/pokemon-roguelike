@@ -16,6 +16,7 @@ import { random } from '../core/Random.js';
 import { recruitChance, isRecruitable } from '../core/Recruitment.js';
 import { toSnapshot, restedSnapshot } from '../core/PokemonSnapshot.js';
 import { addToRoster } from '../core/Profile.js';
+import { heldHelpsRecruit } from '../core/HeldItems.js';
 
 /** @param {import('../core/Game.js').Game} game */
 function partySize(game) {
@@ -36,14 +37,6 @@ function hasBase(game) {
  */
 export function canTakeRecruit(game) {
   return partySize(game) < MAX_PARTY_SIZE || hasBase(game);
-}
-
-/**
- * El líder tiene equipado el Lazo Amigo.
- * @param {import('../core/Game.js').Game} game
- */
-function leaderHoldsFriendBow(game) {
-  return game.entityManager.getComponent(game._playerId, 'pokemonInfo')?.heldItem === 'friend_bow';
 }
 
 /**
@@ -69,7 +62,7 @@ export function tryRecruit(game, defeatedId, attackerId) {
     captureRate: species?.captureRate,
     targetLevel: info.level,
     leaderLevel: leader.level,
-    friendBow: leaderHoldsFriendBow(game),
+    friendBow: heldHelpsRecruit(leader),
   });
   const forced = game.debug?.forceRecruit;
   const wantsToJoin = forced ?? random() < chance;

@@ -1,5 +1,6 @@
 import { openPauseMenu } from './PauseMenu.js';
 import { GAME_STATES } from '../../constants.js';
+import { heldName } from '../../core/HeldItems.js';
 
 /** Confirmación Sí/No (no usa diálogo, para poder cancelar). */
 function openYesNoConfirm(ui, title, body, onYes, onNo) {
@@ -27,7 +28,7 @@ function openYesNoConfirm(ui, title, body, onYes, onNo) {
 const INV_TYPE_ORDER = {
   food: 0, heal: 1, heal_percent: 1, pp_restore: 2, pp_restore_full: 2,
   seed: 4, revive: 4, status_cure: 5, full_heal: 5,
-  evolution_stone: 6, stat_boost: 7, gummi: 8, escape: 9
+  evolution_stone: 6, stat_boost: 7, gummi: 8, escape: 9, held: 10
 };
 
 function sortInventory(ui) {
@@ -125,7 +126,8 @@ export function updateItemDetails(ui, itemId) {
       seed: 'Semilla especial',
       slumber_orb: 'Usar = sala entera; Lanzar = 1 objetivo',
       petrify_orb: 'Usar = sala entera; Lanzar = 1 objetivo',
-      throwable: 'Lanzar para dañar a distancia'
+      throwable: 'Lanzar para dañar a distancia',
+      held: 'Equipable: dáselo a un Pokémon del equipo (Usar / Equipar)'
     };
     const hint = typeHints[item.type] || '';
     descPanel.innerHTML = `${item.description || 'Sin descripción.'}${hint ? `<div style="margin-top:4px;color:var(--text-accent);">${hint}</div>` : ''}`;
@@ -215,18 +217,23 @@ export function openItemActionsMenu(ui) {
  * @param {string} name
  */
 function openTownItemActionsMenu(ui, name) {
+  const held = ui.game.itemsData.find(i => i.id === ui.selectedItem)?.type === 'held';
   const html = `
     <div class="game-panel" style="width: 280px;">
       <h2 class="game-panel-title">${name}</h2>
-      <p class="town-text">En el pueblo los objetos no se usan. Guárdalos en el almacén de Kangaskhan o llévalos a la mazmorra.</p>
+      <p class="town-text">${held
+        ? 'Dáselo a un Pokémon del equipo para que lo lleve puesto.'
+        : 'En el pueblo los objetos no se usan. Guárdalos en el almacén de Kangaskhan o llévalos a la mazmorra.'}</p>
       <div id="options-list">
-        <div class="menu-option selected" data-index="0"><span class="cursor">▶</span> Tirar objeto</div>
-        <div class="menu-option" data-index="1"><span class="cursor">▶</span> Atrás</div>
+        ${held ? '<div class="menu-option" data-index="0"><span class="cursor">▶</span> Equipar</div>' : ''}
+        <div class="menu-option" data-index="${held ? 1 : 0}"><span class="cursor">▶</span> Tirar objeto</div>
+        <div class="menu-option" data-index="${held ? 2 : 1}"><span class="cursor">▶</span> Atrás</div>
       </div>
     </div>
   `;
   ui.showMenu('item_actions', html);
   ui.menuOptions = [
+    ...(held ? [() => openItemTargetMenu(ui)] : []),
     () => {
       openYesNoConfirm(
         ui,
@@ -250,10 +257,11 @@ function openTownItemActionsMenu(ui, name) {
 export function openItemTargetMenu(ui) {
   const party = ui.game.party;
   const item = ui.game.itemsData.find(i => i.id === ui.selectedItem);
+  const held = item.type === 'held';
 
   let html = `
     <div class="game-panel" style="width: 320px;">
-      <h2 class="game-panel-title">¿USAR ${item.name.toUpperCase()} EN?</h2>
+      <h2 class="game-panel-title">${held ? `¿QUIÉN LLEVA ${item.name.toUpperCase()}?` : `¿USAR ${item.name.toUpperCase()} EN?`}</h2>
       <div id="options-list">
   `;
 
@@ -262,7 +270,7 @@ export function openItemTargetMenu(ui) {
       <div class="menu-option" data-index="${idx}">
         <span class="cursor">▶</span>
         <span style="flex-grow: 1;">${poke.name}</span>
-        <span style="color: var(--text-secondary);">PS: ${poke.hp}/${poke.maxHp}</span>
+        <span style="color: var(--text-secondary);">${held ? (poke.heldItem ? heldName(poke.heldItem) : 'Nada') : `PS: ${poke.hp}/${poke.maxHp}`}</span>
       </div>
     `;
   });

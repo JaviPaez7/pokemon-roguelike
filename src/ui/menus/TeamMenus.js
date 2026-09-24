@@ -2,6 +2,8 @@ import { openPauseMenu } from './PauseMenu.js';
 import { checkEvolution } from '../../systems/EvolutionSystem.js';
 import { openEvolutionMenu } from './EvolutionMenu.js';
 import { GAME_STATES, TYPE_NAMES_ES } from '../../constants.js';
+import { heldName } from '../../core/HeldItems.js';
+import { takeHeldItem } from '../../systems/InventorySystem.js';
 
 /** @param {import('../UIManager.js').UIManager} ui */
 export function openTeamMenu(ui) {
@@ -36,6 +38,7 @@ export function openTeamMenu(ui) {
         </div>
         <div style="font-size: 6px; color: var(--text-secondary); margin-left: 12px; display: flex; justify-content: space-between; width: calc(100% - 12px); align-items: center;">
           <span style="color:${poke.hp <= 0 ? '#f66' : (poke.hp / poke.maxHp < 0.25 ? '#fa4' : '#8f8')};">PS: ${poke.hp}/${poke.maxHp}</span>
+          ${poke.heldItem ? `<span style="color: #ffcc66;">${heldName(poke.heldItem)}</span>` : ''}
           ${tacticText}
         </div>
       </div>
@@ -148,6 +151,12 @@ export function openPokemonActionsMenu(ui) {
     options.push({ label: 'Cambiar táctica', action: () => openTacticSelectMenu(ui) });
   }
   options.push({ label: 'Ver movimientos', action: () => openMovesViewMenu(ui) });
+  if (info.heldItem) {
+    options.push({
+      label: 'Quitar objeto',
+      action: () => ui.showDialog(takeHeldItem(ui.game, ui.selectedPokemon), () => openPokemonActionsMenu(ui)),
+    });
+  }
 
   if (canRetryEvo) {
     options.push({
@@ -170,6 +179,7 @@ export function openPokemonActionsMenu(ui) {
       <div style="font-size: 6px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.5;">
         Nivel: ${info.level} | Tipos: ${(info.types || []).map(t => TYPE_NAMES_ES[t] || t).join('/')}<br/>
         Habilidad: <span style="color: #ffcc00;">${abilityLabel}</span><br/>
+        Objeto: <span style="color: #ffcc66;">${info.heldItem ? heldName(info.heldItem) : 'ninguno'}</span><br/>
         ATQ: ${fighter.attack} DEF: ${fighter.defense} ESP: ${fighter.spAtk} VEL: ${fighter.speed}
       </div>
       <div id="options-list">

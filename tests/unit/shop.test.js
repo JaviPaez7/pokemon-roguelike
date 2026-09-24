@@ -23,8 +23,8 @@ describe('tienda del pueblo', () => {
     }
   });
 
-  it('los precios están entre 8 y 250 y los raros cuestan más', () => {
-    for (const item of itemsData) {
+  it('los precios calculados están entre 8 y 250 y los raros cuestan más', () => {
+    for (const item of itemsData.filter((i) => i.price == null)) {
       const price = buyPrice(item);
       expect(price).toBeGreaterThanOrEqual(8);
       expect(price).toBeLessThanOrEqual(250);

@@ -3,6 +3,8 @@ import { useItem } from './ItemSystem.js';
 import { checkEvolution, evolve } from './EvolutionSystem.js';
 import { getAbility } from './AbilitySystem.js';
 import { random } from '../core/Random.js';
+import { equipItem, unequipItem, heldName } from '../core/HeldItems.js';
+import { getMember } from '../core/Profile.js';
 
 /**
  * Usa un objeto del inventario sobre un objetivo.
@@ -13,6 +15,11 @@ import { random } from '../core/Random.js';
 export function useInventoryItem(game, itemId, targetPokemonId) {
   const itemData = game.itemsData.find(i => i.id === itemId);
   if (!itemData) return;
+
+  if (itemData.type === 'held') {
+    giveHeldItem(game, itemId, targetPokemonId);
+    return;
+  }
 
   if (itemData.type === 'evolution_stone') {
     const targetInfo = game.entityManager.getComponent(targetPokemonId, 'pokemonInfo');
@@ -308,3 +315,55 @@ export function throwInventoryItem(game, itemId) {
   game.needsRender = true;
 }
 
+/**
+ * Da un objeto equipable de la mochila a un Pokémon del equipo. No gasta turno.
+ * @param {import('../core/Game.js').Game} game
+ * @param {string} itemId
+ * @param {number} pokemonId
+ */
+export function giveHeldItem(game, itemId, pokemonId) {
+  const info = game.entityManager.getComponent(pokemonId, 'pokemonInfo');
+  if (!info) return;
+  const result = equipItem(info, game.inventory, itemId, { maxSlots: game.maxInventorySize || 24 });
+  const back = () => game.uiManager.openTeamMenu?.();
+  if (!result.ok) {
+    game.uiManager.showDialog(result.reason === 'bag_full'
+      ? `No hay sitio en la mochila para lo que llevaba ${info.name}.`
+      : 'Ese objeto no se puede equipar.', back);
+    return;
+  }
+  syncRosterHeldItem(game, pokemonId);
+  const swapped = result.previous && result.previous !== itemId ? `\n\n${heldName(result.previous)} vuelve a la mochila.` : '';
+  game.uiManager.showDialog(`${info.name} lleva ahora ${heldName(itemId)}.${swapped}`, back);
+  game.needsRender = true;
+}
+
+/**
+ * Quita el objeto equipado de un Pokémon y lo guarda en la mochila.
+ * @param {import('../core/Game.js').Game} game
+ * @param {number} pokemonId
+ * @returns {string} Mensaje para el jugador
+ */
+export function takeHeldItem(game, pokemonId) {
+  const info = game.entityManager.getComponent(pokemonId, 'pokemonInfo');
+  if (!info) return '';
+  const result = unequipItem(info, game.inventory, { maxSlots: game.maxInventorySize || 24 });
+  if (!result.ok) return result.reason === 'bag_full' ? 'La mochila está llena.' : `${info.name} no lleva nada.`;
+  syncRosterHeldItem(game, pokemonId);
+  game.needsRender = true;
+  return `${heldName(result.itemId)} vuelve a la mochila.`;
+}
+
+/**
+ * En el pueblo, el equipo son copias de las fichas de la plantilla: lo que se
+ * equipa ahí hay que apuntarlo también en la ficha, porque las expediciones
+ * salen de ella. En la mazmorra no hace falta: al volver se copian las fichas.
+ * @param {import('../core/Game.js').Game} game
+ * @param {number} pokemonId
+ */
+function syncRosterHeldItem(game, pokemonId) {
+  if (game.dungeonId || !game.profile) return;
+  const uid = game.entityManager.getComponent(pokemonId, 'partyMember')?.uid;
+  const member = uid != null ? getMember(game.profile, uid) : null;
+  if (member) member.heldItem = game.entityManager.getComponent(pokemonId, 'pokemonInfo')?.heldItem ?? null;
+}

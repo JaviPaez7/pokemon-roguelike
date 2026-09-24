@@ -55,6 +55,7 @@ export function toSnapshot(p) {
     _rageTurns: p._rageTurns,
     _focusTurns: p._focusTurns,
     _traced: !!p._traced,
+    heldItem: p.heldItem ?? null,
   };
 }
 
@@ -119,6 +120,7 @@ export function spawnFromSnapshot(game, p, { slot, isLeader }) {
     xp: p.xp,
     ability: p.ability || null,
     _traced: !!p._traced,
+    heldItem: p.heldItem ?? null,
     currentMoves: (p.currentMoves || []).map((m) => {
       const enabled = m.enabled !== undefined ? m.enabled : true;
       const disableTurns = m._disableTurns;

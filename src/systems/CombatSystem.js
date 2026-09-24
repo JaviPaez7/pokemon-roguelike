@@ -6,6 +6,7 @@
 import { COLORS } from '../constants.js';
 import { getAbility, applyPostAttackAbilities, tryTraceAbility } from './AbilitySystem.js';
 import { random } from '../core/Random.js';
+import { heldStatMultiplier, heldPreventsStatus, heldName } from '../core/HeldItems.js';
 
 /**
  * Calcula el daño de un movimiento
@@ -253,6 +254,9 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
       : (defender.statModifiers.spDef || 0);
     def = applyStatModifier(def, defStage);
   }
+  // Objetos equipados (Banda Poder, Pañuelo Defensa…)
+  atk = Math.floor(atk * heldStatMultiplier(attackerInfo, isPhysical ? 'attack' : 'spAtk'));
+  def = Math.max(1, Math.floor(def * heldStatMultiplier(defenderInfo, isPhysical ? 'defense' : 'spDef')));
   // Sebo (Thick Fat): reduce daño de Fuego/Hielo
   {
     const defAbThick = getAbility(defenderInfo);
@@ -1035,7 +1039,7 @@ function syncTransformSprite(entityManager, attackerId, defenderId, attackerFigh
   entityManager.setComponent(attackerId, 'sprite', spr);
 }
 
-function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFighter, attackerInfo, damageDealt = 0, isBoss = false) {
+export function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFighter, attackerInfo, damageDealt = 0, isBoss = false) {
   const chance = move.effectChance || 100;
   if (random() * 100 > chance) return false;
 
@@ -1048,6 +1052,12 @@ function tryApplyEffect(move, targetFighter, targetInfo, messages, attackerFight
   const mn = String(move.name || '').toLowerCase();
   if (getAbility(targetInfo) === 'soundproof' && (move.sound || mn.includes('canto') || mn.includes('chirrido') || mn.includes('gruñido') || mn.includes('ronquido') || mn.includes('ultralido') || mn.includes('chillido') || mn.includes('eco') || mn.includes('voz'))) {
     messages.push('¡Insonorizar anuló el movimiento de sonido!');
+    return false;
+  }
+
+  // Objeto equipado que protege de ese estado (Pañuelo Meloc, Insomniscopio)
+  if (heldPreventsStatus(targetInfo, move.effect)) {
+    messages.push(`¡${heldName(targetInfo.heldItem)} protege a ${targetInfo.name}!`);
     return false;
   }
 

@@ -43,6 +43,7 @@ import { endExpedition } from './Expedition.js';
 import { useInventoryItem as useInventoryItemHandler, throwInventoryItem } from '../systems/InventorySystem.js';
 import { MessageLog } from '../ui/MessageLog.js';
 import { getDungeon, relativeFloor, isLastFloor, WIND } from './Dungeons.js';
+import { heldBellyDrain } from './HeldItems.js';
 import { setSeed, newRunSeed } from './Random.js';
 import { roomAt } from '../systems/MoveTargeting.js';
 
@@ -720,7 +721,8 @@ export class Game {
         // Consumir tripa (0.2 por turno = 1 tripa cada 5 turnos)
         const fl = this._currentFloor || 1;
         const bellyDrain = fl <= 3 ? 0.08 : (fl <= 12 ? 0.10 : (fl <= 30 ? 0.12 : 0.13));
-        fighter.belly = Math.max(0, fighter.belly - bellyDrain);
+        const leaderInfo = this.entityManager.getComponent(this._playerId, 'pokemonInfo');
+        fighter.belly = Math.max(0, fighter.belly - bellyDrain * heldBellyDrain(leaderInfo));
 
         if (fighter.belly <= 20 && fighter.belly > 10 && !this._bellyWarned20) {
           this._bellyWarned20 = true;
@@ -1112,6 +1114,7 @@ export class Game {
       _rageTurns: fighter._rageTurns,
       _focusTurns: fighter._focusTurns,
       _traced: !!(info._traced),
+      heldItem: info.heldItem ?? null,
       speciesId: info.speciesId,
       name: info.name,
       level: info.level,

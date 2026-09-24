@@ -534,6 +534,7 @@ export class FloorManager {
       'Consejo: las gomas suben stats de forma permanente (se conservan al guardar).',
       'Consejo: la Bolsa del HUD se pone naranja cuando quedan 2 huecos o menos.',
       'Consejo: reclutar guarda automáticamente la partida.',
+      'Consejo: los objetos equipables se dan desde la mochila y se quitan desde el menú de Equipo.',
       'Consejo: derrotar a Mewtwo completa la aventura al instante.',
       'Consejo: Danza Espada y Agilidad te potencian a ti, no al enemigo.',
       'Consejo: Descanso y Recuperación se pueden usar sin enemigo al lado.',
