@@ -15,7 +15,7 @@ Fundan el **{equipo}** y siguen el Eco hacia el norte, mazmorra a mazmorra, hast
 
 **Tema: tener un sitio al que volver.** El bucle del juego es el tema. El viento de las mazmorras empuja hacia fuera y el pueblo siempre trae al equipo de vuelta, incluso cuando cae. Mewtwo no tiene adónde volver, y el final consiste en ofrecérselo.
 
-**Tono:** aventura amable con humor de pueblo (Slowpoke, Kecleon) y momentos serios (Persian, Mewtwo). Nadie muere. Los jefes no son malos: el Eco les amplifica un sentimiento. La excepción es Gengar, que es un aprovechado.
+**Tono:** aventura amable con humor de pueblo y memes españoles de toda la vida (Kecleon, Slowpoke, Pidgey, Gengar, Persian), y momentos serios en los que no se bromea (Persian, Arcanine, Mewtwo). Los memes están en la sección 8. Nadie muere. Los jefes no son malos: el Eco les amplifica un sentimiento. La excepción es Gengar, que es un aprovechado.
 
 ### Cómo encaja con lo que ya hay en el juego
 
@@ -52,7 +52,7 @@ Fundan el **{equipo}** y siguen el Eco hacia el norte, mazmorra a mazmorra, hast
   - Gengar: Normal, Happy, Surprised, Angry, Sad y Pain.
 - **El protagonista habla poco:** frases cortas y dichas en voz alta, y pensamientos **entre paréntesis** que solo ve el jugador.
 - **Género neutro para `{héroe}` y `{compañero}`:** pueden ser cualquier especie y el jugador no elige género. No se les aplican adjetivos ni pronombres con género («¿Estás bien?» sí, «¿Estás cansado?» no). Tampoco se les aplican plurales con género («vosotros», «juntos»): se habla del grupo como «el equipo» o con el verbo solo («Volved»).
-- **Personajes con género en el guion:** Pidgey y Pidgeotto (hermanas), Kangaskhan, Persian, Raichu y Clefable son ellas. Kecleon, Slowpoke, Onix y Arcanine son ellos. Gengar y Mewtwo se escriben sin marcas de género.
+- **Personajes con género en el guion:** Pidgey y Pidgeotto (hermanas), Kangaskhan, Persian, Raichu y Clefable son ellas. Kecleon, Slowpoke, Onix y Arcanine son ellos. Gengar y Mewtwo no tienen género: en sus propias frases se evita, y cuando otros hablan de ellos se usa el masculino genérico («lo despertamos»).
 
 ### Cuándo salta cada tipo de escena
 
@@ -146,12 +146,15 @@ Sustituye al mensaje de bienvenida actual, al terminar la nueva aventura (despu�
 - **Pidgey** · *Worried* — Desde que sopla el viento del norte, el bosque cambia cada mañana. Nadie se atreve a entrar.
 - **{compañero}** · *Determined* — Entraremos.
 - **{compañero}** · *Happy* — ¿Verdad? Tú no sabes adónde ir y yo no tengo adónde volver. Podríamos unir fuerzas. Un equipo de verdad.
-- **{compañero}** · *Joyous* — ¡Desde hoy somos el {equipo}!
+- **{compañero}** · *Joyous* — ¡Desde hoy somos el {equipo}! Y a partir de ahora: ganar, ganar y volver a ganar.
 - **Pidgey** · *Joyous* — ¡Gracias, gracias, gracias! La base del Equipo Centella está vacía: es vuestra.
 - **Pidgey** · *Happy* — Kecleon vende provisiones. Kangaskhan os guarda lo que no queráis llevar encima. En el tablón irán saliendo encargos de los vecinos. Y Persian os guarda el dinero… y os lo recuerda.
-- **Persian** · *Normal* — Un equipo de exploración. Qué romántico. Y qué caro. Cuando os quedéis sin Poké, ya sabéis dónde está el banco.
+- **Persian** · *Normal* — Un equipo de exploración. Qué romántico. Y qué caro. Cuando os quedéis sin Poké, ya sabéis dónde está el banco. Hacienda somos todos, pero el banco soy yo.
+- **{compañero}** · *Normal* — Perdona, ¿por dónde se va al Bosque Verde?
 - **Slowpoke** · *Normal* — ……
-- **Slowpoke** · *Normal* — …Hola. …Hace mucho tiempo…
+- **Slowpoke** · *Normal* — …Manzanas traigo.
+- **Pidgey** · *Sigh* — No le hagáis caso. Slowpoke vive en Babia.
+- **Slowpoke** · *Normal* — …Hace mucho tiempo…
 - *Narración* — Slowpoke se ha dormido.
 - **Pidgey** · *Determined* — El Bosque Verde está saliendo por el camino del sur. ¡Traed a mi hermana!
 
@@ -176,6 +179,7 @@ Jefe: **Pidgeotto** (nuevo; propuesta: nivel 6 en el piso 5). El Eco le provoca 
 **1-D · Después del jefe**
 
 - **Pidgeotto** · *Worried* — Ugh… ¿Dónde…? Estaba repartiendo cartas y el viento empezó a hablarme. Preguntaba y preguntaba… y al final ni yo sabía quién era.
+- **Pidgeotto** · *Normal* — Más perdida que un pulpo en un garaje, vamos.
 - **{compañero}** · *Happy* — Pidgey te espera en el pueblo.
 - **Pidgeotto** · *Normal* — Mi hermana… Sí. Vamos a casa.
 
@@ -186,7 +190,7 @@ Jefe: **Pidgeotto** (nuevo; propuesta: nivel 6 en el piso 5). El Eco le provoca 
 - **Pidgeotto** · *Worried* — El viento que baja del norte no es normal. Lleva una voz dentro, y si la escuchas mucho rato, se te mete en la cabeza.
 - **Pidgeotto** · *Normal* — Desde el cielo se ve de dónde viene: de más allá de la Cueva Oscura, de las montañas.
 - **Pidgeotto** · *Normal* — Y otra cosa: si alguna vez caéis ahí dentro, os traeré de vuelta. Es lo mínimo.
-- **Kecleon** · *Shouting* — ¡Ruina! ¡Desastre! ¡Mis carros no llegan!
+- **Kecleon** · *Shouting* — ¡Ruina! ¡Desastre! ¡Mis carros no llegan! ¡Esto es peor que la operación salida!
 - **Kecleon** · *Worried* — Un Onix se ha tumbado en la salida de la Cueva Oscura y no deja pasar a nadie. Sin carros, la tienda se queda en cuatro manzanas y una baya mordida.
 - **Kecleon** · *Happy* — Tenéis cara de valientes. ¡Y de clientes! Si abrís el paso, os lo agradeceré con mi mejor sonrisa comercial.
 - **{compañero}** · *Determined* — La voz viene del norte, y la cueva es el camino al norte. ¡Vamos!
@@ -207,6 +211,7 @@ Jefe: **Onix**. El Eco le provoca miedo a que los demás se vayan.
 - **Onix** · *Normal* — Fuera. Los pequeños de la cueva duermen. Nadie entra. Nadie sale.
 - **{compañero}** · *Surprised* — ¡Solo queremos cruzar! Buscamos de dónde sale la voz del viento.
 - **Onix** · *Normal* — Todo el que se va, no vuelve. Por eso ya no se va nadie. Nunca más.
+- **{compañero}** · *Determined* — Pues nada… ¡al ataquer!
 
 **2-D · Después del jefe**
 
@@ -219,7 +224,8 @@ Jefe: **Onix**. El Eco le provoca miedo a que los demás se vayan.
 
 - **Kecleon** · *Joyous* — ¡Han llegado los carros! ¡Mercancía fresca! ¡Sois mi clientela favorita! Bueno, sois mi única clientela, pero lo digo igual.
 - **Kecleon** · *Normal* — Y los carreteros traen noticias: en la Ruta Eléctrica hay una Raichu que ataca a todo el que pasa. Dicen que fue exploradora. De un equipo famoso. De aquí.
-- **{compañero}** · *Surprised* — ¿Del Equipo Centella?
+- **{compañero}** · *Sigh* — Primero un Onix y ahora una Raichu. De Guatemala a Guatepeor.
+- **{compañero}** · *Surprised* — Espera… ¿Un equipo de aquí? ¿Del Equipo Centella?
 - **Pidgey** · *Surprised* — ¡Persian! Tú conocías al Equipo Centella, ¿no?
 - **Persian** · *Angry* — Conozco a mucha gente. Casi toda me debe dinero. Id a esa ruta si queréis, pero no volváis contando historias.
 - **{compañero}** · *Worried* — …¿Has visto qué cara ha puesto? Aquí hay algo.
@@ -238,14 +244,16 @@ Jefe: **Raichu**. El Eco le aviva la rabia por el abandono.
 
 - *Narración* — Los relámpagos caen en círculo. En el centro, una Raichu echa chispas por las mejillas.
 - **Raichu** · *Angry* — Venís de Pueblo Raíz. Lo huelo: a pan recién hecho y a promesas rotas.
+- **Raichu** · *Angry* — ¿Sabéis quién soy yo? ¿Eh? ¿Lo sabéis?
+- **{héroe}** · *Sigh* — (Primero «¿quién eres?» y ahora «¿sabéis quién soy yo?». En este mundo nadie sabe quién es nadie.)
 - **Raichu** · *Shouting* — ¡Nos dejasteis tirados! ¡Nadie vino a buscarnos! ¡NADIE!
 - **{compañero}** · *Worried* — ¡No sabemos de qué hablas! ¡Llegamos al pueblo hace nada!
 - **Raichu** · *Angry* — Entonces pagaréis por los que no vinieron.
 
 **3-D · Después del jefe**
 
-- **Raichu** · *Pain* — Ay… Hacía diez años que nadie me ganaba.
-- **Raichu** · *Sad* — La tormenta no era solo mía. El viento me gritaba por dentro, y yo ya tenía rabia de sobra guardada. Entre las dos armamos un buen escándalo.
+- **Raichu** · *Pain* — Ay… Hacía diez años que nadie me ganaba. Quien tuvo, retuvo… pero se ve que no tanto.
+- **Raichu** · *Sad* — La tormenta no era solo mía. El viento me gritaba por dentro, y yo ya tenía rabia de sobra guardada. Entre las dos la liamos parda.
 - **Raichu** · *Normal* — Fui del Equipo Centella: Arcanine, Persian y yo. Fuimos al norte, al laboratorio de los Antiguos, porque de allí salía una luz. Dentro dormía alguien. Lo despertamos a medias… y el viento nos barrió.
 - **Raichu** · *Sad* — Aparecí aquí, sin fuerzas. Esperé a que alguien viniera. No vino nadie. Y después me dio vergüenza volver.
 - **Raichu** · *Determined* — Si queréis respuestas, subid al Monte Lunar: Clefable nos vio pasar aquella noche. Y preguntadle a Persian por qué nadie vino a buscarnos.
@@ -257,7 +265,7 @@ Jefe: **Raichu**. El Eco le aviva la rabia por el abandono.
 - **Persian** · *Normal* — Claro que está bien. Esa ratona tozuda sobreviviría a una lluvia de meteoritos.
 - **Persian** · *Worried* — ¿Os ha dicho algo… de mí?
 - **{compañero}** · *Normal* — Que te preguntemos por qué nadie fue a buscar al Equipo Centella.
-- **Persian** · *Angry* — El banco cierra. Buenas noches.
+- **Persian** · *Angry* — El banco cierra. Vuelva usted mañana.
 - *Narración* — Persian se da la vuelta. Tarda mucho en entrar.
 - **Slowpoke** · *Normal* — …Persian llora a veces… por las noches… detrás del banco.
 - **Slowpoke** · *Sigh* — …Yo me duermo a mitad de todo… pero siempre me despierto justo a tiempo de oírla.
@@ -277,7 +285,7 @@ Jefe: **Clefable** (es el jefe que ya figura en `floors.json`). No está bajo el
 **4-C · Antes del jefe (piso 20)**
 
 - *Narración* — En la cumbre, bajo la luna llena, una Clefable espera. Sus ojos están claros: sabía que ibais a venir.
-- **Clefable** · *Normal* — Por fin, {equipo}. La luna me habló de vuestro equipo.
+- **Clefable** · *Normal* — Por fin, {equipo}. La luna me habló de vuestro equipo. Bueno, la luna y Pidgeotto, que sube el correo hasta aquí.
 - **Clefable** · *Normal* — Y de ti, que hueles a otro cielo. No naciste en este mundo, ¿verdad?
 - **{héroe}** · *Surprised* — ¿Sabes qué me pasó?
 - **Clefable** · *Determined* — Lo sé. Pero la verdad pesa, y solo se la doy a quien puede cargarla. En guardia.
@@ -297,11 +305,11 @@ Jefe: **Clefable** (es el jefe que ya figura en `floors.json`). No está bajo el
 
 **4-E · De vuelta**
 
-- **Pidgey** · *Shouting* — ¡Slowpoke ha desaparecido!
+- **Pidgey** · *Shouting* — ¡Bombazo! ¡Slowpoke ha desaparecido!
 - **Kangaskhan** · *Worried* — Lleva treinta años sentado en el mismo sitio. Treinta. Y esta mañana el sitio estaba vacío.
-- **Pidgey** · *Worried* — Anoche vi una sombra que se lo llevaba hacia las Profundidades Oscuras. ¡Una sombra que se reía!
-- **Kecleon** · *Normal* — ¿Seguro que no se ha ido a dar un paseo? Es capaz de volver dentro de un mes.
-- **Kangaskhan** · *Angry* — Kecleon.
+- **Pidgey** · *Worried* — Anoche vi una sombra que se lo llevaba hacia las Profundidades Oscuras. ¡Una sombra que se reía! ¡Te lo juro por Snoopy!
+- **Kecleon** · *Normal* — ¿Seguro que no se ha ido a dar un paseo? Es capaz de volver dentro de un mes contando batallitas, como el abuelo Cebolleta.
+- **Kangaskhan** · *Angry* — Kecleon. Un poquito de por favor.
 - **Kecleon** · *Sigh* — Vale, vale… Os deseo muchísima suerte. Es lo más valiente que sé hacer.
 - **{compañero}** · *Determined* — Alguien que come pesadillas… Lo que dijo Clefable. ¡A las Profundidades Oscuras!
 
@@ -322,7 +330,7 @@ Jefe: **Gengar**. No está bajo el Eco: se aprovecha de él. **Slowpoke no está
 **5-C · Antes del jefe (piso 30)**
 
 - *Narración* — Al fondo, Slowpoke duerme flotando sobre una nube de humo morado. A su lado, en la oscuridad, se abre una sonrisa enorme.
-- **Gengar** · *Happy* — ¡Pasad, pasad a mi despensa! ¿Sabéis lo difícil que es encontrar a alguien con pesadillas tan largas? ¡Este tarda tres días en tener un mal sueño! ¡Es un banquete!
+- **Gengar** · *Happy* — ¡Pasad, pasad a mi despensa! ¿Sabéis lo difícil que es encontrar a alguien con pesadillas tan largas? ¡Este tarda tres días en tener un mal sueño! ¡Esto es Jauja!
 - **Gengar** · *Happy* — Desde que ese del norte empezó a soñar en voz alta, todo el valle tiene pesadillas. Nunca había comido tan bien.
 - **{compañero}** · *Angry* — ¡Suelta a Slowpoke!
 - **Gengar** · *Angry* — ¿Y volver a pasar hambre? Ni hablar. Si el del laboratorio despierta del todo, la noche no acabará nunca… ¡y la noche es mía!
@@ -330,14 +338,14 @@ Jefe: **Gengar**. No está bajo el Eco: se aprovecha de él. **Slowpoke no está
 **5-D · Después del jefe**
 
 - **Gengar** · *Pain* — ¡Ay, ay, ay! Vale, vale. Quedaos con el lento. Ya encontraré otra despensa.
-- **Gengar** · *Happy* — Pero cuando lleguéis al laboratorio, acordaos de mí: allí dentro hay pesadillas que ni yo me atrevo a probar. ¡Ji, ji, ji!
+- **Gengar** · *Happy* — Pero cuando lleguéis al laboratorio, acordaos de mí: allí dentro hay pesadillas que ni yo me atrevo a probar. ¡Hasta luego, Lucas!
 - *Narración* — La sonrisa se apaga en la oscuridad.
 - **Slowpoke** · *Normal* — ……
 - **Slowpoke** · *Normal* — …¿Eh? Ah. Hola. …¿Ya es de día?
 - **{compañero}** · *Joyous* — ¡Slowpoke! ¿Estás bien?
 - **Slowpoke** · *Normal* — He tenido un sueño muy largo… Salía un perro de fuego… en una isla que echaba humo… y decía todo el rato: «Nadie pasa».
 - **Slowpoke** · *Sigh* — Y yo pensaba… qué aburrido, decir siempre lo mismo.
-- **Slowpoke** · *Happy* — …Tengo hambre. ¿Volvemos?
+- **Slowpoke** · *Happy* — …Tengo más hambre que un caracol en un espejo. ¿Volvemos?
 
 **5-E · De vuelta**
 
@@ -396,7 +404,7 @@ Jefe: **Mewtwo**. Es el origen del Eco: la soledad.
 
 **7-A · La víspera** *(en el pueblo, al elegir el Laboratorio Final por primera vez, antes de entrar)*
 
-- **Kecleon** · *Happy* — ¿Ya os vais? Cuando volváis, os invito a una manzana. No se lo digáis a nadie, que tengo una reputación.
+- **Kecleon** · *Happy* — ¿Ya os vais? Cuando volváis, tiro la casa por la ventana: os invito a una manzana. Una. No se lo digáis a nadie, que tengo una reputación.
 - **Kangaskhan** · *Worried* — Lo que dejéis aquí seguirá aquí. Pero lo que más quiero es que volváis, ¿me oís?
 - **Pidgeotto** · *Normal* — Si caéis, os traeremos. Pero mejor no caigáis.
 - **Slowpoke** · *Normal* — Suerte.
@@ -451,7 +459,11 @@ Jefe: **Mewtwo**. Es el origen del Eco: la soledad.
 - *Narración* — Esa noche, el viento del norte deja de hablar. En todo el valle, muchos Pokémon duermen del tirón por primera vez en semanas.
 - **Pidgey** · *Joyous* — ¡Han vuelto! ¡Y antes de que anochezca!
 - **Persian** · *Happy* — Por los pelos. El banco toma nota.
-- **Kangaskhan** · *Joyous* — Todo el mundo adentro, que hay sopa.
+- **Kangaskhan** · *Joyous* — Todo el mundo adentro, que hay tortilla.
+- **Kecleon** · *Surprised* — ¿Con cebolla o sin cebolla?
+- **Kangaskhan** · *Determined* — Con cebolla.
+- **Kecleon** · *Shouting* — ¿¡CON CEBOLLA!?
+- **Slowpoke** · *Normal* — …Yo sin. …Bueno, con. …Me da igual, tengo hambre.
 
 **F-2 · Epílogo** *(al día siguiente: al dormir en la base o al volver de la siguiente expedición)*
 
@@ -460,8 +472,9 @@ Jefe: **Mewtwo**. Es el origen del Eco: la soledad.
 - **{compañero}** · *Crying* — ¡Están bien! ¡Están bien de verdad!
 - **{compañero}** · *Happy* — Iré a verlos. Pero volveré. Ahora esta también es mi casa. Aquí está mi equipo.
 - **Raichu** · *Happy* — ¿Qué pasa aquí? ¿Hay fiesta y nadie me avisa?
+- **Persian** · *Surprised* — ¿Raichu? ¿Ahora? ¿Y yo con estos pelos?
 - **Arcanine** · *Happy* — Diez años tarde. Pero antes de que anochezca.
-- **Persian** · *Teary-Eyed* — Llegáis tarde. Los dos. …Os he guardado vuestra parte del botín. Con intereses.
+- **Persian** · *Teary-Eyed* — A buenas horas, mangas verdes. …Os he guardado vuestra parte del botín. Con intereses.
 - **Pidgeotto** · *Normal* — Traigo más recados: Onix dice que la cueva queda abierta para quien quiera pasar. Y Clefable, que la luna os manda saludos.
 - **Slowpoke** · *Normal* — …Hace mucho tiempo… en este valle… vivían los Antiguos… …que dejaron a alguien dormido en el norte… …que tenía miedo de quedarse sin nadie… …y un equipo muy joven fue a hacerle compañía.
 - **Slowpoke** · *Happy* — …Fin.
@@ -488,7 +501,7 @@ Jefe: **Mewtwo**. Es el origen del Eco: la soledad.
 
 **Escena tras los créditos** *(después, el juego vuelve al pueblo y se sigue jugando)*
 
-- **Mewtwo** · *Normal* — Cincuenta pisos. Os espero arriba.
+- **Mewtwo** · *Normal* — Cincuenta pisos. Sin ascensor. Os espero arriba.
 - *Narración* — La Torre del Desafío os espera al norte.
 
 ---
@@ -508,7 +521,7 @@ Son frases para cuando hablas con ellos. Las de Slowpoke y Pidgey sustituyen a l
 | 5 | *(No está en el pueblo.)* |
 | 6 | …Hace mucho tiempo… en este valle… vivían unos seres sin cola… que hacían casas de piedra… y una muy grande… en el norte… *(Se ha dormido.)* |
 | 7 | …y dentro… dejaron a alguien… …Ya casi estoy. |
-| Después | …¿Otra vez? Bueno… Hace mucho tiempo… *(Se ha dormido.)* |
+| Después | …¿Otra vez? Vísteme despacio, que tengo prisa… Hace mucho tiempo… *(Se ha dormido.)* |
 
 **Pidgey**
 
@@ -516,25 +529,25 @@ Son frases para cuando hablas con ellos. Las de Slowpoke y Pidgey sustituyen a l
 |---|---|
 | 1 | Por favor, traed a mi hermana. El Bosque Verde está saliendo por el camino del sur. |
 | 2 | ¡Mi hermana vuelve a repartir el correo! Yo me encargo del tablón: cuantos más encargos cumpláis, más sube el rango del equipo. |
-| 3 | Dicen que en la Ruta Eléctrica caen rayos sin nubes. ¡Llevad Bayas Aranja de sobra! |
+| 3 | Ojo al dato: en la Ruta Eléctrica caen rayos sin nubes. ¡Llevad Bayas Aranja de sobra! |
 | 4 | Persian lleva días sin cobrarle intereses a nadie. Eso es muy mala señal. |
 | 5 | ¡Vi la sombra! ¡Se reía! ¡Traed a Slowpoke, por favor! |
 | 6 | De mayor quiero explorar como el {equipo}. Pidgeotto dice que antes tengo que aprender a volar en línea recta. |
-| 7 | Pase lo que pase ahí dentro, mañana a primera hora sale el correo. Así que tenéis que estar aquí para recibirlo. ¿Entendido? |
+| 7 | Pase lo que pase ahí dentro, mañana a primera hora sale el correo, que al que madruga, Pidgey le ayuda. Así que tenéis que estar aquí para recibirlo. ¿Entendido? |
 | Después | ¿Habéis visto la torre nueva del norte? Pidgeotto intentó volar hasta arriba y no le vio el final. |
 
 **Kecleon, Kangaskhan y Persian** *(antes de su menú)*
 
 | Cap. | Kecleon | Kangaskhan | Persian |
 |---|---|---|---|
-| 1 | ¡Pasad, pasad! Hay poca cosa: sin carros, la tienda está medio vacía. | Lo que guardéis aquí, aquí se queda aunque el equipo caiga. Palabra de Kangaskhan. | Lo que dejéis en el banco no se pierde, caigáis o no. Lo que llevéis encima… eso ya es otra historia. |
-| 2 | Hasta que no se abra la cueva, no me pidáis milagros. | — | — |
+| 1 | ¡Pasad, pasad! Hay poca cosa: sin carros, la tienda está medio vacía. Y hoy no se fía; mañana, sí. | Lo que guardéis aquí, aquí se queda aunque el equipo caiga. Palabra de Kangaskhan. | Lo que dejéis en el banco no se pierde, caigáis o no. Lo que llevéis encima… eso ya es otra historia. |
+| 2 | Con este viento y la cueva cerrada, aquí no hay quien viva. No me pidáis milagros. | — | — |
 | 3 | ¡Mercancía fresca! Y con cada compra, un rumor gratis. El de hoy: Persian no ha pegado ojo. | En el almacén hay una caja que lleva diez años cerrada. No me preguntéis de quién es. …Bueno, preguntadle a Persian. | — |
 | 4 | Dicen que en el Monte Lunar la luna habla. Yo no me lo creo, pero por si acaso no le contéis mis precios. | — | ¿Qué os dijo Raichu exactamente? …No. No me lo digáis. |
 | 5 | Sin Slowpoke en la plaza, nadie me mira mientras coloco el género. Es inquietante. | Sin Slowpoke, la plaza se hace rara. Hasta echo de menos sus bostezos. | — |
-| 6 | ¿A la Isla Volcánica? Llevad agua. Bueno, bayas, que llevan agua dentro. Tengo bayas. | — | — |
+| 6 | ¿A la Isla Volcánica? Tengo un primo que fue y volvió más moreno que nunca. Llevad bayas, que llevan agua dentro. Yo tengo bayas. | — | — |
 | 7 | *(ver 7-A)* | *(ver 7-A)* | Si no volvéis, me quedo con vuestros ahorros. …Es broma. Volved. |
-| Después | Desde que el viento calla, los clientes vienen más contentos. ¡Y compran más! Viva el silencio. | Ahora que el viento calla, hasta la sopa sale mejor. | El Equipo Centella ha vuelto a abrir cuenta. Tres titulares. Qué cosas. |
+| Después | Desde que el viento calla, se vende el doble. Si es que yo ya lo decía. | Ahora que el viento calla, hasta la tortilla cuaja mejor. Con cebolla, claro. | El Equipo Centella ha vuelto a abrir cuenta. Tres titulares. Qué cosas. |
 
 ---
 
@@ -544,7 +557,7 @@ Cada frase sale solo si `{héroe}` o `{compañero}` es de esa especie. Se añade
 
 | Especie | Escena | Quién | Frase |
 |---|---|---|---|
-| Pikachu | 3-D | Raichu · *Happy* | Y tú, Pikachu: que nadie te diga que unas chispas no sirven para nada. |
+| Pikachu | 3-D | Raichu · *Happy* | Y tú, Pikachu: que nadie te diga que unas chispas no sirven para nada. Y ponte las pilas. |
 | Meowth | P-3 | Persian · *Normal* | Un Meowth explorador. No sé si reírme u ofrecerte un préstamo. |
 | Psyduck | 5-D | Slowpoke · *Normal* | …Tú también tienes dolor de cabeza… ¿verdad? …Se nota. |
 | Charmander | 6-D | Arcanine · *Normal* | Esa llama de la cola… cuídala. Es lo único que el viento no puede apagar. |
@@ -556,7 +569,41 @@ Cada frase sale solo si `{héroe}` o `{compañero}` es de esa especie. Se añade
 
 ---
 
-## 8. Decisiones que necesito que valides
+## 8. Memes españoles
+
+Son frases hechas y memes de toda la vida, cortos y aptos para cualquier edad. No hay política, ni tacos, ni nadie que imite a una persona real. Van solo en los personajes cómicos. Las escenas serias quedan limpias: 6-D, 6-E, 7-B, 7-C, 7-D y F-3. Tacha los que no te gusten.
+
+| Meme | Quién | Dónde |
+|---|---|---|
+| «Ganar, ganar y volver a ganar» | {compañero} | P-3 |
+| «Hacienda somos todos» (…pero el banco soy yo) | Persian | P-3 |
+| «¿Dónde vas? Manzanas traigo» y «vivir en Babia» | Slowpoke y Pidgey | P-3 |
+| «Más perdida que un pulpo en un garaje» | Pidgeotto | 1-D |
+| «Peor que la operación salida» | Kecleon | 1-E |
+| «¡Al ataquer!» | {compañero} | 2-C |
+| «De Guatemala a Guatepeor» | {compañero} | 2-E |
+| «¿Sabéis quién soy yo?» (y el protagonista que lo compara con «¿quién eres?») | Raichu y {héroe} | 3-C |
+| «Quien tuvo, retuvo» y «liarla parda» | Raichu | 3-D |
+| «Vuelva usted mañana» | Persian | 3-E |
+| «¡Bombazo!» y «Te lo juro por Snoopy» | Pidgey | 4-E |
+| «El abuelo Cebolleta» y sus batallitas | Kecleon | 4-E |
+| «Un poquito de por favor» | Kangaskhan | 4-E |
+| «¡Esto es Jauja!» | Gengar | 5-C |
+| «¡Hasta luego, Lucas!» | Gengar | 5-D |
+| «Más hambre que un caracol en un espejo» | Slowpoke | 5-D |
+| «Tirar la casa por la ventana» (con una manzana) | Kecleon | 7-A |
+| La tortilla, ¿con o sin cebolla? | Kangaskhan, Kecleon y Slowpoke | F-1 y vecinos |
+| «¿Y yo con estos pelos?» y «A buenas horas, mangas verdes» | Persian | F-2 |
+| «Cincuenta pisos. Sin ascensor.» | Mewtwo | Tras los créditos |
+| Cuñadismo: «tengo un primo que…», «si es que yo ya lo decía» | Kecleon | Vecinos |
+| «Hoy no se fía, mañana sí» y «aquí no hay quien viva» | Kecleon | Vecinos |
+| «Ojo al dato» y «al que madruga…» | Pidgey | Vecinos |
+| «Vísteme despacio, que tengo prisa» | Slowpoke | Vecinos |
+| «Ponte las pilas» | Raichu | Variante de Pikachu |
+
+---
+
+## 9. Decisiones que necesito que valides
 
 1. **Premisa:** protagonista humano, llamado sin querer por la pregunta de Mewtwo. Encaja con el texto actual del test («Tu forma de ser decidirá quién eres en este mundo»). ¿Te vale, o prefieres que el protagonista sea del pueblo?
 2. **Bosque Verde no tiene jefe** en `floors.json`. Propongo **Pidgeotto** (nivel 6, piso 5). La alternativa es un capítulo sin combate: se la encuentra al llegar al piso 5.
@@ -576,7 +623,7 @@ Cada frase sale solo si `{héroe}` o `{compañero}` es de esa especie. Se añade
 
 ---
 
-## 9. Cómo se implementaría (después de tu OK; nada de esto está hecho)
+## 10. Cómo se implementaría (después de tu OK; nada de esto está hecho)
 
 - **Datos:** `src/data/story.json` con las escenas (código, disparador, condiciones y líneas `{ speaker, emotion, text }`, donde `speaker` es una especie, `hero`, `partner` o la narración). El contenido va en JSON, como pide el `CLAUDE.md`.
 - **Lógica pura:** `src/core/Story.js` decide qué escena toca según el perfil y el evento, y sustituye `{héroe}`, `{compañero}` y `{equipo}`. Lleva tests unitarios.
