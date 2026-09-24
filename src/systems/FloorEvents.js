@@ -190,7 +190,7 @@ export function createMerchantNPC(game, x, y, presetItems = null) {
   });
 
   game.entityManager.setComponent(id, 'pokemonInfo', {
-    speciesId: 'kecleon',
+    speciesId: 352, // Kecleon: tiene sprite de PMDCollab aunque no sea de 1.ª generación
     name: 'Mercader Kecleon',
     level: 50,
     types: ['normal']
@@ -208,7 +208,7 @@ export function createMerchantNPC(game, x, y, presetItems = null) {
   });
 
   game.entityManager.setComponent(id, 'sprite', {
-    url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/352.png',
+    url: '',
     image: null,
     loaded: false
   });
@@ -273,10 +273,7 @@ export function createMerchantNPC(game, x, y, presetItems = null) {
     items: (presetItems && presetItems.length) ? presetItems : selectedItems
   });
 
-  // Pre-cargar sprite
-  if (game.renderer?.spriteManager) {
-    game.renderer.spriteManager.loadSprite('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/352.png');
-  }
+  game.renderer?.entityRenderer?.pmd?.preload([352]);
 }
 
 /** Restaura un Kecleon guardado tras regenerar el mapa. */

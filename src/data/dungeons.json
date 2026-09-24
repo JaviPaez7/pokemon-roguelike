@@ -16,7 +16,8 @@
         5
       ],
       "description": "Un bosque tranquilo junto al pueblo. Buen sitio para empezar.",
-      "unlock": null
+      "unlock": null,
+      "tileset": "bosque"
     },
     {
       "id": "cueva_oscura",
@@ -28,7 +29,8 @@
       "description": "Galerías húmedas donde un Onix vigila la salida.",
       "unlock": {
         "cleared": "bosque_verde"
-      }
+      },
+      "tileset": "cueva"
     },
     {
       "id": "ruta_electrica",
@@ -40,7 +42,8 @@
       "description": "Un sendero lleno de chispas. Al final espera un Raichu.",
       "unlock": {
         "cleared": "cueva_oscura"
-      }
+      },
+      "tileset": "electrica"
     },
     {
       "id": "monte_lunar",
@@ -52,7 +55,8 @@
       "description": "Cumbres de piedra lunar, hogar de los Clefairy.",
       "unlock": {
         "cleared": "ruta_electrica"
-      }
+      },
+      "tileset": "lunar"
     },
     {
       "id": "profundidades_oscuras",
@@ -64,7 +68,8 @@
       "description": "Donde no llega la luz. Dicen que un Gengar ríe en el fondo.",
       "unlock": {
         "cleared": "monte_lunar"
-      }
+      },
+      "tileset": "oscuras"
     },
     {
       "id": "isla_volcanica",
@@ -76,7 +81,8 @@
       "description": "Lava, ceniza y un Arcanine que guarda la cima.",
       "unlock": {
         "cleared": "profundidades_oscuras"
-      }
+      },
+      "tileset": "volcanica"
     },
     {
       "id": "laboratorio_final",
@@ -88,7 +94,8 @@
       "description": "Un laboratorio abandonado. Algo muy poderoso despertó aquí.",
       "unlock": {
         "cleared": "isla_volcanica"
-      }
+      },
+      "tileset": "laboratorio"
     },
     {
       "id": "torre_desafio",

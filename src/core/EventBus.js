@@ -9,6 +9,7 @@
  * - 'floor_change'      → Se ha cambiado de piso en la mazmorra
  * - 'turn_end'          → Ha terminado un turno completo
  * - 'damage_dealt'      → Se ha infligido daño
+ * - 'move_used'         → Alguien usa un movimiento (o ataca): { attackerId, range, moveId }
  * - 'message'           → Mensaje para el log del juego
  */
 export class EventBus {

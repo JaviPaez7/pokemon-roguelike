@@ -382,11 +382,8 @@ export class EntityManager {
     });
 
     // Sprite (se carga asíncronamente después)
-    const spriteUrl = species?.sprite
-      ?? species?.spriteUrl
-      ?? (typeof speciesId === 'number'
-        ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${speciesId}.png`
-        : '');
+    // Sprite estático local; el animado de PMDCollab lo pone EntityRenderer
+    const spriteUrl = species?.sprite ?? species?.spriteUrl ?? '';
     this.setComponent(id, 'sprite', {
       url: spriteUrl,
       image: null,

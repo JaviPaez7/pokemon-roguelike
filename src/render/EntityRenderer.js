@@ -15,6 +15,7 @@
  */
 
 import { SpriteManager } from './SpriteManager.js';
+import { PmdSpriteSheets, hasPmdSprite, animDuration, shadowSize } from './PmdSprites.js';
 
 /** Colores de la barra de HP según porcentaje */
 const HP_COLORES = {
@@ -53,6 +54,15 @@ const REBOTE_AMPLITUD = 2; // píxeles
 const FLOAT_DURATION = 800;
 const FLASH_DURATION = 150;
 
+/** Tiempo que se sigue viendo la animación de andar tras dar un paso (ms). */
+const WALK_ANIM_MS = 260;
+
+/** Sombra bajo los sprites de PMD: tamaño según la especie y color según el bando. */
+const SOMBRA_RADIOS = [[5, 2], [7, 3], [10, 4]];
+const SOMBRA_ALIADO = 'rgba(52, 152, 219, 0.75)';
+const SOMBRA_ENEMIGO = 'rgba(231, 76, 60, 0.6)';
+const SOMBRA_NEUTRA = 'rgba(0, 0, 0, 0.45)';
+
 /** Iconos de estado sobre el sprite */
 const STATUS_ICONS = {
   sleep: { text: 'zZz', color: '#a8b8ff' },
@@ -86,6 +96,39 @@ export class EntityRenderer {
 
     /** @type {Array<{startX: number, startY: number, endX: number, endY: number, spriteUrl: string, sprite: string, startTime: number, duration: number}>} */
     this._projectiles = [];
+
+    /** Hojas animadas de PMDCollab */
+    this.pmd = new PmdSpriteSheets();
+
+    /** @type {Map<number, { name: string, start: number }>} Animaciones de una vez (atacar, recibir daño) */
+    this._oneShots = new Map();
+
+    /** @type {Map<number, string>} Animación con la que se dibujó cada Pokémon la última vez */
+    this._lastAnim = new Map();
+
+    /** Si el último fotograma dibujó algún sprite animado (hay que seguir repintando) */
+    this._drewAnimated = false;
+  }
+
+  /**
+   * Reproduce una animación de una vez (Attack, Shoot, Hurt). Si ya hay otra
+   * en marcha y `keep` es true, no la interrumpe.
+   * @param {number} entityId
+   * @param {string} name
+   * @param {{ keep?: boolean }} [options]
+   */
+  playAnimation(entityId, name, { keep = false } = {}) {
+    if (keep && this._oneShots.has(entityId)) return;
+    this._oneShots.set(entityId, { name, start: performance.now() });
+  }
+
+  /**
+   * Animación con la que se dibujó el Pokémon en el último fotograma.
+   * @param {number} entityId
+   * @returns {string | null}
+   */
+  animationOf(entityId) {
+    return this._lastAnim.get(entityId) ?? null;
   }
 
   /**
@@ -94,10 +137,12 @@ export class EntityRenderer {
    * @param {Object} pos
    * @param {string} spriteUrl
    */
-  spawnFaintAnimation(entityId, pos, spriteUrl) {
+  spawnFaintAnimation(entityId, pos, spriteUrl, speciesId = null) {
     this._faintingEntities.push({
       entityId,
       pos: { x: pos.x, y: pos.y },
+      dir: { dx: pos.facingDx ?? 0, dy: pos.facingDy ?? 1 },
+      speciesId,
       spriteUrl,
       startTime: performance.now(),
       duration: 500
@@ -179,7 +224,7 @@ export class EntityRenderer {
    * @returns {boolean} true si hay animaciones VFX activas
    */
   hasActiveEffects() {
-    return this._danosFlotantes.length > 0 || this._damageFlashes.length > 0 || this._faintingEntities.length > 0 || this._projectiles.length > 0;
+    return this._drewAnimated || this._danosFlotantes.length > 0 || this._damageFlashes.length > 0 || this._faintingEntities.length > 0 || this._projectiles.length > 0;
   }
 
   /**
@@ -201,6 +246,7 @@ export class EntityRenderer {
     }
 
     const entidades = entityManager.getEntitiesWithComponents('position');
+    this._drewAnimated = false;
 
     for (const entityId of entidades) {
       const pos = entityManager.getComponent(entityId, 'position');
@@ -303,6 +349,11 @@ export class EntityRenderer {
 
       ctx.save();
       ctx.globalAlpha = alpha;
+      if (f.speciesId != null && this.pmd.draw(ctx, f.speciesId, 'Hurt', f.dir, 1e9,
+        screenPos.x + tileSize / 2, screenPos.y + tileSize / 2 - 4 + sinkY, false)) {
+        ctx.restore();
+        continue;
+      }
       this.spriteManager.drawSprite(
         ctx,
         f.spriteUrl,
@@ -332,8 +383,10 @@ export class EntityRenderer {
     // Lerp (animación de movimiento suave)
     let drawX = pos.x;
     let drawY = pos.y;
+    let walking = false;
     if (pos.moveStartTime) {
       const elapsed = this._tiempo - pos.moveStartTime;
+      walking = elapsed < WALK_ANIM_MS;
       const MOVE_DURATION = 150; // ms
       if (elapsed < MOVE_DURATION) {
         const t = elapsed / MOVE_DURATION;
@@ -364,50 +417,57 @@ export class EntityRenderer {
       ctx.globalAlpha = 0.4;
     }
 
-    // Indicador de aliado/enemigo (borde coloreado detrás del sprite)
-    if (partyMember && !isFainted) {
-      this._dibujarIndicadorEquipo(ctx, sx, sy, tileSize, INDICADOR_ALIADO);
-    } else if (isEnemy && !isFainted) {
-      this._dibujarIndicadorEquipo(ctx, sx, sy, tileSize, INDICADOR_ENEMIGO);
-    }
+    // Sprite animado de PMDCollab; si aún no ha cargado, el estático de antes
+    const drewPmd = pokemonInfo && hasPmdSprite(pokemonInfo.speciesId) && this._dibujarPokemonPmd(ctx, entityId, pokemonInfo.speciesId, {
+      pos, fighter, sx, sy, tileSize, walking,
+      shadow: isFainted ? SOMBRA_NEUTRA : partyMember ? SOMBRA_ALIADO : isEnemy ? SOMBRA_ENEMIGO : SOMBRA_NEUTRA,
+    });
+    if (!drewPmd) {
+      // Indicador de aliado/enemigo (borde coloreado detrás del sprite)
+      if (partyMember && !isFainted) {
+        this._dibujarIndicadorEquipo(ctx, sx, sy, tileSize, INDICADOR_ALIADO);
+      } else if (isEnemy && !isFainted) {
+        this._dibujarIndicadorEquipo(ctx, sx, sy, tileSize, INDICADOR_ENEMIGO);
+      }
 
-    // Dibujar sprite o placeholder
-    // El sprite se dibuja ligeramente más pequeño y centrado para dar margen visual
-    const margen = Math.floor(tileSize * 0.1);
-    const spriteSize = tileSize - margen * 2;
+      // Dibujar sprite o placeholder
+      // El sprite se dibuja ligeramente más pequeño y centrado para dar margen visual
+      const margen = Math.floor(tileSize * 0.1);
+      const spriteSize = tileSize - margen * 2;
 
-    this.spriteManager.drawSprite(
-      ctx,
-      sprite ? sprite.url : '',
-      sx + margen,
-      sy + margen,
-      spriteSize,
-      spriteSize,
-      pokemonInfo ? pokemonInfo.name : '?'
-    );
+      this.spriteManager.drawSprite(
+        ctx,
+        sprite ? sprite.url : '',
+        sx + margen,
+        sy + margen,
+        spriteSize,
+        spriteSize,
+        pokemonInfo ? pokemonInfo.name : '?'
+      );
 
-    // Parpadeo de daño sobre el sprite
-    if (this._isFlashing(entityId)) {
-      const flashProgress = this._getFlashProgress(entityId);
-      const alpha = 0.6 * (1 - flashProgress);
-      ctx.fillStyle = flashProgress < 0.5 ? `rgba(255, 255, 255, ${alpha})` : `rgba(255, 60, 60, ${alpha})`;
-      ctx.fillRect(sx + margen, sy + margen, spriteSize, spriteSize);
-    } else if (fighter && fighter.statusEffects && fighter.statusEffects.length > 0) {
-      // Tinte de estado persistente
-      const tintColors = {
-          'poison': 'rgba(128, 0, 128, 0.3)',
-          'burn': 'rgba(255, 69, 0, 0.3)',
-          'paralyze': 'rgba(255, 255, 0, 0.3)',
-          'sleep': 'rgba(100, 149, 237, 0.3)',
-          'freeze': 'rgba(0, 255, 255, 0.3)',
-          'confusion': 'rgba(255, 105, 180, 0.3)',
-          'confuse': 'rgba(255, 105, 180, 0.3)'
-      };
-      const effectObj = fighter.statusEffects[0];
-      const effectType = typeof effectObj === 'string' ? effectObj : effectObj.type;
-      if (tintColors[effectType]) {
-          ctx.fillStyle = tintColors[effectType];
-          ctx.fillRect(sx + margen, sy + margen, spriteSize, spriteSize);
+      // Parpadeo de daño sobre el sprite
+      if (this._isFlashing(entityId)) {
+        const flashProgress = this._getFlashProgress(entityId);
+        const alpha = 0.6 * (1 - flashProgress);
+        ctx.fillStyle = flashProgress < 0.5 ? `rgba(255, 255, 255, ${alpha})` : `rgba(255, 60, 60, ${alpha})`;
+        ctx.fillRect(sx + margen, sy + margen, spriteSize, spriteSize);
+      } else if (fighter && fighter.statusEffects && fighter.statusEffects.length > 0) {
+        // Tinte de estado persistente
+        const tintColors = {
+            'poison': 'rgba(128, 0, 128, 0.3)',
+            'burn': 'rgba(255, 69, 0, 0.3)',
+            'paralyze': 'rgba(255, 255, 0, 0.3)',
+            'sleep': 'rgba(100, 149, 237, 0.3)',
+            'freeze': 'rgba(0, 255, 255, 0.3)',
+            'confusion': 'rgba(255, 105, 180, 0.3)',
+            'confuse': 'rgba(255, 105, 180, 0.3)'
+        };
+        const effectObj = fighter.statusEffects[0];
+        const effectType = typeof effectObj === 'string' ? effectObj : effectObj.type;
+        if (tintColors[effectType]) {
+            ctx.fillStyle = tintColors[effectType];
+            ctx.fillRect(sx + margen, sy + margen, spriteSize, spriteSize);
+        }
       }
     }
 
@@ -418,10 +478,67 @@ export class EntityRenderer {
 
     // Dibujar barra de HP si el Pokémon tiene datos de vida
     if (fighter && fighter.hp !== undefined && fighter.maxHp !== undefined && !isFainted) {
-      this._dibujarBarraHP(ctx, sx, sy, tileSize, fighter.hp, fighter.maxHp);
+      // Con los sprites de PMD (más altos que la casilla), al pie para no taparles la cara
+      this._dibujarBarraHP(ctx, sx, drewPmd ? sy + tileSize - 5 : sy, tileSize, fighter.hp, fighter.maxHp);
     }
 
     ctx.restore();
+  }
+
+  /**
+   * Dibuja un Pokémon con su hoja animada de PMDCollab.
+   * @returns {boolean} false si la hoja aún no está cargada
+   * @private
+   */
+  _dibujarPokemonPmd(ctx, entityId, speciesId, { pos, fighter, sx, sy, tileSize, walking, shadow }) {
+    const anim = this._animacionActual(entityId, speciesId, fighter, walking);
+    const dir = { dx: pos.facingDx ?? 0, dy: pos.facingDy ?? 0 };
+    if (!dir.dx && !dir.dy) {
+      dir.dx = pos.facing === 'left' ? -1 : pos.facing === 'right' ? 1 : 0;
+      dir.dy = pos.facing === 'up' ? -1 : pos.facing === 'down' || !dir.dx ? 1 : 0;
+    }
+    const cx = sx + tileSize / 2;
+    const cy = sy + tileSize / 2;
+
+    // Al recibir daño, parpadea
+    if (this._isFlashing(entityId) && Math.floor(this._tiempo / 40) % 2 === 0) {
+      this._drewAnimated = true;
+      return true;
+    }
+
+    const [rx, ry] = SOMBRA_RADIOS[shadowSize(speciesId)] ?? SOMBRA_RADIOS[1];
+    ctx.fillStyle = shadow;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 7, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const drew = this.pmd.draw(ctx, speciesId, anim.name, dir, anim.elapsed, cx, cy - 4, anim.loop);
+    if (drew) {
+      this._drewAnimated = true;
+      this._lastAnim.set(entityId, anim.name);
+    }
+    return drew;
+  }
+
+  /**
+   * Qué animación toca: la de una vez si está en marcha; si no, la del estado.
+   * @returns {{ name: string, elapsed: number, loop: boolean }}
+   * @private
+   */
+  _animacionActual(entityId, speciesId, fighter, walking) {
+    const shot = this._oneShots.get(entityId);
+    if (shot) {
+      const elapsed = this._tiempo - shot.start;
+      if (elapsed < animDuration(speciesId, shot.name)) return { name: shot.name, elapsed, loop: false };
+      this._oneShots.delete(entityId);
+    }
+    if (fighter && fighter.hp <= 0) return { name: 'Hurt', elapsed: 1e9, loop: false };
+    // Desfase por entidad para que no respiren todos a la vez
+    const offset = entityId * 131;
+    if (walking) return { name: 'Walk', elapsed: this._tiempo + offset, loop: true };
+    const asleep = fighter?.statusEffects?.some((st) => (typeof st === 'string' ? st : st.type) === 'sleep');
+    if (asleep) return { name: 'Sleep', elapsed: this._tiempo + offset, loop: true };
+    return { name: 'Idle', elapsed: this._tiempo + offset, loop: true };
   }
 
   /**

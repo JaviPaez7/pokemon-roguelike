@@ -637,6 +637,10 @@ export class FloorManager {
         });
       }
     }
+    // Hojas animadas de PMDCollab de las especies presentes
+    const species = new Set(game.entityManager.getEntitiesWithComponents('pokemonInfo')
+      .map((id) => game.entityManager.getComponent(id, 'pokemonInfo').speciesId));
+    game.renderer.entityRenderer?.pmd?.preload(species);
   }
 
   _selectRandomEnemySpecies(pokemonList) {

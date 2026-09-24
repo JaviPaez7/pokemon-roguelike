@@ -8,6 +8,7 @@
 import { GAME_STATES, TYPE_NAMES_ES } from '../../constants.js';
 import { NATURES, pickQuestions, natureFromAnswers, partnerOptions } from '../../core/Personality.js';
 import { startAdventure } from '../../core/TownSession.js';
+import { portraitUrl } from '../../render/PmdSprites.js';
 
 /** Nombre del equipo que se propone si no se escribe otro. */
 export const DEFAULT_TEAM_NAME = 'Equipo Aurora';
@@ -124,7 +125,7 @@ function pickSpecies(ui, type, title, options, onPick, { note = '' } = {}) {
             (s, i) => `
           <div class="menu-option" data-index="${i}">
             <span class="cursor">▶</span>
-            <img src="${s.sprite}" alt="" width="24" height="24" style="image-rendering: pixelated;">
+            <img src="${s.portrait}" alt="" width="24" height="24" style="image-rendering: pixelated;">
             <span style="flex-grow: 1;">${s.name}</span>
             <span class="quiz-types">${s.typesLabel}</span>
           </div>`,
@@ -194,11 +195,13 @@ function speciesInfo(ui, speciesId) {
     id: speciesId,
     name: data?.name ?? `#${speciesId}`,
     sprite: data?.sprite ?? '',
+    // Retrato de PMDCollab (el sprite estático si no lo hubiera)
+    portrait: portraitUrl(speciesId, 'Happy') ?? data?.sprite ?? '',
     typesLabel: (data?.types ?? []).map((t) => TYPE_NAMES_ES[t] || t).join('/'),
   };
 }
 
 /** @param {ReturnType<typeof speciesInfo>} species */
 function portrait(species) {
-  return `<img class="quiz-portrait" src="${species.sprite}" alt="${species.name}" width="64" height="64">`;
+  return `<img class="quiz-portrait" src="${species.portrait}" alt="${species.name}" width="80" height="80">`;
 }

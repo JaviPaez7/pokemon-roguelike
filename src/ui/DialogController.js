@@ -1,4 +1,11 @@
 import { GAME_STATES } from '../constants.js';
+import { portraitUrl } from '../render/PmdSprites.js';
+
+/**
+ * @typedef {Object} DialogOptions
+ * @property {string} [speaker] - Quién habla (se muestra encima del texto)
+ * @property {{ speciesId: number, emotion?: string }} [portrait] - Retrato de PMDCollab a la izquierda
+ */
 
 /** Diálogos RPG con cola y animación letra a letra. */
 export class DialogController {
@@ -17,8 +24,14 @@ export class DialogController {
     return this.ui.currentMenuType === 'dialog';
   }
 
-  showDialog(text, callback = null, instant = false) {
-    this.dialogQueue.push({ text, callback, instant });
+  /**
+   * @param {string} text
+   * @param {Function | null} [callback]
+   * @param {boolean} [instant]
+   * @param {DialogOptions} [options]
+   */
+  showDialog(text, callback = null, instant = false, options = {}) {
+    this.dialogQueue.push({ text, callback, instant, options });
     if (this.dialogQueue.length === 1) {
       this.displayNextDialog();
     }
@@ -32,16 +45,23 @@ export class DialogController {
       return;
     }
 
-    const { text, callback, instant } = this.dialogQueue[0];
+    const { text, callback, instant, options = {} } = this.dialogQueue[0];
     this.currentDialogCallback = callback;
 
     ui.game.inputHandler.setContext('dialog');
     ui.overlay.classList.remove('hidden');
     ui.overlay.classList.add('dialog-mode');
 
+    const portrait = options.portrait ? portraitUrl(options.portrait.speciesId, options.portrait.emotion) : null;
     const html = `
       <div class="game-panel dialog-panel" style="display: flex; flex-direction: column; justify-content: space-between; border-color: var(--border-glow); padding: 12px; z-index: 20;">
-        <div id="dialog-text" style="font-size: 8px; line-height: 1.8; white-space: pre-wrap; color: var(--text-primary);"></div>
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          ${portrait ? `<img class="dialog-portrait" src="${portrait}" alt="${options.speaker ?? ''}" style="width: 80px; height: 80px; flex: none; image-rendering: pixelated; border: 2px solid var(--border-glow); border-radius: 4px; background: rgba(0, 0, 0, 0.35);">` : ''}
+          <div style="flex: 1; min-width: 0;">
+            ${options.speaker ? `<div class="dialog-speaker" style="font-size: 8px; color: var(--text-accent); margin-bottom: 6px;">${options.speaker}</div>` : ''}
+            <div id="dialog-text" style="font-size: 8px; line-height: 1.8; white-space: pre-wrap; color: var(--text-primary);"></div>
+          </div>
+        </div>
         <div style="text-align: right; font-size: 6px; color: var(--text-accent); animation: loadingDots 1s infinite alternate; margin-top: 8px;">PULSA Z PARA CONTINUAR ▶</div>
       </div>
     `;

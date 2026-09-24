@@ -1,5 +1,6 @@
 import { GAME_STATES } from '../../constants.js';
 import { openStatsMenu } from './StatsMenu.js';
+import { openCreditsMenu } from './CreditsMenu.js';
 import { inspectSave, setAsideCorruptSave, backupBeforeNewGame } from '../../core/SaveManager.js';
 import { getDungeon, relativeFloor } from '../../core/Dungeons.js';
 import { rankFor } from '../../core/Profile.js';
@@ -30,7 +31,7 @@ export function openTitleScreen(ui) {
   const html = `
     <div class="game-panel" style="text-align: center; width: 340px;">
       <h1 class="loading-title" style="margin-bottom: 20px; font-size: 24px;">POKÉROGUE</h1>
-      <p style="font-size: 8px; color: var(--text-secondary); margin-bottom: 30px; line-height: 1.5;">Roguelike · 50 pisos · Gen 1</p>
+      <p style="font-size: 8px; color: var(--text-secondary); margin-bottom: 30px; line-height: 1.5;">Mundo Misterioso · 151 Pokémon</p>
       
       <div id="options-list">
         <div class="menu-option selected" data-index="0">
@@ -47,6 +48,9 @@ export function openTitleScreen(ui) {
         <div class="menu-option" data-index="${hasSave ? 3 : 2}">
           <span class="cursor">▶</span> Cómo jugar
         </div>
+        <div class="menu-option" data-index="${hasSave ? 4 : 3}">
+          <span class="cursor">▶</span> Créditos
+        </div>
       </div>
     </div>
   `;
@@ -57,7 +61,8 @@ export function openTitleScreen(ui) {
     () => (hasSave ? confirmNewAdventure(ui) : ui.game.changeState(GAME_STATES.STARTER_SELECT)),
     ...(hasSave ? [() => ui.game.loadSavedGame()] : []),
     () => openStatsMenu(ui, 'title'),
-    () => showControlsDialog(ui)
+    () => showControlsDialog(ui),
+    () => openCreditsMenu(ui, () => openTitleScreen(ui)),
   ];
   ui.selectedIndex = 0;
   ui.updateSelectionVisuals();

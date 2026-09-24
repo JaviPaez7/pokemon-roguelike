@@ -55,7 +55,7 @@ describe('mapa del pueblo', () => {
   });
 
   it('townThingAt encuentra PNJ y elementos fijos', () => {
-    expect(townThingAt(4, 15)).toEqual({ kind: 'npc', id: 'kecleon', role: 'shop', name: 'Kecleon' });
+    expect(townThingAt(4, 15)).toEqual({ kind: 'npc', id: 'kecleon', role: 'shop', name: 'Kecleon', speciesId: 352 });
     expect(townThingAt(15, 3)).toEqual(expect.objectContaining({ kind: 'fixture', role: 'board' }));
     expect(townThingAt(TOWN.start.x, TOWN.start.y)).toBeNull();
   });

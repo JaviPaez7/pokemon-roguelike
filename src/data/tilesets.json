@@ -1,0 +1,58 @@
+{
+  "bosque": {
+    "name": "Bosque",
+    "floor": "#4a7a34", "floorAlt": "#528540", "corridor": "#5a8a3e",
+    "wall": "#1d3a16", "wallTop": "#3c6b2c", "wallEdge": "#0f2210",
+    "water": "#3b8fa0", "lava": "#ff5500", "stairs": "#8b5a2b", "void": "#050a04",
+    "gridLines": "rgba(0, 0, 0, 0.12)",
+    "deco": "grass", "decoColors": ["#6fa84a", "#f2d94e", "#f294b8"]
+  },
+  "cueva": {
+    "name": "Cueva",
+    "floor": "#5a534c", "floorAlt": "#625a52", "corridor": "#6b6259",
+    "wall": "#2e2925", "wallTop": "#4a423b", "wallEdge": "#1a1714",
+    "water": "#2f5a78", "lava": "#ff5500", "stairs": "#9a8f80", "void": "#0a0908",
+    "gridLines": "rgba(0, 0, 0, 0.18)",
+    "deco": "pebbles", "decoColors": ["#7d746a", "#3e3833"]
+  },
+  "electrica": {
+    "name": "Ruta eléctrica",
+    "floor": "#8a7a4e", "floorAlt": "#93825a", "corridor": "#a08e5c",
+    "wall": "#3d3a44", "wallTop": "#5d5a68", "wallEdge": "#24222a",
+    "water": "#3570a0", "lava": "#ff5500", "stairs": "#c9b16a", "void": "#0d0c10",
+    "gridLines": "rgba(0, 0, 0, 0.15)",
+    "deco": "sparks", "decoColors": ["#ffe14d", "#fff7b0", "#6d6040"]
+  },
+  "lunar": {
+    "name": "Monte lunar",
+    "floor": "#8c86a0", "floorAlt": "#958fa9", "corridor": "#9f99b3",
+    "wall": "#3b3552", "wallTop": "#5a5378", "wallEdge": "#221f33",
+    "water": "#4a5fa8", "lava": "#ff5500", "stairs": "#d8d2ee", "void": "#0b0914",
+    "gridLines": "rgba(0, 0, 0, 0.12)",
+    "deco": "craters", "decoColors": ["#77718c", "#c9c3e0", "#ffffff"]
+  },
+  "oscuras": {
+    "name": "Profundidades",
+    "floor": "#2e2a3d", "floorAlt": "#332e44", "corridor": "#3a3450",
+    "wall": "#15121f", "wallTop": "#282238", "wallEdge": "#0a0810",
+    "water": "#243a5c", "lava": "#ff5500", "stairs": "#6b5f8f", "void": "#030206",
+    "gridLines": "rgba(255, 255, 255, 0.03)",
+    "deco": "motes", "decoColors": ["#8f7cff", "#5ad1c8"]
+  },
+  "volcanica": {
+    "name": "Isla volcánica",
+    "floor": "#4a2c26", "floorAlt": "#52312a", "corridor": "#5c372e",
+    "wall": "#2e1c17", "wallTop": "#5a3328", "wallEdge": "#140b09",
+    "water": "#c24a10", "lava": "#ff5a1a", "stairs": "#d98a3a", "void": "#0a0403",
+    "gridLines": "rgba(0, 0, 0, 0.2)",
+    "deco": "cracks", "decoColors": ["#1a0f0d", "#ff7a2e"]
+  },
+  "laboratorio": {
+    "name": "Laboratorio",
+    "floor": "#5d6b73", "floorAlt": "#66757e", "corridor": "#6e7d86",
+    "wall": "#262d33", "wallTop": "#3f4a52", "wallEdge": "#151a1e",
+    "water": "#3fa0b8", "lava": "#ff5500", "stairs": "#9fd8e8", "void": "#06080a",
+    "gridLines": "rgba(0, 0, 0, 0.2)",
+    "deco": "panels", "decoColors": ["#4c585f", "#8fa3ad", "#e8c547"]
+  }
+}
