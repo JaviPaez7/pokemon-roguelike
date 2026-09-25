@@ -1,0 +1,6 @@
+# Los scripts .mjs empiezan por un shebang (#!/usr/bin/env node). Con
+# core.autocrlf=true (lo normal en Windows) se sacaban con CRLF, y Vitest no
+# lee un shebang que acaba en retorno de carro: story.test.js, que importa
+# scripts/build-story.mjs, fallaba en local con «SyntaxError: Invalid or
+# unexpected token». Siempre en LF.
+*.mjs text eol=lf
