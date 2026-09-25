@@ -4,7 +4,7 @@ import { checkEvolution, evolve } from './EvolutionSystem.js';
 import { getAbility } from './AbilitySystem.js';
 import { random } from '../core/Random.js';
 import { equipItem, unequipItem, heldName } from '../core/HeldItems.js';
-import { getMember } from '../core/Profile.js';
+import { storeTownTeam } from '../core/TownSession.js';
 import { hasIqSkill } from '../core/IQ.js';
 
 /**
@@ -334,7 +334,7 @@ export function giveHeldItem(game, itemId, pokemonId) {
       : 'Ese objeto no se puede equipar.', back);
     return;
   }
-  syncRosterHeldItem(game, pokemonId);
+  storeTownTeam(game);
   const swapped = result.previous && result.previous !== itemId ? `\n\n${heldName(result.previous)} vuelve a la mochila.` : '';
   game.uiManager.showDialog(`${info.name} lleva ahora ${heldName(itemId)}.${swapped}`, back);
   game.needsRender = true;
@@ -351,21 +351,7 @@ export function takeHeldItem(game, pokemonId) {
   if (!info) return '';
   const result = unequipItem(info, game.inventory, { maxSlots: game.maxInventorySize || 24 });
   if (!result.ok) return result.reason === 'bag_full' ? 'La mochila está llena.' : `${info.name} no lleva nada.`;
-  syncRosterHeldItem(game, pokemonId);
+  storeTownTeam(game);
   game.needsRender = true;
   return `${heldName(result.itemId)} vuelve a la mochila.`;
-}
-
-/**
- * En el pueblo, el equipo son copias de las fichas de la plantilla: lo que se
- * equipa ahí hay que apuntarlo también en la ficha, porque las expediciones
- * salen de ella. En la mazmorra no hace falta: al volver se copian las fichas.
- * @param {import('../core/Game.js').Game} game
- * @param {number} pokemonId
- */
-function syncRosterHeldItem(game, pokemonId) {
-  if (game.dungeonId || !game.profile) return;
-  const uid = game.entityManager.getComponent(pokemonId, 'partyMember')?.uid;
-  const member = uid != null ? getMember(game.profile, uid) : null;
-  if (member) member.heldItem = game.entityManager.getComponent(pokemonId, 'pokemonInfo')?.heldItem ?? null;
 }

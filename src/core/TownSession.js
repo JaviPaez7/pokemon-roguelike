@@ -9,7 +9,7 @@
 
 import { ACTIONS, GAME_STATES } from '../constants.js';
 import { TOWN, buildTownMap, isTownExit, townThingAt } from '../map/Town.js';
-import { createProfile, getMember } from './Profile.js';
+import { createProfile, getMember, storeTeam } from './Profile.js';
 import { toSnapshot, restedSnapshot, spawnFromSnapshot } from './PokemonSnapshot.js';
 import { playStory, storyTalk, storyGreet, isNpcAway } from './StorySession.js';
 
@@ -116,6 +116,21 @@ export function enterTown(game, { arrival = 'start', spot: requestedSpot } = {})
     game.uiManager?.music?.playZone('Pueblo');
   } catch (e) {}
   game.needsRender = true;
+}
+
+/**
+ * En el pueblo el equipo son copias de las fichas de la plantilla (las crea
+ * `enterTown`), y de la plantilla salen las expediciones, el guardado y la
+ * próxima visita al pueblo. Quien cambie algo del equipo en el pueblo que deba
+ * durar (líder, táctica, objeto equipado, una evolución…) llama a esta función
+ * justo después: vuelca el equipo entero, fichas y orden con el líder primero.
+ * En la mazmorra no hace nada: al volver, `endExpedition` copia las fichas.
+ * @param {import('./Game.js').Game} game
+ * @returns {boolean} Si se ha volcado
+ */
+export function storeTownTeam(game) {
+  if (game.dungeonId || !game.profile || !game.tileMap?.isTown) return false;
+  return storeTeam(game.profile, game.party.map(toSnapshot)).ok;
 }
 
 /**

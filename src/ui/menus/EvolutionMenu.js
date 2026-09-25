@@ -1,8 +1,10 @@
 import { GAME_STATES } from '../../constants.js';
 import { evolve, checkEvolution } from '../../systems/EvolutionSystem.js';
+import { storeTownTeam } from '../../core/TownSession.js';
 
 /**
- * Menú Sí/No para confirmar (o cancelar) una evolución pendiente.
+ * Menú Sí/No para confirmar (o cancelar) una evolución pendiente. En el pueblo,
+ * el resultado se vuelca a la plantilla.
  * @param {import('../UIManager.js').UIManager} ui
  * @param {number} pokemonId
  * @param {Object} evolution - Datos de evolutions.json
@@ -78,6 +80,8 @@ export function openEvolutionMenu(ui, pokemonId, evolution, opts = {}) {
         ui.game.renderer.screenFlash('rgba(255, 255, 255, 0.8)', 800);
       }
       ui.game.needsRender = true;
+      // En el pueblo (al reintentar desde el equipo), que la evolución dure
+      storeTownTeam(ui.game);
       try { ui.game.saveGameData(); } catch (e) {}
 
       const extra = (result.messages || []).filter(m => m.includes('aprendió')).join('\n');
@@ -102,6 +106,7 @@ export function openEvolutionMenu(ui, pokemonId, evolution, opts = {}) {
         refreshed.pendingEvolution = null;
         refreshed.evolutionDeclinedAtLevel = refreshed.level;
         ui.game.entityManager.setComponent(pokemonId, 'pokemonInfo', refreshed);
+        storeTownTeam(ui.game);
       }
       ui.showDialog(`¡${info.name} no evolucionó!`, finishExploring);
     }

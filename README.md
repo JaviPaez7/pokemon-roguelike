@@ -1,90 +1,81 @@
 # PokéRogue
 
-**PokéRogue** es un juego roguelike por turnos inspirado en la franquicia Pokémon. Está diseñado para jugarse directamente en el navegador, con generación procedural de mazmorras (Mystery Dungeon style), combate táctico, mecánicas de evolución y un sistema complejo de IA para compañeros y enemigos.
+Juego de fans gratuito, al estilo de **Pokémon Mundo Misterioso**, con los 151 Pokémon de la primera generación. Se juega en el navegador: https://roguelike.javistudio.dev
 
-## Características
+Un test de personalidad decide tu Pokémon; eliges compañero y fundáis un equipo de exploración con base en Pueblo Raíz. Desde allí salís a mazmorras que se generan cada vez, cumplís encargos del tablón, reclutáis Pokémon y subís de rango, mientras sigue la historia original «El Eco del Norte».
 
-- 🗺️ **Generación Procedural**: Cada piso de la mazmorra se genera dinámicamente con diferentes biomas, salas, pasillos, trampas e ítems.
-- 🐾 **151 Pokémon**: Encuentra, recluta y lucha contra los 151 Pokémon originales.
-- ⚔️ **Combate por Turnos**: Sistema táctico profundo basado en el movimiento por cuadrículas.
-- 🧠 **IA Avanzada**:
-  - Los enemigos toman decisiones basadas en su entorno y estado.
-  - Los compañeros de equipo te siguen inteligentemente.
-  - **Tácticas de Equipo**: Puedes cambiar las tácticas de tus seguidores ("Seguir", "Atacar a discreción", "Huir", "Mantener posición").
-  - **Cambio de Líder**: Alterna el control en tiempo real entre los miembros de tu equipo.
-- 🎒 **Sistema de Objetos**: Recoge y utiliza Pociones, Bayas, MTs (Máquinas Técnicas) para aprender nuevos movimientos, y semillas raras.
-- ⛈️ **Climas Dinámicos**: Efectos climáticos que afectan el combate (Soleado, Lluvia, Tormenta Arena, Granizo).
-- 🧬 **Habilidades Pasivas**: Habilidades únicas para cada Pokémon que cambian las reglas del juego.
-- 🏆 **Jefes**: Enfréntate a Pokémon jefe desafiantes en pisos específicos.
+## Cómo se juega
 
-## Tecnologías Utilizadas
+- **El pueblo**: sin turnos ni enemigos. Kecleon vende y compra, Kangaskhan guarda objetos, Persian guarda el dinero, en la base se forma el equipo, se duerme (pasa el día) y se guarda la partida, y el tablón tiene encargos nuevos cada día. La salida del sur lleva a las mazmorras.
+- **Las mazmorras**: siete de historia (del Bosque Verde al Laboratorio Final, cada una con su jefe) y la Torre del Desafío, 50 pisos con reglas roguelike. Se juega por turnos: cada paso o ataque es un turno y los enemigos se mueven a la vez.
+- **Combate**: cada movimiento tiene su alcance (delante, en línea, alrededor, toda la sala, uno mismo o el equipo), con tipos, estados, clima y habilidades.
+- **El equipo**: hasta cuatro Pokémon. Los compañeros siguen al líder con la táctica que les pongas. Si el líder derrota a un salvaje, a veces este se levanta y pide unirse. Cada uno puede llevar un objeto equipado, y las Gominolas le suben el CI, que desbloquea habilidades.
+- **Riesgos**: la tripa baja al andar, el viento expulsa al equipo si pasa demasiado tiempo en un piso y, si el equipo cae, vuelve al pueblo sin el dinero ni la mochila (el banco y el almacén se conservan). Con una Cuerda Huida se vuelve con todo.
 
-- **HTML5 Canvas** para renderizado 2D.
-- **JavaScript (ES6+)** puro (Vanilla JS), estructurado con módulos.
-- **Vite** como entorno de desarrollo y bundler.
-- Arquitectura **ECS (Entity-Component-System)** para gestionar la complejidad del juego y el rendimiento.
+### Controles
 
-## Estructura del Proyecto
+| Tecla | Acción |
+| --- | --- |
+| Flechas / WASD / HJKL | Moverse (chocar con un enemigo es un ataque básico) |
+| Teclado numérico / YUBN | Diagonales |
+| Mayús + dirección | Correr hasta que pase algo |
+| Ctrl + dirección | Girarse sin gastar turno |
+| 1-4 | Usar un movimiento |
+| Z / Intro | Hablar, recoger, examinar, escaleras |
+| X | Mochila |
+| C | Equipo |
+| Tab | Cambiar de líder (en la mazmorra) |
+| M | Mapa |
+| Esc | Pausa y guardar |
+
+En el móvil salen una cruceta y botones táctiles.
+
+## Desarrollo
+
+Hace falta Node.js 22.12 o superior (lo pide Vitest 5).
+
+```bash
+npm ci            # dependencias
+npm run dev       # servidor de desarrollo en http://localhost:5173
+npm run build     # build de producción en dist/
+npm test          # tests unitarios (Vitest) y después E2E (Playwright)
+```
+
+- `npm run test:unit`: lógica pura, en menos de un segundo.
+- `npm run test:e2e`: Playwright sobre el build de producción servido con `vite preview` (puerto 4317; `E2E_PORT` lo cambia). La primera vez: `npx playwright install chromium`. Las partidas usan semilla fija (`?seed=` en la URL), así que son deterministas.
+- `npm run story`: regenera `src/data/story.json` desde el guion (`docs/guion-historia.md`).
+- `npm run sprites:pmd`: vuelve a descargar los sprites y retratos de PMDCollab (ya están en el repo).
+
+La CI (`.github/workflows/ci.yml`) pasa los tests en cada PR y cada push a `master`; si pasan, un push a `master` despliega en producción.
+
+## Estructura
+
+JavaScript sin framework (módulos ES), Canvas 2D, arquitectura ECS y Vite. La única dependencia del juego es [rot-js](https://ondras.github.io/rot.js/) (RNG con semilla, campo de visión y rutas).
 
 ```text
-├── public/                 # Assets estáticos (favicon, spritesheets base)
-├── src/
-│   ├── assets/             # Sistema de carga de imágenes y audio
-│   ├── combat/             # Lógica de daño, clima, pasivas y experiencia
-│   ├── core/               # Bucle principal, ECS, EventBus, TurnManager
-│   ├── data/               # Bases de datos JSON (Pokémon, movimientos, ítems)
-│   ├── entities/           # Entidades prefabricadas, componentes ECS
-│   ├── input/              # Manejo de teclado/móvil
-│   ├── map/                # Generación procedural (BSP/Autómatas), tipos de tiles
-│   ├── render/             # Motor de renderizado Canvas, cámara
-│   ├── systems/            # Sistemas ECS (Movimiento, IA, Combate, Trampas)
-│   ├── ui/                 # Gestión de menús, HUD, logs, diálogos
-│   ├── utils/              # RNG, funciones de ayuda matemáticas
-│   ├── constants.js        # Constantes globales
-│   ├── main.js             # Punto de entrada
-│   └── style.css           # Estilos de UI
-├── tests/                  # Tests E2E (Puppeteer)
-├── package.json
-└── vite.config.js
+src/
+├── core/       # Game (estados y bucle), turnos, guardado, pueblo, expediciones, misiones, historia, RNG
+├── entities/   # EntityManager, componentes ECS e IA de enemigos y aliados
+├── systems/    # Sistemas ECS: combate, movimiento, objetos, trampas, clima, reclutamiento…
+├── map/        # Generación de mazmorras, pisos, casillas y el pueblo
+├── render/     # Canvas: mapa, entidades, sprites animados, partículas, cámara
+├── ui/         # Menús HTML sobre el canvas, HUD, registro y diálogos
+├── audio/      # Música y efectos sintetizados
+├── input/      # Teclado y controles táctiles
+└── data/       # Contenido y balance en JSON: Pokémon, movimientos, objetos, mazmorras, historia, consejos…
+tests/
+├── unit/       # Vitest
+└── e2e/        # Playwright
 ```
 
-## Requisitos Previos
+El detalle técnico (flujo de estados, reglas del guardado, aleatoriedad, convenciones) está en [`CLAUDE.md`](CLAUDE.md).
 
-Necesitas tener instalado [Node.js](https://nodejs.org/) (versión 16 o superior).
+## Licencia y créditos
 
-## Instalación y Uso Local
+PokéRogue es un juego de fans, **gratuito y sin ánimo de lucro**. Pokémon y sus personajes son © Nintendo, Creatures Inc. y GAME FREAK inc.; Pokémon Mundo Misterioso es de Spike Chunsoft. Este proyecto no tiene relación con ellos.
 
-1. Clona el repositorio.
-2. Instala las dependencias:
-   ```bash
-   npm install
-   ```
-3. Inicia el servidor de desarrollo local:
-   ```bash
-   npm run dev
-   ```
-4. Abre tu navegador en la URL que indique Vite (usualmente `http://localhost:5173`).
-
-## Pruebas (E2E)
-
-El proyecto incluye tests end-to-end básicos utilizando Puppeteer para asegurar la estabilidad del juego.
-
-Para ejecutar los tests:
-```bash
-npm run test
-```
-
-## Despliegue (Vercel / GitHub Pages)
-
-El juego está diseñado para compilarse como un sitio estático.
-Puedes compilar la versión de producción con:
-
-```bash
-npm run build
-```
-
-Los archivos resultantes en el directorio `dist/` se pueden subir a cualquier hosting estático (Vercel, Netlify, GitHub Pages). En Vercel, al tener el repositorio conectado, cada `commit` a la rama `main` disparará un despliegue automático.
-
-## Créditos y Agradecimientos
-
-Este proyecto es un homenaje "fan-made" (hecho por fans) a la saga *Pokémon Mystery Dungeon*. Todos los derechos de los personajes, nombres y marcas pertenecen a Nintendo / The Pokémon Company.
+- **Sprites y retratos**: [PMDCollab / SpriteCollab](https://sprites.pmdcollab.org/). El arte de base de la 1.ª generación es el oficial de **Chunsoft**; las animaciones y emociones que ha añadido la comunidad se usan con licencia [CC BY-NC 4.0](public/sprites/pmd/LICENSE.md), que no permite el uso comercial. La lista de artistas está en [`public/sprites/pmd/CREDITS.txt`](public/sprites/pmd/CREDITS.txt) y en la pantalla de créditos del juego, que no se puede quitar. Por eso el juego tiene que seguir siendo gratuito y sin anuncios.
+- **Sprites estáticos de reserva** (`public/sprites/pokemon/`): descargados de PokeAPI.
+- **Tipografía**: Press Start 2P, de CodeMan38 (SIL Open Font License).
+- **Motor**: rot-js (licencia BSD). La música y los efectos se sintetizan en el propio juego.
+- **Historia**: «El Eco del Norte», guion y desarrollo de JaviStudio.
