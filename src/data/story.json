@@ -1,6 +1,7 @@
 {
   "_formato": "Generado desde docs/guion-historia.md con `npm run story`: no lo edites a mano. Cada línea es [hablante, emoción, texto, condición?]. Hablantes: hero, partner, member (quien del equipo sea de la especie de la condición), voice (???), narration o una clave de `speakers`. Condiciones: {\"species\": id} solo sale si el protagonista o el compañero es de esa especie; {\"notSpecies\": id}, solo si no lo es.",
   "chapters": ["bosque_verde", "cueva_oscura", "ruta_electrica", "monte_lunar", "profundidades_oscuras", "isla_volcanica", "laboratorio_final"],
+  "postgame": ["cumbre_escarcha", "pico_tronador", "caldera_ascua", "jardin_primer_sueno"],
   "speakers": {
     "slowpoke": {"name": "Slowpoke", "speciesId": 79},
     "pidgey": {"name": "Pidgey", "speciesId": 16},
@@ -13,7 +14,11 @@
     "clefable": {"name": "Clefable", "speciesId": 36},
     "gengar": {"name": "Gengar", "speciesId": 94},
     "arcanine": {"name": "Arcanine", "speciesId": 59},
-    "mewtwo": {"name": "Mewtwo", "speciesId": 150}
+    "mewtwo": {"name": "Mewtwo", "speciesId": 150},
+    "articuno": {"name": "Articuno", "speciesId": 144},
+    "zapdos": {"name": "Zapdos", "speciesId": 145},
+    "moltres": {"name": "Moltres", "speciesId": 146},
+    "mew": {"name": "Mew", "speciesId": 151}
   },
   "absent": {"slowpoke": [5]},
   "letterMission": {
@@ -611,6 +616,194 @@
       "lines": [
         ["mewtwo", "Normal", "Cincuenta pisos. Sin ascensor. Os espero arriba."],
         ["narration", null, "La Torre del Desafío os espera al norte."]
+      ]
+    },
+    {
+      "id": "L-0",
+      "title": "Tres picos nuevos",
+      "chapter": 8,
+      "requires": ["F-3"],
+      "triggers": [
+        {"on": "credits_end"},
+        {"on": "town_return"},
+        {"on": "new_day"},
+        {"on": "board_open"},
+        {"on": "dungeon_select"}
+      ],
+      "lines": [
+        ["narration", null, "A la mañana siguiente, Pidgeotto aterriza en la plaza con las plumas revueltas."],
+        ["pidgeotto", "Normal", "¡Noticias del cielo! Ahora que el viento calla, desde arriba se ve lo que antes tapaba."],
+        ["pidgeotto", "Worried", "Al norte han salido tres picos que no estaban: uno helado, otro que no para de tronar y otro que arde. Y en cada uno anida un pájaro enorme."],
+        ["slowpoke", "Normal", "…Los guardianes del cielo… Mi abuela decía que dormían tan tranquilos… hasta que alguien los despertaba…"],
+        ["partner", "Surprised", "¿Y quién los ha despertado?"],
+        ["hero", "Sigh", "(Creo que lo sé. Semanas de alguien gritando «¿quién eres?» por todo el valle. Así no duerme nadie.)"],
+        ["partner", "Determined", "Pues habrá que subir a presentarse. Con buenos modales. …Y con bayas."]
+      ]
+    },
+    {
+      "id": "L1-B",
+      "title": "Entrada",
+      "chapter": 8,
+      "triggers": [{"on": "dungeon_enter", "dungeon": "cumbre_escarcha"}],
+      "lines": [
+        ["partner", "Surprised", "¡Qué frío! Se me congelan hasta las ideas."],
+        ["hero", "Normal", "(Aquí arriba no hay eco. Solo silencio. Un silencio que alguien cuida.)"]
+      ]
+    },
+    {
+      "id": "L1-C",
+      "title": "Antes del jefe (piso 8)",
+      "chapter": 8,
+      "triggers": [{"on": "boss_floor", "dungeon": "cumbre_escarcha"}],
+      "lines": [
+        ["narration", null, "En la cima, la nieve cae hacia arriba. Un pájaro de hielo abre las alas y el aire cruje."],
+        ["articuno", "Normal", "Silencio. Semanas de gritos, y ahora que por fin calla el valle, subís a hacer ruido."],
+        ["partner", "Normal", "Solo queríamos presentarnos…"],
+        ["articuno", "Normal", "Quien sube hasta aquí viene a demostrar algo. Demostradlo."]
+      ]
+    },
+    {
+      "id": "L1-D",
+      "title": "Después del jefe",
+      "chapter": 8,
+      "triggers": [{"on": "boss_defeated", "dungeon": "cumbre_escarcha"}],
+      "lines": [
+        ["articuno", "Normal", "…Suficiente. Hacía mucho que nadie me hacía entrar en calor."],
+        ["articuno", "Normal", "Cuido este pico para que el frío no baje al valle. Pero el frío guarda las cosas… no las abriga."],
+        ["hero", "Normal", "En Pueblo Raíz hay sitio. Y una tortilla que no se congela."],
+        ["articuno", "Normal", "…Tortilla. No sé qué es. Pero lo decís como si importara."]
+      ]
+    },
+    {
+      "id": "L2-B",
+      "title": "Entrada",
+      "chapter": 8,
+      "triggers": [{"on": "dungeon_enter", "dungeon": "pico_tronador"}],
+      "lines": [
+        ["partner", "Worried", "Cada vez que truena se me eriza todo. ¡Y truena cada dos segundos!"],
+        ["hero", "Determined", "(Los truenos van a compás. Como si alguien tocara el tambor ahí arriba.)"]
+      ]
+    },
+    {
+      "id": "L2-C",
+      "title": "Antes del jefe (piso 8)",
+      "chapter": 8,
+      "triggers": [{"on": "boss_floor", "dungeon": "pico_tronador"}],
+      "lines": [
+        ["narration", null, "Todos los rayos caen en el mismo sitio. Allí, un pájaro amarillo se ríe a carcajadas."],
+        ["zapdos", "Normal", "¡POR FIN! ¡Semanas con ese eco tapándome los truenos! ¡No oía ni mi propia tormenta!"],
+        ["zapdos", "Normal", "Y ahora que el valle está en silencio, me falta público. ¿Venís a ver el espectáculo? ¡Primera fila!"],
+        ["partner", "Determined", "Pues que suene. ¡Vamos allá!"]
+      ]
+    },
+    {
+      "id": "L2-D",
+      "title": "Después del jefe",
+      "chapter": 8,
+      "triggers": [{"on": "boss_defeated", "dungeon": "pico_tronador"}],
+      "lines": [
+        ["zapdos", "Normal", "¡JA! ¡Eso sí que ha sido un trueno! ¡Así da gusto dar la nota!"],
+        ["zapdos", "Normal", "Oye, en ese pueblo vuestro… ¿hay tormentas? ¿No? ¿Ni una triste nube?"],
+        ["partner", "Happy", "Tenemos a Kecleon cuando alguien le regatea. Suena parecido."],
+        ["zapdos", "Normal", "¡Me vale!"]
+      ]
+    },
+    {
+      "id": "L3-B",
+      "title": "Entrada",
+      "chapter": 8,
+      "triggers": [{"on": "dungeon_enter", "dungeon": "caldera_ascua"}],
+      "lines": [
+        ["partner", "Surprised", "Este calor no es como el del volcán. No quema: calienta. Como una chimenea."],
+        ["hero", "Normal", "(Algunas noches, desde el pueblo, se ve un resplandor en el norte. Viene de aquí.)"]
+      ]
+    },
+    {
+      "id": "L3-C",
+      "title": "Antes del jefe (piso 8)",
+      "chapter": 8,
+      "triggers": [{"on": "boss_floor", "dungeon": "caldera_ascua"}],
+      "lines": [
+        ["narration", null, "En el fondo del cráter, un pájaro de fuego vigila una llama que no se apaga nunca. La llama tiembla."],
+        ["moltres", "Normal", "Mi llama es un faro. De noche guía a quien se pierde en el valle, para que encuentre el camino de vuelta."],
+        ["moltres", "Normal", "Pero el Eco soplaba sin parar y yo la avivaba tanto que casi quemo el cielo. Ya no sé si alumbro o si asusto."],
+        ["moltres", "Normal", "Si de verdad se ve, enseñadme lo que ilumina."]
+      ]
+    },
+    {
+      "id": "L3-D",
+      "title": "Después del jefe",
+      "chapter": 8,
+      "triggers": [{"on": "boss_defeated", "dungeon": "caldera_ascua"}],
+      "lines": [
+        ["moltres", "Normal", "…Habéis subido sin perderos ni una vez."],
+        ["partner", "Normal", "Porque siempre se veía tu luz. Como cuando volvemos al pueblo antes de que anochezca."],
+        ["moltres", "Normal", "Antes de que anochezca… Entonces la llama puede arder sola un tiempo. Quiero ver ese pueblo al que vuelve todo el mundo."]
+      ]
+    },
+    {
+      "id": "L4-A",
+      "title": "Otro sobre sin remite",
+      "chapter": 8,
+      "requires": ["L1-D", "L2-D", "L3-D"],
+      "triggers": [
+        {"on": "town_return", "dungeon": "cumbre_escarcha", "outcome": "cleared"},
+        {"on": "town_return", "dungeon": "pico_tronador", "outcome": "cleared"},
+        {"on": "town_return", "dungeon": "caldera_ascua", "outcome": "cleared"},
+        {"on": "dungeon_select", "dungeon": "jardin_primer_sueno"}
+      ],
+      "lines": [
+        ["pidgey", "Surprised", "¡Ha llegado otro sobre sin remite! Esta vez no huele a perfume. Huele a… ¿algodón de azúcar?"],
+        ["persian", "Sigh", "A mí no me miréis. Yo ya no escribo cartas. …Casi nunca."],
+        ["narration", null, "Dentro hay un dibujo: una flor, una nube y un camino que no sale en ningún mapa. Debajo, con letra muy redonda: «¿Jugamos?»."],
+        ["slowpoke", "Surprised", "…Esa letra… la he visto antes… en un sueño… de cuando era pequeño… …o de cuando era huevo…"],
+        ["partner", "Determined", "¡Un escondite! Ya sé adónde vamos mañana."]
+      ]
+    },
+    {
+      "id": "L4-B",
+      "title": "Entrada",
+      "chapter": 8,
+      "triggers": [{"on": "dungeon_enter", "dungeon": "jardin_primer_sueno"}],
+      "lines": [
+        ["partner", "Inspired", "Esto no parece una mazmorra. Parece el sueño de alguien que se lo pasa en grande."],
+        ["hero", "Normal", "(Es un sueño muy antiguo. Más que las mazmorras. Más que el Eco.)"],
+        ["voice", null, "Ji, ji. ¡Frío, frío!"]
+      ]
+    },
+    {
+      "id": "L4-B2",
+      "title": "Piso 5",
+      "chapter": 8,
+      "triggers": [{"on": "floor_enter", "dungeon": "jardin_primer_sueno", "floor": 5}],
+      "lines": [["voice", null, "¡Templado, templado! …¡Caliente!"]]
+    },
+    {
+      "id": "L4-C",
+      "title": "Antes del jefe (piso 10)",
+      "chapter": 8,
+      "triggers": [{"on": "boss_floor", "dungeon": "jardin_primer_sueno"}],
+      "lines": [
+        ["narration", null, "En el centro del jardín flota una burbuja rosa. Dentro, alguien muy pequeño da vueltas sin parar."],
+        ["mew", "Joyous", "¡Me habéis encontrado! Os ha costado, ¿eh?"],
+        ["mew", "Happy", "Soy Mew. Vivo aquí desde antes que los Antiguos. Ellos me encontraron una vez… y a partir de mí hicieron a alguien nuevo."],
+        ["hero", "Surprised", "¿Mewtwo?"],
+        ["mew", "Normal", "Salió mucho más serio que yo. Si yo soy la voz, Mewtwo es mi eco. Y un eco se queda muy solo si nadie le contesta."],
+        ["mew", "Determined", "Le contestasteis. Ahora quiero ver cómo jugáis. ¡A que no me pilláis!"]
+      ]
+    },
+    {
+      "id": "L4-D",
+      "title": "Después del jefe",
+      "chapter": 8,
+      "triggers": [{"on": "boss_defeated", "dungeon": "jardin_primer_sueno"}],
+      "lines": [
+        ["mew", "Dizzy", "¡Ay, que me mareo! Vale, vale… ¡me habéis pillado!"],
+        ["mew", "Happy", "Hacía muchísimo que no jugaba con nadie. Mewtwo no sabe jugar: se lo toma todo muy a pecho."],
+        ["partner", "Normal", "Podrías enseñarle. Vive en lo alto de la torre, al norte."],
+        ["mew", "Worried", "¿Y si no quiere verme? Lo hicieron a partir de mí. A lo mejor le recuerdo a los Antiguos."],
+        ["hero", "Determined", "Nos preguntó si nos quedaríamos. Alguien tendrá que preguntárselo a él."],
+        ["mew", "Inspired", "…Entonces subiré con el equipo. ¡Cincuenta pisos y sin ascensor!"]
       ]
     }
   ],

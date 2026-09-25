@@ -1,6 +1,6 @@
 # PokéRogue · H4 Historia: «El Eco del Norte»
 
-> **Versión 2, implementada en el juego (H4).** Este documento es la fuente: `npm run story` genera `src/data/story.json` a partir de las secciones 5 a 7. Un test unitario avisa si los dos no coinciden.
+> **Versión 2, implementada en el juego (H4), con el posjuego de los legendarios (H5).** Este documento es la fuente: `npm run story` genera `src/data/story.json` a partir de las secciones 5 a 7. Un test unitario avisa si los dos no coinciden.
 >
 > **Novedades del borrador 2:**
 > - Los capítulos 1 a 3 ya no siguen el mismo molde: rescate (1), malentendido con el viento como enemigo (2) y encargo del tablón con una carta sin remite (3).
@@ -98,6 +98,8 @@ La historia no pone nuevos bloqueos: cada mazmorra se sigue abriendo al completa
 | **Gengar** | Se alimenta de pesadillas y el Eco le ha dado un festín. Gamberro, divertido y sin escrúpulos. | Huye, y avisa de que el laboratorio da miedo hasta a él. |
 | **Arcanine** | Líder del Equipo Centella. Se quedó en el volcán para que nadie volviera a asustar a Mewtwo. | Se rinde ante el equipo y le pide «escuchar, no vencer». Vuelve al pueblo en el epílogo. |
 | **Mewtwo** | Creado por los Antiguos y abandonado dormido. El Eco es su soledad. | Deja de gritar, levanta la Torre y deja una puerta abierta para el protagonista. |
+| **Articuno, Zapdos y Moltres** *(posjuego)* | Los guardianes del cielo del valle. El Eco no los dejaba dormir. | Articuno cuida el silencio, Zapdos quiere que se oigan sus truenos y Moltres, que su llama guíe sin asustar. Al vencerlos, se ofrecen a unirse. |
+| **Mew** *(posjuego)* | Vive en un sueño más antiguo que los Antiguos. Mewtwo se hizo a partir de Mew. | Solo quiere jugar. Al final sube con el equipo para hacerle a Mewtwo la pregunta que nadie le hizo. |
 
 ---
 
@@ -114,6 +116,7 @@ La historia no pone nuevos bloqueos: cada mazmorra se sigue abriendo al completa
 | 6 | Diez años de guardia | Isla Volcánica (31-40) | Arcanine | Persian | La verdad de aquella noche, la caja y la nota del Equipo Centella. |
 | 7 | ¿Te quedarías? | Laboratorio Final (41-50) | Mewtwo | Todo el pueblo | El Eco era soledad y la pregunta que faltaba. |
 | Final | Antes de que anochezca | Pueblo | — | — | Epílogo, créditos y la Torre del Desafío. |
+| Posjuego | Las leyendas del valle | Cumbre Escarcha (51-58), Pico Tronador (59-66) y Caldera Ascua (67-74), en cualquier orden; después, Jardín del Primer Sueño (75-84) | Articuno, Zapdos, Moltres y Mew | Pidgeotto (los tres picos) y un sobre sin remite (el jardín) | Que Mewtwo se hizo a partir de Mew: si Mew es la voz, Mewtwo es su eco. |
 
 ---
 
@@ -561,6 +564,126 @@ Jefe: **Mewtwo**. Es el origen del Eco: la soledad.
 
 ---
 
+### Posjuego · «Las leyendas del valle» (H5)
+
+Se abre con el final: cuando el Eco se calla, desde el cielo se ven tres picos que antes tapaba el viento. En cada uno anida uno de los tres pájaros legendarios, que llevaban semanas sin dormir por culpa del Eco. Los tres picos se abren a la vez y se pueden hacer en cualquier orden. Al completar los tres llega un sobre sin remite que lleva al **Jardín del Primer Sueño**, donde se esconde **Mew**.
+
+Ningún legendario es malo: Articuno cuida el silencio, Zapdos echaba de menos oír sus truenos, Moltres teme que su luz asuste en vez de guiar y Mew solo quiere jugar. Al derrotarlos, cada uno se ofrece a unirse al equipo (si se le dice que no, se puede volver a por él).
+
+Articuno, Zapdos y Moltres solo tienen retrato *Normal*.
+
+**L-0 · Tres picos nuevos** *(detrás de F-4; en las partidas que ya habían visto el final, la próxima vez que se vuelva al pueblo, se duerma, se mire el tablón o se elija mazmorra)*
+
+- *Narración* — A la mañana siguiente, Pidgeotto aterriza en la plaza con las plumas revueltas.
+- **Pidgeotto** · *Normal* — ¡Noticias del cielo! Ahora que el viento calla, desde arriba se ve lo que antes tapaba.
+- **Pidgeotto** · *Worried* — Al norte han salido tres picos que no estaban: uno helado, otro que no para de tronar y otro que arde. Y en cada uno anida un pájaro enorme.
+- **Slowpoke** · *Normal* — …Los guardianes del cielo… Mi abuela decía que dormían tan tranquilos… hasta que alguien los despertaba…
+- **{compañero}** · *Surprised* — ¿Y quién los ha despertado?
+- **{héroe}** · *Sigh* — (Creo que lo sé. Semanas de alguien gritando «¿quién eres?» por todo el valle. Así no duerme nadie.)
+- **{compañero}** · *Determined* — Pues habrá que subir a presentarse. Con buenos modales. …Y con bayas.
+
+#### Cumbre Escarcha · Articuno (pisos 51-58)
+
+**L1-B · Entrada**
+
+- **{compañero}** · *Surprised* — ¡Qué frío! Se me congelan hasta las ideas.
+- **{héroe}** · *Normal* — (Aquí arriba no hay eco. Solo silencio. Un silencio que alguien cuida.)
+
+**L1-C · Antes del jefe (piso 8)**
+
+- *Narración* — En la cima, la nieve cae hacia arriba. Un pájaro de hielo abre las alas y el aire cruje.
+- **Articuno** · *Normal* — Silencio. Semanas de gritos, y ahora que por fin calla el valle, subís a hacer ruido.
+- **{compañero}** · *Normal* — Solo queríamos presentarnos…
+- **Articuno** · *Normal* — Quien sube hasta aquí viene a demostrar algo. Demostradlo.
+
+**L1-D · Después del jefe**
+
+- **Articuno** · *Normal* — …Suficiente. Hacía mucho que nadie me hacía entrar en calor.
+- **Articuno** · *Normal* — Cuido este pico para que el frío no baje al valle. Pero el frío guarda las cosas… no las abriga.
+- **{héroe}** · *Normal* — En Pueblo Raíz hay sitio. Y una tortilla que no se congela.
+- **Articuno** · *Normal* — …Tortilla. No sé qué es. Pero lo decís como si importara.
+
+#### Pico Tronador · Zapdos (pisos 59-66)
+
+**L2-B · Entrada**
+
+- **{compañero}** · *Worried* — Cada vez que truena se me eriza todo. ¡Y truena cada dos segundos!
+- **{héroe}** · *Determined* — (Los truenos van a compás. Como si alguien tocara el tambor ahí arriba.)
+
+**L2-C · Antes del jefe (piso 8)**
+
+- *Narración* — Todos los rayos caen en el mismo sitio. Allí, un pájaro amarillo se ríe a carcajadas.
+- **Zapdos** · *Normal* — ¡POR FIN! ¡Semanas con ese eco tapándome los truenos! ¡No oía ni mi propia tormenta!
+- **Zapdos** · *Normal* — Y ahora que el valle está en silencio, me falta público. ¿Venís a ver el espectáculo? ¡Primera fila!
+- **{compañero}** · *Determined* — Pues que suene. ¡Vamos allá!
+
+**L2-D · Después del jefe**
+
+- **Zapdos** · *Normal* — ¡JA! ¡Eso sí que ha sido un trueno! ¡Así da gusto dar la nota!
+- **Zapdos** · *Normal* — Oye, en ese pueblo vuestro… ¿hay tormentas? ¿No? ¿Ni una triste nube?
+- **{compañero}** · *Happy* — Tenemos a Kecleon cuando alguien le regatea. Suena parecido.
+- **Zapdos** · *Normal* — ¡Me vale!
+
+#### Caldera Ascua · Moltres (pisos 67-74)
+
+**L3-B · Entrada**
+
+- **{compañero}** · *Surprised* — Este calor no es como el del volcán. No quema: calienta. Como una chimenea.
+- **{héroe}** · *Normal* — (Algunas noches, desde el pueblo, se ve un resplandor en el norte. Viene de aquí.)
+
+**L3-C · Antes del jefe (piso 8)**
+
+- *Narración* — En el fondo del cráter, un pájaro de fuego vigila una llama que no se apaga nunca. La llama tiembla.
+- **Moltres** · *Normal* — Mi llama es un faro. De noche guía a quien se pierde en el valle, para que encuentre el camino de vuelta.
+- **Moltres** · *Normal* — Pero el Eco soplaba sin parar y yo la avivaba tanto que casi quemo el cielo. Ya no sé si alumbro o si asusto.
+- **Moltres** · *Normal* — Si de verdad se ve, enseñadme lo que ilumina.
+
+**L3-D · Después del jefe**
+
+- **Moltres** · *Normal* — …Habéis subido sin perderos ni una vez.
+- **{compañero}** · *Normal* — Porque siempre se veía tu luz. Como cuando volvemos al pueblo antes de que anochezca.
+- **Moltres** · *Normal* — Antes de que anochezca… Entonces la llama puede arder sola un tiempo. Quiero ver ese pueblo al que vuelve todo el mundo.
+
+#### Jardín del Primer Sueño · Mew (pisos 75-84)
+
+**L4-A · Otro sobre sin remite** *(al volver al pueblo tras completar el tercer pico, o al elegir el jardín si no ha salido)*
+
+- **Pidgey** · *Surprised* — ¡Ha llegado otro sobre sin remite! Esta vez no huele a perfume. Huele a… ¿algodón de azúcar?
+- **Persian** · *Sigh* — A mí no me miréis. Yo ya no escribo cartas. …Casi nunca.
+- *Narración* — Dentro hay un dibujo: una flor, una nube y un camino que no sale en ningún mapa. Debajo, con letra muy redonda: «¿Jugamos?».
+- **Slowpoke** · *Surprised* — …Esa letra… la he visto antes… en un sueño… de cuando era pequeño… …o de cuando era huevo…
+- **{compañero}** · *Determined* — ¡Un escondite! Ya sé adónde vamos mañana.
+
+**L4-B · Entrada**
+
+- **{compañero}** · *Inspired* — Esto no parece una mazmorra. Parece el sueño de alguien que se lo pasa en grande.
+- **{héroe}** · *Normal* — (Es un sueño muy antiguo. Más que las mazmorras. Más que el Eco.)
+- **???** — Ji, ji. ¡Frío, frío!
+
+**L4-B2 · Piso 5**
+
+- **???** — ¡Templado, templado! …¡Caliente!
+
+**L4-C · Antes del jefe (piso 10)**
+
+- *Narración* — En el centro del jardín flota una burbuja rosa. Dentro, alguien muy pequeño da vueltas sin parar.
+- **Mew** · *Joyous* — ¡Me habéis encontrado! Os ha costado, ¿eh?
+- **Mew** · *Happy* — Soy Mew. Vivo aquí desde antes que los Antiguos. Ellos me encontraron una vez… y a partir de mí hicieron a alguien nuevo.
+- **{héroe}** · *Surprised* — ¿Mewtwo?
+- **Mew** · *Normal* — Salió mucho más serio que yo. Si yo soy la voz, Mewtwo es mi eco. Y un eco se queda muy solo si nadie le contesta.
+- **Mew** · *Determined* — Le contestasteis. Ahora quiero ver cómo jugáis. ¡A que no me pilláis!
+
+**L4-D · Después del jefe**
+
+- **Mew** · *Dizzy* — ¡Ay, que me mareo! Vale, vale… ¡me habéis pillado!
+- **Mew** · *Happy* — Hacía muchísimo que no jugaba con nadie. Mewtwo no sabe jugar: se lo toma todo muy a pecho.
+- **{compañero}** · *Normal* — Podrías enseñarle. Vive en lo alto de la torre, al norte.
+- **Mew** · *Worried* — ¿Y si no quiere verme? Lo hicieron a partir de mí. A lo mejor le recuerdo a los Antiguos.
+- **{héroe}** · *Determined* — Nos preguntó si nos quedaríamos. Alguien tendrá que preguntárselo a él.
+- **Mew** · *Inspired* — …Entonces subiré con el equipo. ¡Cincuenta pisos y sin ascensor!
+
+---
+
 ## 6. Qué dicen los vecinos en cada capítulo
 
 Son frases para cuando hablas con ellos. Las de Slowpoke y Pidgey sustituyen a las actuales, que se pueden seguir alternando como consejos. Las de Kecleon, Kangaskhan y Persian salen la primera vez que les hablas en cada capítulo, antes de abrir su menú. Las casillas con «—» mantienen el comportamiento actual.
@@ -677,6 +800,7 @@ Aplicadas con los valores recomendados. Cualquiera se puede cambiar.
 10. **Partidas de antes (v4):** migran a v5 y siguen desde su capítulo, con las escenas de los capítulos anteriores marcadas como vistas. Quien ya había terminado no ve el final de golpe. No hay «Diario» para volver a verlas.
 11. **Recompensas:** ninguna de juego; todo es texto. Quedan como ideas para más adelante el pañuelo del Equipo Centella, los susurros del Eco en los avisos del viento, «Pidgeotto os trajo de vuelta» al caer y Arcanine y Raichu como vecinos. Las variantes por especie de la sección 7 sí están.
 12. **Créditos:** «Guion y desarrollo: JaviStudio» (`STORY_AUTHOR` en `src/ui/menus/CreditsMenu.js`). Cámbialo si prefieres otro nombre.
+13. **Posjuego (H5):** los tres picos se abren con el final (al ver F-3, la escena que lleva a los créditos) y se pueden hacer en cualquier orden; el Jardín del Primer Sueño, al completar los tres. Los niveles van por encima del Laboratorio Final (salvajes 44-52 en los picos y 50-58 en el jardín; jefes a nivel 55 y Mew a 62). Cada legendario se ofrece a unirse siempre que se le derrota como jefe, hasta que se une (como mucho uno de cada). Mewtwo sigue sin unirse: está en lo alto de la Torre.
 
 ---
 
@@ -696,4 +820,5 @@ Aplicadas con los valores recomendados. Cualquiera se puede cambiar.
   - Dormir.
   - Hablar con los vecinos.
 - **Final:** F-1 al volver del laboratorio. Al día siguiente (durmiendo o tras otra expedición), F-2 y F-3, los créditos sobre negro y F-4.
-- **Tests E2E:** `tests/e2e/story.spec.js` cubre el prólogo, el capítulo 1 con Pidgeotto, Squirtle y el monstersito, el sobre, la ausencia de Slowpoke y el final con los créditos.
+- **Tests E2E:** `tests/e2e/story.spec.js` cubre el prólogo, el capítulo 1 con Pidgeotto, Squirtle y el monstersito, el sobre, la ausencia de Slowpoke y el final con los créditos. `tests/e2e/legends.spec.js` cubre el posjuego: L-0 tras los créditos, los picos abiertos, Articuno que se une y el sobre del jardín.
+- **Posjuego:** las escenas L son del «capítulo» 8 (después del final), así que las partidas antiguas no las dan por vistas. Las mazmorras dicen cuándo se abren en `src/data/dungeons.json` (`unlock: { story: "F-3" }` o varias mazmorras completadas) y la regla de los legendarios está en `src/data/recruitment.json` (`legendBosses`) y `src/core/Recruitment.js`.

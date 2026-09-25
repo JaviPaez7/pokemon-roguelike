@@ -47,7 +47,7 @@ describe('los datos de la historia', () => {
   });
 
   it('el guion se lee igual con finales de línea de Windows', () => {
-    const crlf = readFileSync(SCRIPT_PATH, 'utf8').replace(/\n/g, '\r\n');
+    const crlf = readFileSync(SCRIPT_PATH, 'utf8').replace(/\r?\n/g, '\r\n');
     expect(buildStory(crlf)).toEqual(STORY);
   });
 
@@ -76,6 +76,22 @@ describe('los datos de la historia', () => {
       const zone = floorsData.zones.find((z) => z.floors[1] === last);
       expect(zone?.boss, dungeon).toBeTruthy();
     });
+  });
+
+  it('cada mazmorra de posjuego tiene entrada, legendario antes y después, y es del capítulo de después del final', () => {
+    expect(STORY.postgame).toEqual(DUNGEONS.filter((d) => d.postgame).map((d) => d.id));
+    STORY.postgame.forEach((dungeon, i) => {
+      const on = (event) => STORY.scenes.filter((s) => s.triggers.some((t) => t.on === event && t.dungeon === dungeon));
+      for (const event of ['dungeon_enter', 'boss_floor', 'boss_defeated']) {
+        expect(on(event).map((s) => s.id), `${dungeon}: ${event}`).toEqual([`L${i + 1}-${{ dungeon_enter: 'B', boss_floor: 'C', boss_defeated: 'D' }[event]}`]);
+      }
+      // Quien habla ante el jefe es el legendario del final de la mazmorra
+      const last = DUNGEONS.find((d) => d.id === dungeon).floors[1];
+      const boss = floorsData.zones.find((z) => z.floors[1] === last).boss;
+      const speakers = on('boss_floor')[0].lines.map((l) => STORY.speakers[l[0]]?.speciesId);
+      expect(speakers, dungeon).toContain(boss.id);
+    });
+    for (const scene of STORY.scenes.filter((s) => s.id.startsWith('L'))) expect(scene.chapter, scene.id).toBe(AFTER_ENDING);
   });
 
   it('cada hablante existe y cada emoción tiene retrato para su especie', () => {
@@ -167,7 +183,8 @@ describe('qué escena toca', () => {
     expect(ids(scenesFor(['town_return', 'new_day'], back, state(all)))).toEqual(['F-1']);
     expect(ids(scenesFor('new_day', {}, state(all, ['F-1'])))).toEqual(['F-2', 'F-3']);
     expect(STORY.scenes.find((s) => s.id === 'F-3').then).toBe('credits');
-    expect(ids(scenesFor('credits_end', {}, state(all, ['F-1', 'F-2', 'F-3'])))).toEqual(['F-4']);
+    // Tras los créditos, Mewtwo y después Pidgeotto con los tres picos del posjuego
+    expect(ids(scenesFor('credits_end', {}, state(all, ['F-1', 'F-2', 'F-3'])))).toEqual(['F-4', 'L-0']);
     // Sin haber visto F-1 no hay epílogo
     expect(scenesFor('new_day', {}, state(all))).toEqual([]);
   });
@@ -175,6 +192,50 @@ describe('qué escena toca', () => {
   it('la víspera sale al elegir el laboratorio', () => {
     const six = STORY.chapters.slice(0, 6);
     expect(ids(scenesFor('dungeon_select', { dungeonId: 'laboratorio_final' }, state(six)))).toEqual(['7-A']);
+  });
+});
+
+describe('posjuego: las leyendas del valle', () => {
+  const all = STORY.chapters;
+  const ending = ['F-1', 'F-2', 'F-3', 'F-4'];
+
+  it('L-0 no sale antes del final', () => {
+    const back = { dungeonId: 'laboratorio_final', outcome: 'cleared' };
+    expect(ids(scenesFor(['town_return', 'new_day'], back, state(all)))).toEqual(['F-1']);
+    expect(ids(scenesFor('new_day', {}, state(all, ['F-1'])))).not.toContain('L-0');
+    expect(scenesFor('board_open', {}, state(all, ['F-1']))).toEqual([]);
+  });
+
+  it('quien ya había visto el final la ve en cuanto pasa algo en el pueblo', () => {
+    const back = { dungeonId: 'bosque_verde', outcome: 'escaped' };
+    expect(ids(scenesFor(['town_return', 'new_day'], back, state(all, ending)))).toEqual(['L-0']);
+    expect(ids(scenesFor('board_open', {}, state(all, ending)))).toEqual(['L-0']);
+    expect(ids(scenesFor('dungeon_select', { dungeonId: 'bosque_verde' }, state(all, ending)))).toEqual(['L-0']);
+    expect(scenesFor('board_open', {}, state(all, [...ending, 'L-0']))).toEqual([]);
+  });
+
+  it('en cada pico: entrada, legendario y después', () => {
+    const seen = [...ending, 'L-0'];
+    expect(ids(scenesFor('dungeon_enter', { dungeonId: 'cumbre_escarcha' }, state(all, seen)))).toEqual(['L1-B']);
+    expect(ids(scenesFor('boss_floor', { dungeonId: 'pico_tronador', floor: 8 }, state(all, seen)))).toEqual(['L2-C']);
+    expect(ids(scenesFor('boss_defeated', { dungeonId: 'caldera_ascua' }, state(all, seen)))).toEqual(['L3-D']);
+    expect(ids(scenesFor('floor_enter', { dungeonId: 'jardin_primer_sueno', floor: 5 }, state(all, seen)))).toEqual(['L4-B2']);
+  });
+
+  it('el sobre del jardín llega al volver del tercer pico, no antes', () => {
+    const seen = [...ending, 'L-0', 'L1-D', 'L2-D'];
+    const back = (dungeonId) => ({ dungeonId, outcome: 'cleared' });
+    expect(scenesFor('town_return', back('pico_tronador'), state(all, seen))).toEqual([]);
+    expect(ids(scenesFor('town_return', back('caldera_ascua'), state(all, [...seen, 'L3-D'])))).toEqual(['L4-A']);
+    // Si no ha salido, sale al elegir el jardín
+    expect(ids(scenesFor('dungeon_select', { dungeonId: 'jardin_primer_sueno' }, state(all, [...seen, 'L3-D'])))).toEqual(['L4-A']);
+  });
+
+  it('los pájaros hablan con su único retrato y Mew con todas sus caras', () => {
+    const birds = new Set(['articuno', 'zapdos', 'moltres']);
+    const lines = STORY.scenes.flatMap((s) => s.lines);
+    expect(lines.filter((l) => birds.has(l[0])).every((l) => l[1] === 'Normal')).toBe(true);
+    expect(new Set(lines.filter((l) => l[0] === 'mew').map((l) => l[1])).size).toBeGreaterThan(3);
   });
 });
 
@@ -278,7 +339,9 @@ describe('partidas de antes de la historia', () => {
     expect(two).toContain('1-E');
     expect(two).toContain('2-E');
     expect(two).not.toContain('3-A');
-    // Quien ya había terminado no ve el final de golpe
-    expect(seenForCleared(STORY.chapters)).toEqual(ids(STORY.scenes));
+    // Quien ya había terminado no ve el final de golpe, pero el posjuego sí es nuevo
+    expect(seenForCleared(STORY.chapters)).toEqual(ids(STORY.scenes.filter((s) => s.chapter < AFTER_ENDING)));
+    expect(seenForCleared(STORY.chapters)).toContain('F-3');
+    expect(seenForCleared(STORY.chapters)).not.toContain('L-0');
   });
 });
