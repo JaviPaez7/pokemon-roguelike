@@ -1,7 +1,8 @@
 /**
  * Missions.js — Tablón de misiones del pueblo.
  *
- * Cada día el tablón ofrece encargos nuevos en las mazmorras desbloqueadas:
+ * Cada día el tablón ofrece encargos nuevos en las mazmorras desbloqueadas
+ * (también en las de posjuego, tras el final de la historia):
  * - `rescue`: un Pokémon se ha quedado atrapado en un piso; hay que llegar hasta él.
  * - `find_item`: un Pokémon perdió un objeto en un piso; hay que recogerlo.
  * - `deliver`: un Pokémon necesita un objeto en un piso; hay que llevárselo.
@@ -29,6 +30,8 @@ export const DIFFICULTIES = [
   { rank: 'B', upTo: 35, points: 50 },
   { rank: 'A', upTo: 45, points: 80 },
   { rank: 'S', upTo: 50, points: 120 },
+  // Posjuego: las mazmorras de los legendarios (pisos 51 en adelante)
+  { rank: '★', upTo: Infinity, points: 160 },
 ];
 
 /** Objetos que se pierden (buscar) y que se piden (entregar: se venden en el pueblo). */
@@ -59,7 +62,7 @@ export const REWARD_ITEMS = ['sitrus_berry', 'super_potion', 'reviver_seed', 'et
 
 /** @param {number} globalFloor */
 export function difficultyFor(globalFloor) {
-  return DIFFICULTIES.find((d) => globalFloor <= d.upTo) ?? DIFFICULTIES.at(-1);
+  return DIFFICULTIES.find((d) => globalFloor <= d.upTo);
 }
 
 /**
@@ -83,13 +86,19 @@ function localRng(seed) {
 
 /**
  * Encargos del tablón para un día.
- * @param {{ day: number, clearedDungeons: string[], pokemonData: { id: number, name: string }[], count?: number }} options
+ * @param {{
+ *   day: number,
+ *   clearedDungeons: string[],
+ *   storySeen?: string[],
+ *   pokemonData: { id: number, name: string }[],
+ *   count?: number
+ * }} options - `storySeen`: escenas vistas (abren las mazmorras de posjuego)
  * @returns {Mission[]}
  */
-export function generateBoard({ day, clearedDungeons, pokemonData, count = BOARD_SIZE }) {
+export function generateBoard({ day, clearedDungeons, storySeen = [], pokemonData, count = BOARD_SIZE }) {
   const rng = localRng(floorSeed(day, 0, 'misiones'));
   const pick = (list) => list[Math.floor(rng() * list.length)];
-  const dungeons = DUNGEONS.filter((d) => !d.challenge && isUnlocked(d, clearedDungeons));
+  const dungeons = DUNGEONS.filter((d) => !d.challenge && isUnlocked(d, clearedDungeons, storySeen));
   const missions = [];
   for (let i = 0; i < count; i++) {
     const dungeon = pick(dungeons);
@@ -152,7 +161,12 @@ export function refreshBoard(profile, pokemonData) {
   const missions = profile.missions;
   if (missions.day === profile.day) return;
   const taken = new Set(missions.accepted.map((m) => m.id));
-  missions.board = generateBoard({ day: profile.day, clearedDungeons: profile.clearedDungeons, pokemonData }).filter(
+  missions.board = generateBoard({
+    day: profile.day,
+    clearedDungeons: profile.clearedDungeons,
+    storySeen: profile.story?.seen ?? [],
+    pokemonData,
+  }).filter(
     (m) => !taken.has(m.id),
   );
   missions.day = profile.day;

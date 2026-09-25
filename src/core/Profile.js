@@ -14,7 +14,7 @@
  */
 
 import { MAX_PARTY_SIZE } from '../constants.js';
-import { DUNGEONS, isUnlocked } from './Dungeons.js';
+import { DUNGEONS, isUnlocked, unlockedDungeons } from './Dungeons.js';
 
 /** Rangos del equipo y puntos necesarios para alcanzarlos. */
 export const RANKS = [
@@ -212,7 +212,17 @@ export function defeatLosses(bag, wallet) {
  */
 export function markCleared(profile, dungeonId) {
   if (profile.clearedDungeons.includes(dungeonId)) return [];
-  const before = DUNGEONS.filter((d) => isUnlocked(d, profile.clearedDungeons)).map((d) => d.id);
+  const seen = profile.story?.seen ?? [];
+  const before = DUNGEONS.filter((d) => isUnlocked(d, profile.clearedDungeons, seen)).map((d) => d.id);
   profile.clearedDungeons.push(dungeonId);
-  return DUNGEONS.filter((d) => isUnlocked(d, profile.clearedDungeons) && !before.includes(d.id)).map((d) => d.id);
+  return DUNGEONS.filter((d) => isUnlocked(d, profile.clearedDungeons, seen) && !before.includes(d.id)).map((d) => d.id);
+}
+
+/**
+ * Mazmorras abiertas para este perfil, en orden.
+ * @param {Object} profile
+ * @returns {import('./Dungeons.js').Dungeon[]}
+ */
+export function profileDungeons(profile) {
+  return unlockedDungeons(profile.clearedDungeons, profile.story?.seen ?? []);
 }

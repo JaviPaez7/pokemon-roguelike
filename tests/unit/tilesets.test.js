@@ -20,6 +20,13 @@ describe('aspecto de las mazmorras', () => {
     expect(tilesetIdForFloor(50)).toBe('laboratorio');
   });
 
+  it('las mazmorras de los legendarios tienen su propio tema', () => {
+    expect(getBiomeForFloor(51)).toMatchObject({ id: 'escarcha', deco: 'frost' });
+    expect(getBiomeForFloor(66)).toMatchObject({ id: 'tronador', deco: 'storm' });
+    expect(getBiomeForFloor(70)).toMatchObject({ id: 'ascua', deco: 'embers' });
+    expect(getBiomeForFloor(84)).toMatchObject({ id: 'sueno', deco: 'dream' });
+  });
+
   it('los temas traen todo lo que usa el pintor', () => {
     for (const [id, ts] of Object.entries(TILESETS)) {
       for (const key of ['floor', 'floorAlt', 'corridor', 'wall', 'wallTop', 'wallEdge', 'water', 'lava', 'stairs', 'void', 'gridLines', 'deco']) {

@@ -5,7 +5,7 @@
  */
 
 import { GAME_STATES, MAX_PARTY_SIZE } from '../../constants.js';
-import { floorCount, unlockedDungeons } from '../../core/Dungeons.js';
+import { floorCount } from '../../core/Dungeons.js';
 import {
   bankDeposit,
   bankWithdraw,
@@ -15,6 +15,7 @@ import {
   rankFor,
   nextRank,
   STORAGE_STACK_MAX,
+  profileDungeons,
 } from '../../core/Profile.js';
 import { townShopStock } from '../../core/Shop.js';
 import { startExpedition } from '../../core/Expedition.js';
@@ -270,7 +271,7 @@ export function openDungeonSelect(ui) {
     ui.closeMenu();
     leaveExitTile(game);
   };
-  const dungeons = unlockedDungeons(profile.clearedDungeons);
+  const dungeons = profileDungeons(profile);
   simpleMenu(ui, {
     type: 'town_dungeon_select',
     title: '¿A DÓNDE VAMOS?',
@@ -279,7 +280,8 @@ export function openDungeonSelect(ui) {
     options: [
       ...dungeons.map((d) => ({
         label: `${profile.clearedDungeons.includes(d.id) ? '✔ ' : ''}${d.name}`,
-        hint: `${floorCount(d)} pisos`,
+        // Las de posjuego (legendarios) llevan estrella
+        hint: `${d.postgame ? '★ ' : ''}${floorCount(d)} pisos`,
         action: () => confirmDungeon(ui, d),
       })),
       { label: 'Quedarse en el pueblo', action: stay },

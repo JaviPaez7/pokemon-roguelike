@@ -293,19 +293,20 @@ export class EntityManager {
       // Tomar máximo 4
       .slice(0, 4);
 
-    return available.map(entry => {
-      // Buscar datos del movimiento para obtener los PP
-      const moveData = this._movesData
-        ? this._movesData[entry.moveId]
-        : null;
+    return this.moveSlots(available.map(entry => entry.moveId));
+  }
 
+  /**
+   * Casillas de movimiento con los PP al máximo.
+   * @param {number[]} moveIds
+   * @returns {Array<{moveId: number, currentPP: number, maxPP: number, enabled: boolean}>}
+   */
+  moveSlots(moveIds) {
+    return moveIds.map(moveId => {
+      // Buscar datos del movimiento para obtener los PP
+      const moveData = this._movesData ? this._movesData[moveId] : null;
       const maxPP = moveData ? moveData.pp : 20; // PP por defecto: 20
-      return {
-        moveId: entry.moveId,
-        currentPP: maxPP,
-        maxPP: maxPP,
-        enabled: true
-      };
+      return { moveId, currentPP: maxPP, maxPP, enabled: true };
     });
   }
 

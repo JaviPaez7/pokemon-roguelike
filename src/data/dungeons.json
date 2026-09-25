@@ -98,6 +98,66 @@
       "tileset": "laboratorio"
     },
     {
+      "id": "cumbre_escarcha",
+      "name": "Cumbre Escarcha",
+      "floors": [
+        51,
+        58
+      ],
+      "description": "Una cumbre donde hasta el viento se congela. En lo más alto anida un pájaro de hielo.",
+      "unlock": {
+        "story": "F-3"
+      },
+      "postgame": true,
+      "tileset": "escarcha"
+    },
+    {
+      "id": "pico_tronador",
+      "name": "Pico Tronador",
+      "floors": [
+        59,
+        66
+      ],
+      "description": "Una aguja de roca que atrae todos los rayos del valle. Arriba no para de tronar.",
+      "unlock": {
+        "story": "F-3"
+      },
+      "postgame": true,
+      "tileset": "tronador"
+    },
+    {
+      "id": "caldera_ascua",
+      "name": "Caldera Ascua",
+      "floors": [
+        67,
+        74
+      ],
+      "description": "Un cráter que arde desde antes de los Antiguos. Su resplandor se ve desde todo el valle.",
+      "unlock": {
+        "story": "F-3"
+      },
+      "postgame": true,
+      "tileset": "ascua"
+    },
+    {
+      "id": "jardin_primer_sueno",
+      "name": "Jardín del Primer Sueño",
+      "floors": [
+        75,
+        84
+      ],
+      "description": "Un jardín que no sale en ningún mapa. Al fondo, alguien muy pequeño juega al escondite.",
+      "unlock": {
+        "cleared": [
+          "cumbre_escarcha",
+          "pico_tronador",
+          "caldera_ascua"
+        ]
+      },
+      "postgame": true,
+      "tileset": "sueno"
+    },
+    {
       "id": "torre_desafio",
       "name": "Torre del Desafío",
       "floors": [

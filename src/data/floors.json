@@ -444,6 +444,266 @@
         "level": 48,
         "name": "Mewtwo"
       }
+    },
+    {
+      "name": "Cumbre Escarcha",
+      "floors": [
+        51,
+        58
+      ],
+      "theme": "ice",
+      "colors": {
+        "floor": "#c8dcea",
+        "wall": "#2c4a66",
+        "accent": "#9fd6ff"
+      },
+      "pokemon": [
+        {
+          "id": 87,
+          "weight": 2
+        },
+        {
+          "id": 91,
+          "weight": 2
+        },
+        {
+          "id": 124,
+          "weight": 2
+        },
+        {
+          "id": 131,
+          "weight": 1
+        },
+        {
+          "id": 85,
+          "weight": 2
+        },
+        {
+          "id": 18,
+          "weight": 1
+        },
+        {
+          "id": 22,
+          "weight": 2
+        }
+      ],
+      "levelRange": [
+        44,
+        52
+      ],
+      "enemiesPerFloor": [
+        5,
+        7
+      ],
+      "itemsPerFloor": [
+        3,
+        6
+      ],
+      "boss": {
+        "id": 144,
+        "level": 55,
+        "name": "Articuno",
+        "hpMultiplier": 2
+      }
+    },
+    {
+      "name": "Pico Tronador",
+      "floors": [
+        59,
+        66
+      ],
+      "theme": "storm",
+      "colors": {
+        "floor": "#4a4f63",
+        "wall": "#1d2030",
+        "accent": "#ffe14d"
+      },
+      "pokemon": [
+        {
+          "id": 82,
+          "weight": 2
+        },
+        {
+          "id": 101,
+          "weight": 2
+        },
+        {
+          "id": 125,
+          "weight": 2
+        },
+        {
+          "id": 135,
+          "weight": 1
+        },
+        {
+          "id": 26,
+          "weight": 1
+        },
+        {
+          "id": 22,
+          "weight": 2
+        },
+        {
+          "id": 142,
+          "weight": 1
+        }
+      ],
+      "levelRange": [
+        44,
+        52
+      ],
+      "enemiesPerFloor": [
+        5,
+        7
+      ],
+      "itemsPerFloor": [
+        3,
+        6
+      ],
+      "boss": {
+        "id": 145,
+        "level": 55,
+        "name": "Zapdos",
+        "hpMultiplier": 2
+      }
+    },
+    {
+      "name": "Caldera Ascua",
+      "floors": [
+        67,
+        74
+      ],
+      "theme": "volcano",
+      "colors": {
+        "floor": "#3a2a22",
+        "wall": "#1c120e",
+        "accent": "#ffb347"
+      },
+      "pokemon": [
+        {
+          "id": 78,
+          "weight": 2
+        },
+        {
+          "id": 126,
+          "weight": 2
+        },
+        {
+          "id": 136,
+          "weight": 1
+        },
+        {
+          "id": 38,
+          "weight": 1
+        },
+        {
+          "id": 6,
+          "weight": 1
+        },
+        {
+          "id": 112,
+          "weight": 2
+        },
+        {
+          "id": 76,
+          "weight": 2
+        }
+      ],
+      "levelRange": [
+        44,
+        52
+      ],
+      "enemiesPerFloor": [
+        5,
+        7
+      ],
+      "itemsPerFloor": [
+        3,
+        6
+      ],
+      "boss": {
+        "id": 146,
+        "level": 55,
+        "name": "Moltres",
+        "hpMultiplier": 2,
+        "moves": [
+          53,
+          143,
+          83,
+          97
+        ]
+      }
+    },
+    {
+      "name": "Jardín del Primer Sueño",
+      "floors": [
+        75,
+        84
+      ],
+      "theme": "dream",
+      "colors": {
+        "floor": "#e8cfe6",
+        "wall": "#6a4c7e",
+        "accent": "#ff9ed2"
+      },
+      "pokemon": [
+        {
+          "id": 65,
+          "weight": 1
+        },
+        {
+          "id": 97,
+          "weight": 2
+        },
+        {
+          "id": 122,
+          "weight": 2
+        },
+        {
+          "id": 36,
+          "weight": 2
+        },
+        {
+          "id": 40,
+          "weight": 2
+        },
+        {
+          "id": 103,
+          "weight": 2
+        },
+        {
+          "id": 113,
+          "weight": 1
+        },
+        {
+          "id": 121,
+          "weight": 1
+        }
+      ],
+      "levelRange": [
+        50,
+        58
+      ],
+      "enemiesPerFloor": [
+        5,
+        7
+      ],
+      "itemsPerFloor": [
+        4,
+        7
+      ],
+      "boss": {
+        "id": 151,
+        "level": 62,
+        "name": "Mew",
+        "hpMultiplier": 2.2,
+        "moves": [
+          94,
+          118,
+          5,
+          132
+        ]
+      }
     }
   ]
 }

@@ -54,5 +54,37 @@
     "water": "#3fa0b8", "lava": "#ff5500", "stairs": "#9fd8e8", "void": "#06080a",
     "gridLines": "rgba(0, 0, 0, 0.2)",
     "deco": "panels", "decoColors": ["#4c585f", "#8fa3ad", "#e8c547"]
+  },
+  "escarcha": {
+    "name": "Cumbre helada",
+    "floor": "#b9d3e3", "floorAlt": "#c4dcea", "corridor": "#a9c6d9",
+    "wall": "#2d4d6b", "wallTop": "#6f9cc2", "wallEdge": "#172b3d",
+    "water": "#4f9fd1", "lava": "#ff5500", "stairs": "#e8f4ff", "void": "#050a10",
+    "gridLines": "rgba(40, 70, 100, 0.12)",
+    "deco": "frost", "decoColors": ["#ffffff", "#8fb8d4", "#dff1ff"]
+  },
+  "tronador": {
+    "name": "Pico de tormenta",
+    "floor": "#555a6e", "floorAlt": "#5c6277", "corridor": "#62687d",
+    "wall": "#1f2233", "wallTop": "#3b4058", "wallEdge": "#0f111a",
+    "water": "#3a5a80", "lava": "#ff5500", "stairs": "#ffe98a", "void": "#05060a",
+    "gridLines": "rgba(0, 0, 0, 0.16)",
+    "deco": "storm", "decoColors": ["#3f5f86", "#ffe14d", "#8fa0c0"]
+  },
+  "ascua": {
+    "name": "Caldera",
+    "floor": "#3b302b", "floorAlt": "#433630", "corridor": "#4a3b33",
+    "wall": "#1e1411", "wallTop": "#4d2c1c", "wallEdge": "#0d0806",
+    "water": "#b85a1a", "lava": "#ff9a1f", "stairs": "#ffc86b", "void": "#070302",
+    "gridLines": "rgba(0, 0, 0, 0.22)",
+    "deco": "embers", "decoColors": ["#ffb347", "#ff6a1a", "#6a5a52"]
+  },
+  "sueno": {
+    "name": "Jardín del sueño",
+    "floor": "#dcc3e0", "floorAlt": "#e4cde6", "corridor": "#d2b8d8",
+    "wall": "#6b4f86", "wallTop": "#a283c2", "wallEdge": "#3f2c52",
+    "water": "#8ec5ff", "lava": "#ff7ab8", "stairs": "#fff2a8", "void": "#120a1a",
+    "gridLines": "rgba(80, 40, 100, 0.10)",
+    "deco": "dream", "decoColors": ["#ffffff", "#ff9ed2", "#9fd8ff"]
   }
 }

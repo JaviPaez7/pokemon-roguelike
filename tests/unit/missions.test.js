@@ -20,6 +20,7 @@ import { createProfile } from '../../src/core/Profile.js';
 import { getDungeon, floorCount } from '../../src/core/Dungeons.js';
 import pokemonData from '../../src/data/pokemon.json';
 import itemsData from '../../src/data/items.json';
+import storyData from '../../src/data/story.json';
 
 const itemName = (id) => itemsData.find((i) => i.id === id)?.name ?? id;
 
@@ -71,6 +72,45 @@ describe('generateBoard', () => {
     expect(difficultyFor(1).rank).toBe('E');
     expect(difficultyFor(12).rank).toBe('D');
     expect(difficultyFor(50).rank).toBe('S');
+    expect(difficultyFor(51).rank).toBe('★');
+    expect(difficultyFor(84).points).toBeGreaterThan(difficultyFor(50).points);
+  });
+
+  it('tras el final también hay encargos en las mazmorras de los legendarios, nunca en el piso del legendario', () => {
+    const postgame = ['cumbre_escarcha', 'pico_tronador', 'caldera_ascua', 'jardin_primer_sueno'];
+    const cleared = [...storyData.chapters, 'cumbre_escarcha', 'pico_tronador', 'caldera_ascua'];
+    const found = new Set();
+    for (let day = 1; day <= 40; day++) {
+      // Sin haber visto el final, ninguno
+      for (const m of generateBoard({ day, clearedDungeons: storyData.chapters, pokemonData })) {
+        expect(postgame).not.toContain(m.dungeonId);
+      }
+      for (const m of generateBoard({ day, clearedDungeons: cleared, storySeen: ['F-3'], pokemonData })) {
+        if (!postgame.includes(m.dungeonId)) continue;
+        found.add(m.dungeonId);
+        const dungeon = getDungeon(m.dungeonId);
+        expect(m.floor).toBeLessThan(floorCount(dungeon));
+        expect(m.difficulty).toBe('★');
+        expect(pokemonData.some((p) => p.id === m.clientSpeciesId)).toBe(true);
+        // Los legendarios no hacen encargos
+        expect([144, 145, 146, 150, 151]).not.toContain(m.clientSpeciesId);
+      }
+    }
+    expect([...found].sort()).toEqual([...postgame].sort());
+  });
+
+  it('refreshBoard lee las escenas vistas del perfil', () => {
+    const profile = newProfile();
+    profile.clearedDungeons = [...storyData.chapters];
+    profile.story.seen = ['F-3'];
+    const postgame = new Set(['cumbre_escarcha', 'pico_tronador', 'caldera_ascua']);
+    let any = false;
+    for (let day = 2; day <= 30 && !any; day++) {
+      profile.day = day;
+      refreshBoard(profile, pokemonData);
+      any = profile.missions.board.some((m) => postgame.has(m.dungeonId));
+    }
+    expect(any).toBe(true);
   });
 });
 

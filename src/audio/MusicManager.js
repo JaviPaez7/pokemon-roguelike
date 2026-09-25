@@ -35,6 +35,10 @@ export class MusicManager {
       'Profundidades Oscuras': { scale: 'a_minor', tempo: 85, waveform: 'triangle', octave: -1 },
       'Isla Volcánica': { scale: 'e_phrygian', tempo: 120, waveform: 'square', octave: -1 },
       'Laboratorio Final': { scale: 'd_dorian', tempo: 140, waveform: 'square', octave: 0 },
+      'Cumbre Escarcha': { scale: 'a_minor', tempo: 90, waveform: 'sine', octave: 1 },
+      'Pico Tronador': { scale: 'd_dorian', tempo: 150, waveform: 'square', octave: 0 },
+      'Caldera Ascua': { scale: 'e_phrygian', tempo: 130, waveform: 'sawtooth', octave: -1 },
+      'Jardín del Primer Sueño': { scale: 'c_major', tempo: 100, waveform: 'triangle', octave: 1 },
       'default': { scale: 'c_major', tempo: 120, waveform: 'square', octave: 0 }
     };
   }
