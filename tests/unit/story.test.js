@@ -47,7 +47,8 @@ describe('los datos de la historia', () => {
   });
 
   it('el guion se lee igual con finales de línea de Windows', () => {
-    const crlf = readFileSync(SCRIPT_PATH, 'utf8').replace(/\r?\n/g, '\r\n');
+    // Se parte de LF: en una copia de Windows (core.autocrlf) el fichero ya viene en CRLF
+    const crlf = readFileSync(SCRIPT_PATH, 'utf8').replace(/\r\n/g, '\n').replace(/\n/g, '\r\n');
     expect(buildStory(crlf)).toEqual(STORY);
   });
 
