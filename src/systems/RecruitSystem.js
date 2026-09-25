@@ -9,11 +9,14 @@
  *
  * Los Pokémon amistosos de los eventos de piso usan el mismo menú y las
  * mismas reglas al aceptar.
+ *
+ * Los legendarios de posjuego no pasan por la tirada: al derrotarlos como jefe
+ * de su mazmorra se ofrecen siempre hasta que se unen (`offerLegendRecruit`).
  */
 
 import { MAX_PARTY_SIZE } from '../constants.js';
 import { random } from '../core/Random.js';
-import { recruitChance, isRecruitable } from '../core/Recruitment.js';
+import { recruitChance, isRecruitable, legendJoins } from '../core/Recruitment.js';
 import { toSnapshot, restedSnapshot } from '../core/PokemonSnapshot.js';
 import { addToRoster } from '../core/Profile.js';
 import { heldHelpsRecruit } from '../core/HeldItems.js';
@@ -86,16 +89,67 @@ export function tryRecruit(game, defeatedId, attackerId) {
 }
 
 /**
+ * Tras derrotar al jefe legendario de su mazmorra: si toca
+ * (`legendJoins`), se levanta y pide unirse. Se crea de nuevo a su nivel, sin
+ * los PS extra de jefe y con su kit. Al contestar, o enseguida si no toca, se
+ * sigue con `onDone` (acabar la mazmorra).
+ * @param {import('../core/Game.js').Game} game
+ * @param {{ speciesId: number, level: number, x: number, y: number, moves?: number[] }} boss
+ * @param {() => void} onDone
+ * @returns {boolean} Si se ha ofrecido
+ */
+export function offerLegendRecruit(game, boss, onDone) {
+  const owned = [...(game.profile?.roster ?? []), ...game.party].map((p) => p.speciesId);
+  const offered =
+    !!game.profile &&
+    canTakeRecruit(game) &&
+    legendJoins({ speciesId: boss.speciesId, challenge: !!game.dungeon?.challenge, ownedSpecies: owned });
+  if (!offered) {
+    onDone();
+    return false;
+  }
+
+  const em = game.entityManager;
+  const id = em.createPokemon(boss.speciesId, boss.level, boss.x, boss.y, false);
+  const info = em.getComponent(id, 'pokemonInfo');
+  if (boss.moves) {
+    info.currentMoves = em.moveSlots(boss.moves);
+    em.setComponent(id, 'pokemonInfo', info);
+  }
+  em.setComponent(id, 'npcFriendly', { speciesId: info.speciesId, name: info.name });
+  game.needsRender = true;
+
+  /** @param {boolean} accepted */
+  const answer = (accepted) => {
+    if (accepted) {
+      acceptRecruit(game, id, onDone);
+      return;
+    }
+    declineRecruit(game, id);
+    game.uiManager.showDialog(`${info.name} se aleja sin prisa.\n\nSi le volvéis a ganar, quizá os lo vuelva a pedir.`, onDone);
+  };
+  game.uiManager.showDialog(
+    `${info.name} se levanta despacio y mira al equipo.\n\nParece que quiere acompañaros.`,
+    () => game.uiManager.openRecruitMenu(id, info, answer),
+    false,
+    { speaker: info.name, portrait: { speciesId: info.speciesId, emotion: 'Inspired' } },
+  );
+  return true;
+}
+
+/**
  * Se acepta al recluta: entra en el equipo o, si está completo, va a la base.
  * @param {import('../core/Game.js').Game} game
  * @param {number} id
+ * @param {(() => void) | null} [onDone] - Al cerrar el diálogo de bienvenida
  */
-export function acceptRecruit(game, id) {
+export function acceptRecruit(game, id, onDone = null) {
   const em = game.entityManager;
   const info = em.getComponent(id, 'pokemonInfo');
   const fighter = em.getComponent(id, 'fighter');
   if (!info || !fighter) {
     em.destroyEntity(id);
+    onDone?.();
     return;
   }
   em.removeComponent(id, 'npcFriendly');
@@ -110,16 +164,16 @@ export function acceptRecruit(game, id) {
     em.setComponent(id, 'fighter', fighter);
     game.turnManager.addEntity(id, fighter.speed || 50, false);
     const onlyThisRun = game.dungeon?.challenge ? '\n\nSolo os acompañará durante esta subida a la torre.' : '';
-    game.uiManager.showDialog(`¡${info.name} se ha unido a vuestro equipo!${onlyThisRun}`, null, false, joyful);
+    game.uiManager.showDialog(`¡${info.name} se ha unido a vuestro equipo!${onlyThisRun}`, onDone, false, joyful);
   } else if (hasBase(game)) {
     addToRoster(game.profile, restedSnapshot(toSnapshot(game.memberData(id)), game.movesData));
     game.turnManager.removeEntity(id);
     em.destroyEntity(id);
-    game.uiManager.showDialog(`¡${info.name} se ha unido a vuestro equipo!\n\nComo ya sois cuatro, os esperará en la base.`, null, false, joyful);
+    game.uiManager.showDialog(`¡${info.name} se ha unido a vuestro equipo!\n\nComo ya sois cuatro, os esperará en la base.`, onDone, false, joyful);
   } else {
     game.turnManager.removeEntity(id);
     em.destroyEntity(id);
-    game.uiManager.showDialog(`${info.name} quería unirse, pero en el equipo ya no cabe nadie más.`);
+    game.uiManager.showDialog(`${info.name} quería unirse, pero en el equipo ya no cabe nadie más.`, onDone);
     game.needsRender = true;
     return;
   }

@@ -6,8 +6,10 @@ import { GAME_STATES, MAX_PARTY_SIZE, TYPE_NAMES_ES } from '../../constants.js';
  * @param {import('../UIManager.js').UIManager} ui
  * @param {number} entityId - ID de la entidad
  * @param {Object} info - Información del Pokémon
+ * @param {((accepted: boolean) => void) | null} [onAnswer] - Quién atiende la respuesta;
+ *   si no se da, se emite `recruit_pokemon` (reclutamiento normal)
  */
-export function openRecruitMenu(ui, entityId, info) {
+export function openRecruitMenu(ui, entityId, info, onAnswer = null) {
   const game = ui.game;
   const fighter = game.entityManager.getComponent(entityId, 'fighter');
   const types = (info.types || []).map(t => TYPE_NAMES_ES[t] || t).join('/');
@@ -34,7 +36,8 @@ export function openRecruitMenu(ui, entityId, info) {
   // closeMenu devuelve el juego a exploración; el diálogo de respuesta se abre después
   const answer = (accepted) => () => {
     ui.closeMenu();
-    game.eventBus.emit('recruit_pokemon', { entityId, accepted });
+    if (onAnswer) onAnswer(accepted);
+    else game.eventBus.emit('recruit_pokemon', { entityId, accepted });
   };
   ui.menuOptions = [answer(true), answer(false)];
 

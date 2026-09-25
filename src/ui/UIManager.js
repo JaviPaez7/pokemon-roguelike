@@ -242,7 +242,7 @@ export class UIManager {
   openTeamMenu() { openTeamMenu(this); }
   
   openStairsMenu() { openStairsMenu(this); }
-  openRecruitMenu(targetId, defenderInfo) { openRecruitMenu(this, targetId, defenderInfo); }
+  openRecruitMenu(targetId, defenderInfo, onAnswer = null) { openRecruitMenu(this, targetId, defenderInfo, onAnswer); }
   openLearnMoveMenu(entityId, moveId) { openLearnMoveMenu(this, entityId, moveId); }
   openEvolutionMenu(entityId, evolution, opts) { openEvolutionMenu(this, entityId, evolution, opts); }
   openMerchantMenu(merchantId) { openMerchantMenu(this, merchantId); }
