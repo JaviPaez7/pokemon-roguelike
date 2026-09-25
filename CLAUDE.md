@@ -66,7 +66,7 @@ Flujo de estados: `Game.changeState(nuevo)` ejecuta `_onStateExit` y `_onStateEn
 
 Aleatoriedad (`core/Random.js`): todo lo que afecta a la partida usa `random()`, `randomInt()`, `chance()`, `pick()` o `shuffle()`, que salen del RNG de rot-js con semilla. Cada partida tiene `runSeed` (`?seed=N` en la URL la fija) y la semilla de cada piso se deriva de ella con `floorSeed()`. Solo render y audio pueden usar `Math.random`.
 
-La estructura del README está desactualizada (menciona `src/utils` y un sistema de carga en `src/assets` que no existen así). Manda el código.
+El README presenta el juego (qué es, cómo se juega, comandos, estructura y licencias) y remite aquí para el detalle técnico. Si cambias algo de lo que cuenta, actualízalo también. Si algo no cuadra, manda el código.
 
 ## Reglas
 
@@ -74,13 +74,13 @@ La estructura del README está desactualizada (menciona `src/utils` y un sistema
 - El balance y el contenido van en `src/data/*.json`, no metidos en el código.
 - No añadas dependencias sin un motivo claro: el juego solo depende de `rot-js`.
 
-## Estado conocido (2026-09-24)
+## Estado conocido (2026-09-25)
 
 - **Arreglado en la fase 1 del plan:** desde `75eebf4` (28 de julio), abrir la pausa, la mochila o el equipo desde exploración entraba en una recursión (`openPauseMenu` → `changeState(MENU)` → `state_changed` → `openPauseMenu`…). El `EventBus` se tragaba el `RangeError` y el menú salía tras más de mil repintados. Lo cubre `tests/e2e/menu-state.spec.js`.
 - **Arreglados en el hito H0:** el diálogo «se ha unido a tu equipo» que se borraba al reclutar (con `changeState` idempotente) y los diálogos animados que pedían dos Z con el texto ya terminado. Los cubre `tests/e2e/dialogs.spec.js`.
-- **H4 · Historia** implementada en la rama `claude/charming-dirac-edcydf`, pendiente de revisión y de fusionar. Decisiones tomadas con los valores recomendados del guion (sección 9): Pidgeotto como jefe del Bosque Verde, Clefable en el Monte Lunar, final sin elección y «Guion y desarrollo: JaviStudio» en los créditos (`STORY_AUTHOR` en `CreditsMenu.js`).
+- **H4 · Historia** fusionada en `master` (PR #6) y en producción. Decisiones tomadas con los valores recomendados del guion (sección 9): Pidgeotto como jefe del Bosque Verde, Clefable en el Monte Lunar, final sin elección y «Guion y desarrollo: JaviStudio» en los créditos (`STORY_AUTHOR` en `CreditsMenu.js`).
 - **Licencia de los sprites:** para la 1.ª generación, todo el arte de base de PMDCollab es el oficial de Chunsoft (los 151 figuran con crédito `CHUNSOFT`); lo de la comunidad (animaciones y emociones añadidas) es CC BY-NC 4.0. El juego debe seguir siendo gratuito y sin anuncios, y la pantalla de créditos no se puede quitar.
-- **Bundle (H5):** los JSON de `src/data/` van en su propio chunk, `data` (unos 228 kB; 40 kB con gzip), que `index.html` precarga junto al código (`index`, unos 372 kB; 110 kB con gzip): todo está en memoria al arrancar y nada se pide a mitad de partida. Solo `pmd-credits.json` se carga al abrir los créditos. Además, `vite.config.js` declara rot-js sin efectos al importarse, lo que quita ~20 kB que no se usaban (`Display`, `Color`…). `tests/e2e/bundle.spec.js` falla si un chunk pasa de 500 kB: no se arregla subiendo `chunkSizeWarningLimit`.
+- **Bundle (H5):** los JSON de `src/data/` van en su propio chunk, `data` (unos 233 kB; 42 kB con gzip), que `index.html` precarga junto al código (`index`, unos 368 kB; 108 kB con gzip): todo está en memoria al arrancar y nada se pide a mitad de partida. Solo `pmd-credits.json` se carga al abrir los créditos. Además, `vite.config.js` declara rot-js sin efectos al importarse, lo que quita ~20 kB que no se usaban (`Display`, `Color`…). `tests/e2e/bundle.spec.js` falla si un chunk pasa de 500 kB: no se arregla subiendo `chunkSizeWarningLimit`.
 - **Equipo en el pueblo (H5):** son copias de las fichas de la plantilla. Quien cambie algo del equipo en el pueblo que deba durar llama justo después a `storeTownTeam(game)` (`core/TownSession.js`), que vuelca el equipo entero a la plantilla: fichas y orden de la formación (`profile.teamUids`, el líder primero). Lo usan el líder y la táctica (`TeamMenus.js`), los objetos equipados (`InventorySystem.js`) y la evolución (`EvolutionMenu.js`); lo cubre `tests/e2e/town-team.spec.js`. Al volver de una expedición se conserva la formación de la salida (`returningTeam`): un cambio de líder en la mazmorra dura solo esa expedición.
 - La batería E2E completa tarda alrededor de un minuto en local (4 workers): mientras trabajas, ejecuta solo los ficheros afectados.
 
