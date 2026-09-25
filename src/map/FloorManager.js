@@ -10,6 +10,7 @@ import { floorSeed } from '../core/Random.js';
 import { relativeFloor } from '../core/Dungeons.js';
 import { spawnMissionTargets } from '../systems/MissionSystem.js';
 import { onFloorEntered } from '../core/StorySession.js';
+import { tipFor } from '../core/Tips.js';
 
 /**
  * Generación de pisos, spawn de enemigos y pre-carga de sprites.
@@ -316,6 +317,12 @@ export class FloorManager {
     }
   }
 
+  /**
+   * Cambia de piso: genera el nuevo, coloca al equipo, aplica lo que pasa al
+   * llegar (curación ligera, eventos, escenas) y deja un consejo en el registro.
+   * @param {'down' | 'up'} direction
+   * @returns {Promise<void>}
+   */
   async _changeFloorInner(direction) {
     const game = this.game;
 
@@ -516,68 +523,6 @@ export class FloorManager {
       });
     }
 
-    const tips = [
-      'Consejo: mira a un salvaje y pulsa Z para ver PS y captura.',
-      'Consejo: Tab cambia de líder (salta debilitados).',
-      'Consejo: la Baldosa Mágica restaura stats y PP.',
-      'Consejo: en Opciones puedes desactivar recoger al andar.',
-      'Consejo: Kecleon compra y vende si te sobran objetos.',
-      'Consejo: Kecleon tiene precios tope; vende basura para hacer sitio en la bolsa.',
-      'Consejo: si el líder cae, un aliado toma el mando automáticamente.',
-      'Consejo: 1-4 mirando a un enemigo muestra si el golpe es eficaz.',
-      'Consejo: en Equipo puedes cambiar la táctica de cada aliado.',
-      'Consejo: guardar conserva equipo, piso, objetos y trampas; el mapa se regenera al cargar.',
-      'Consejo: la Cuerda Huida guarda y te saca al menú si la cosa se pone fea.',
-      'Consejo: algunas salas son casas de monstruos: ¡prepárate al entrar!',
-      'Consejo: algunos salvajes intimidan y bajan tu Ataque al verte.',
-      'Consejo: las salas doradas del minimapa suelen ser de descanso; busca tesoros también.',
-      'Consejo: a veces hay claros de descanso que curan PS y tripa.',
-      'Consejo: las gomas suben stats de forma permanente (se conservan al guardar).',
-      'Consejo: la Bolsa del HUD se pone naranja cuando quedan 2 huecos o menos.',
-      'Consejo: reclutar guarda automáticamente la partida.',
-      'Consejo: los objetos equipables se dan desde la mochila y se quitan desde el menú de Equipo.',
-      'Consejo: derrotar a Mewtwo completa la aventura al instante.',
-      'Consejo: Danza Espada y Agilidad te potencian a ti, no al enemigo.',
-      'Consejo: Descanso y Recuperación se pueden usar sin enemigo al lado.',
-      'Consejo: a veces, el Pokémon que derrota tu líder se levanta y pide unirse.',
-      'Consejo: Vista Lince hace que tus ataques no fallen por precisión.',
-      'Consejo: la quemadura reduce el daño físico (Agallas lo anula).',
-      'Consejo: si un objeto no hace efecto (PS llenos), no gastas turno.',
-      'Consejo: Excavar y Vuelo tardan 2 turnos; mientras, no te alcanzan.',
-      'Consejo: Reflejo y Pantalla de Luz reducen a la mitad el daño recibido.',
-      'Consejo: el Sustituto absorbe golpes a cambio de PS.',
-      'Consejo: capturar es más fácil en los primeros pisos y con estados.',
-      'Consejo: el contador enem. del HUD muestra cuántos salvajes quedan en el piso.',
-      'Consejo: Atadura/Giro Fuego impiden moverse hasta liberarte.',
-      'Consejo: con tripa alta recuperas PP poco a poco cada cierto tiempo.',
-      'Consejo: Remolino y Rugido expulsan al enemigo; Teletransporte te mueve a ti.',
-      'Consejo: si te golpean mientras cargas Excavar/Vuelo, se cancela.',
-      'Consejo: Venganza acumula daño 2 turnos; luego úsala otra vez para devolver el doble.',
-      'Consejo: Mimético copia un movimiento del enemigo al hueco de Mimético.',
-      'Consejo: dormir o congelar al salvaje duplica la probabilidad de captura.',
-      'Consejo: Meowth con Recogida puede encontrar objetos al derrotar enemigos.',
-      'Consejo: Anulación bloquea un movimiento; el HUD muestra turnos (ANULADO 3t).',
-      'Consejo: en el minimapa, naranja = trampa revelada; amarillo = baldosa mágica.',
-      'Consejo: puedes lanzar comida o pociones a un aliado (X → Lanzar).',
-      'Consejo: Transformación copia tipo, stats y habilidad; se revierte al debilitarte o en salas de descanso.',
-      'Consejo: sin PP, el combate usa Forcejeo (con retroceso). Choca para atacar sin PP.',
-      'Consejo: en tormenta de arena, tipo Roca recibe menos daño físico; en granizo, Hielo aguanta mejor lo especial.',
-      'Consejo: no te golpeen mientras miras la tienda de Kecleon (ya no pasa turno).',
-      'Consejo: al derrotarte se borra el guardado al instante (permadeath).',
-      'Consejo: los primeros pisos tienen menos salvajes: explora con calma.',
-      'Consejo: en pisos bajos no hay trampas explosivas; la Baldosa Mágica también restaura tripa.',
-      'Consejo: Rastro copia la habilidad del rival al contactar (solo una vez).',
-      'Consejo: los aliados usan curación propia si bajan de mitad de PS (Descanso solo si están muy mal).',
-      'Consejo: golpear a un dormido puede despertarlo; el hielo siempre se rompe al impactar.',
-      'Consejo: si guardas con Kecleon en el piso, la tienda se conserva al cargar.',
-      'Consejo: el veneno grave (Tóxico) empeora con el tiempo; cúralo pronto.',
-      'Consejo: las orbes de sala respetan Insomnio/Espíritu Vital.',
-      'Consejo: el Sustituto absorbe golpes y también estados del impacto.',
-      'Consejo: choques contra muros no gastan turno ni avanzan veneno/quemadura.',
-      'Consejo: si un movimiento está anulado, pulsar su tecla gasta el turno y baja el contador.',
-      'Consejo: Hiperrayo y similares obligan a un turno de descanso (DESCANSO en el HUD).',
-      'Consejo: al cambiar de piso se cancelan carga, Venganza, Sustituto y pantallas.',
-    ];
     // Recordatorio suave de guardado
     if (game._currentFloor > 1 && game._currentFloor % 5 === 0) {
       game.eventBus.emit('message', {
@@ -586,9 +531,9 @@ export class FloorManager {
       });
     }
 
+    // Un consejo cada dos pisos (data/tips.json); rotan con los turnos jugados
     if (game._currentFloor > 1 && game._currentFloor % 2 === 0) {
-      const tip = tips[Math.floor((game._currentFloor || 1) / 2) % tips.length];
-      game.eventBus.emit('message', { text: tip, color: '#aaccff' });
+      game.eventBus.emit('message', { text: tipFor(game.stats?.turnsPlayed ?? 0), color: '#aaccff' });
     }
 
     // Anunciar cambio de zona (primer piso de cada zona)
