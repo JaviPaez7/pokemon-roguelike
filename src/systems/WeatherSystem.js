@@ -11,6 +11,22 @@ import { RNG } from 'rot-js';
  * - granizo: -1 PS por turno a Pokémon que no sean Hielo
  */
 
+/**
+ * Probabilidad de que un piso tenga clima y climas posibles. Una zona puede
+ * fijar los suyos con `weather` en floors.json (granizo en la Cumbre Escarcha).
+ * - Pisos 1-3: sin clima dañino.
+ * - Pisos 4-7: 20 %, solo lluvia o sol.
+ * - Desde el 8: 20 %, también tormenta de arena y granizo.
+ * @param {number} floor - Piso global
+ * @param {{ weather?: { chance: number, types: string[] } } | null} [zone]
+ * @returns {{ chance: number, types: string[] }}
+ */
+export function weatherOptions(floor, zone = null) {
+  if (floor <= 3) return { chance: 0, types: [] };
+  if (zone?.weather) return zone.weather;
+  return { chance: 0.2, types: floor < 8 ? ['lluvia', 'sol'] : ['lluvia', 'sol', 'tormenta_arena', 'granizo'] };
+}
+
 export class WeatherSystem {
   constructor() {
     this.weatherTypes = ['normal', 'lluvia', 'sol', 'tormenta_arena', 'granizo'];
@@ -24,19 +40,14 @@ export class WeatherSystem {
    */
   generateFloorWeather(game) {
     const floor = game._currentFloor || 1;
-    // Early game: sin clima dañino
-    if (floor <= 3) {
+    const { chance, types } = weatherOptions(floor, game.floorManager?.getZoneConfig?.());
+    if (chance <= 0 || types.length === 0) {
       game.currentWeather = 'normal';
       return;
     }
 
-    // 20% de probabilidad de tener clima
-    if (RNG.getUniform() < 0.2) {
-      // Pisos 4–7: solo lluvia/sol; arena/granizo desde piso 8
-      const activeWeathers = floor < 8
-        ? ['lluvia', 'sol']
-        : ['lluvia', 'sol', 'tormenta_arena', 'granizo'];
-      game.currentWeather = activeWeathers[Math.floor(RNG.getUniform() * activeWeathers.length)];
+    if (RNG.getUniform() < chance) {
+      game.currentWeather = types[Math.floor(RNG.getUniform() * types.length)];
       
       let message = '';
       switch (game.currentWeather) {

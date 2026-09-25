@@ -499,6 +499,12 @@
         3,
         6
       ],
+      "weather": {
+        "chance": 0.35,
+        "types": [
+          "granizo"
+        ]
+      },
       "boss": {
         "id": 144,
         "level": 55,
@@ -560,6 +566,12 @@
         3,
         6
       ],
+      "weather": {
+        "chance": 0.4,
+        "types": [
+          "lluvia"
+        ]
+      },
       "boss": {
         "id": 145,
         "level": 55,
@@ -621,6 +633,12 @@
         3,
         6
       ],
+      "weather": {
+        "chance": 0.35,
+        "types": [
+          "sol"
+        ]
+      },
       "boss": {
         "id": 146,
         "level": 55,
@@ -692,6 +710,13 @@
         4,
         7
       ],
+      "weather": {
+        "chance": 0.15,
+        "types": [
+          "lluvia",
+          "sol"
+        ]
+      },
       "boss": {
         "id": 151,
         "level": 62,
