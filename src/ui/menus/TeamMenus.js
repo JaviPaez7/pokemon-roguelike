@@ -5,6 +5,7 @@ import { GAME_STATES, TYPE_NAMES_ES } from '../../constants.js';
 import { heldName } from '../../core/HeldItems.js';
 import { skillsForIq } from '../../core/IQ.js';
 import { takeHeldItem } from '../../systems/InventorySystem.js';
+import { storeTownTeam } from '../../core/TownSession.js';
 
 /** @param {import('../UIManager.js').UIManager} ui */
 export function openTeamMenu(ui) {
@@ -66,7 +67,6 @@ export function openTeamMenu(ui) {
   ui.updateSelectionVisuals();
 }
 
-/** @param {import('../UIManager.js').UIManager} ui */
 const ABILITY_ES = {
   overgrow: 'Espesura', blaze: 'Mar Llamas', torrent: 'Torrente',
   static: 'Elec. Estática', chlorophyll: 'Clorofila', swarm: 'Enjambre',
@@ -93,6 +93,12 @@ const ABILITY_ES = {
   trace: 'Rastro', flame_body: 'Cuerpo Llama'
 };
 
+/**
+ * Ficha de un Pokémon del equipo con sus acciones: liderar, táctica,
+ * movimientos, quitar objeto y evolucionar. En el pueblo, lo que se cambia aquí
+ * se vuelca a la plantilla (`storeTownTeam`) para que dure.
+ * @param {import('../UIManager.js').UIManager} ui - Con el Pokémon en `ui.selectedPokemon`
+ */
 export function openPokemonActionsMenu(ui) {
   const info = ui.game.entityManager.getComponent(ui.selectedPokemon, 'pokemonInfo');
   const fighter = ui.game.entityManager.getComponent(ui.selectedPokemon, 'fighter');
@@ -142,6 +148,7 @@ export function openPokemonActionsMenu(ui) {
       ui.game._playerId = selectedId;
       ui.game.turnManager.setPlayerEntityId(selectedId);
       ui.game.playerPathHistory = [];
+      storeTownTeam(ui.game);
       ui.showDialog(`¡${info.name} ahora lidera el equipo!`, () => openTeamMenu(ui));
     } else {
       ui.showDialog('Error al cambiar de líder.', () => openTeamMenu(ui));
@@ -197,7 +204,10 @@ export function openPokemonActionsMenu(ui) {
   ui.updateSelectionVisuals();
 }
 
-/** @param {import('../UIManager.js').UIManager} ui */
+/**
+ * Elegir la táctica de un compañero. En el pueblo se vuelca a la plantilla.
+ * @param {import('../UIManager.js').UIManager} ui - Con el Pokémon en `ui.selectedPokemon`
+ */
 export function openTacticSelectMenu(ui) {
   const info = ui.game.entityManager.getComponent(ui.selectedPokemon, 'pokemonInfo');
   const partyMember = ui.game.entityManager.getComponent(ui.selectedPokemon, 'partyMember');
@@ -243,6 +253,7 @@ export function openTacticSelectMenu(ui) {
     if (partyMember) {
       partyMember.tactic = t.id;
       ui.game.entityManager.setComponent(ui.selectedPokemon, 'partyMember', partyMember);
+      storeTownTeam(ui.game);
       ui.showDialog(`Táctica de ${info.name} cambiada a: ¡${t.name}!`, () => openPokemonActionsMenu(ui));
     } else {
       openPokemonActionsMenu(ui);

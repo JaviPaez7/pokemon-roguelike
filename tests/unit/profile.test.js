@@ -5,6 +5,8 @@ import {
   getMember,
   updateMember,
   setTeam,
+  storeTeam,
+  returningTeam,
   rankFor,
   nextRank,
   addRankPoints,
@@ -64,6 +66,57 @@ describe('plantilla y equipo', () => {
     const result = setTeam(profile, build(profile, ...extra));
     expect(result.ok).toBe(false);
     expect(result.error).toContain(error);
+  });
+});
+
+describe('el equipo del pueblo vuelve a la plantilla', () => {
+  /** Fichas del equipo en el orden dado, como las que salen de game.party */
+  const snapshotsOf = (profile, uids, changes = {}) =>
+    uids.map((uid) => ({ ...getMember(profile, uid), ...(changes[uid] ?? {}), isLeader: uid === uids[0] }));
+
+  it('storeTeam guarda la táctica, el líder y cualquier otro cambio de las fichas', () => {
+    const profile = newProfile();
+    const { heroUid, partnerUid } = profile;
+    const result = storeTeam(
+      profile,
+      snapshotsOf(profile, [partnerUid, heroUid], {
+        [heroUid]: { tactic: 'aggressive' },
+        [partnerUid]: { name: 'Wartortle', level: 16, heldItem: 'pecha_scarf' },
+      }),
+    );
+    expect(result).toEqual({ ok: true });
+    expect(profile.teamUids).toEqual([partnerUid, heroUid]);
+    expect(getMember(profile, heroUid).tactic).toBe('aggressive');
+    expect(getMember(profile, partnerUid)).toMatchObject({ name: 'Wartortle', level: 16, heldItem: 'pecha_scarf', isLeader: false });
+  });
+
+  it('storeTeam no toca la formación si no es válida, ni añade a quien no está en la plantilla', () => {
+    const profile = newProfile();
+    const { heroUid, partnerUid } = profile;
+    const stranger = { ...poke('Mew'), uid: 999 };
+    const result = storeTeam(profile, [...snapshotsOf(profile, [heroUid], { [heroUid]: { tactic: 'stay' } }), stranger]);
+    expect(result.ok).toBe(false);
+    expect(profile.teamUids).toEqual([heroUid, partnerUid]);
+    expect(profile.roster).toHaveLength(2);
+    expect(getMember(profile, heroUid).tactic).toBe('stay');
+  });
+
+  it('returningTeam conserva la formación de la salida y pone detrás a los que se unen', () => {
+    const profile = newProfile();
+    const { heroUid, partnerUid } = profile;
+    const a = addToRoster(profile, poke('Rattata'));
+    profile.teamUids = [a, partnerUid, heroUid];
+    const recruit = addToRoster(profile, poke('Pidgey'));
+    // En la mazmorra el líder pasó a ser el protagonista: al volver manda la formación de la salida
+    expect(returningTeam(profile, [heroUid, partnerUid, a, recruit])).toEqual([a, partnerUid, heroUid, recruit]);
+  });
+
+  it('returningTeam deja siempre dentro al protagonista y al compañero, y como mucho 4', () => {
+    const profile = newProfile();
+    const { heroUid, partnerUid } = profile;
+    const extra = [1, 2, 3].map((i) => addToRoster(profile, poke(`Extra${i}`)));
+    profile.teamUids = [extra[0]];
+    expect(returningTeam(profile, [extra[0], extra[1], extra[2]])).toEqual([extra[0], heroUid, partnerUid, extra[1]]);
   });
 });
 

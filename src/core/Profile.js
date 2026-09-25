@@ -112,6 +112,37 @@ export function setTeam(profile, uids) {
 }
 
 /**
+ * Vuelca a la plantilla el equipo tal como está: la ficha de cada miembro y el
+ * orden de la formación, con el líder primero. Es lo que hace durar lo que se
+ * cambia en el pueblo, donde el equipo son copias de las fichas (líder,
+ * táctica, objeto equipado, una evolución…).
+ * Las fichas se guardan siempre; el orden, solo si es una formación válida
+ * (ver `setTeam`).
+ * @param {Object} profile
+ * @param {Object[]} snapshots - Fichas con `uid`, en el orden del equipo (el líder primero)
+ * @returns {{ ok: true } | { ok: false, error: string }}
+ */
+export function storeTeam(profile, snapshots) {
+  const members = snapshots.filter((s) => s.uid != null && getMember(profile, s.uid));
+  for (const snapshot of members) updateMember(profile, snapshot);
+  return setTeam(profile, members.map((s) => s.uid));
+}
+
+/**
+ * Formación al volver de una expedición: la misma con la que se salió (el
+ * líder elegido en el pueblo sigue al frente) y detrás quien se haya unido.
+ * El protagonista y el compañero siguen siempre en el equipo.
+ * @param {Object} profile - Con la formación de la salida en `teamUids`
+ * @param {number[]} partyUids - uids del equipo que vuelve, en su orden
+ * @returns {number[]}
+ */
+export function returningTeam(profile, partyUids) {
+  const fixed = [profile.heroUid, profile.partnerUid].filter((uid) => uid != null);
+  const kept = profile.teamUids.filter((uid) => partyUids.includes(uid) || fixed.includes(uid));
+  return [...new Set([...kept, ...fixed, ...partyUids])].slice(0, MAX_PARTY_SIZE);
+}
+
+/**
  * @param {number} points
  * @returns {typeof RANKS[number]}
  */

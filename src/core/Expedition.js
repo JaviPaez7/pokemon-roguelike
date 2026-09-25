@@ -20,7 +20,7 @@
 import { GAME_STATES } from '../constants.js';
 import { getDungeon, floorCount } from './Dungeons.js';
 import { newRunSeed } from './Random.js';
-import { getMember, updateMember, addToRoster, addRankPoints, defeatLosses, markCleared } from './Profile.js';
+import { getMember, updateMember, addToRoster, addRankPoints, defeatLosses, markCleared, returningTeam } from './Profile.js';
 import { toSnapshot, restedSnapshot, spawnFromSnapshot } from './PokemonSnapshot.js';
 import { enterTown } from './TownSession.js';
 import { saveLifetimeStats } from '../ui/menus/StatsMenu.js';
@@ -217,8 +217,10 @@ export function endExpedition(game, outcome) {
 }
 
 /**
- * Pasa a la plantilla el estado del equipo al volver (niveles, movimientos) y
- * añade a quien se haya unido durante la expedición.
+ * Pasa a la plantilla el estado del equipo al volver (niveles, movimientos,
+ * tácticas) y añade a quien se haya unido durante la expedición. La formación
+ * sigue siendo la de la salida: un cambio de líder en la mazmorra dura lo que
+ * dura la expedición, y el líder elegido en el pueblo se conserva.
  * @param {import('./Game.js').Game} game
  * @returns {string[]} Líneas para el resumen
  */
@@ -237,9 +239,7 @@ function bringTeamHome(game) {
       lines.push(`${rested.name} se une a la base del equipo.`);
     }
   }
-  // Protagonista y compañero siempre al frente, en ese orden
-  const fixed = [profile.heroUid, profile.partnerUid].filter((uid) => uid != null);
-  profile.teamUids = [...fixed, ...team.filter((uid) => !fixed.includes(uid))].slice(0, 4);
+  profile.teamUids = returningTeam(profile, team);
   return lines;
 }
 
