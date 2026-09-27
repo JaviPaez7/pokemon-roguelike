@@ -146,6 +146,25 @@ function freeTilesAround(map, spot, count) {
 }
 
 /**
+ * Vuelve a colocar a los vecinos según quién está ahora en el pueblo (tras una
+ * escena, alguien puede haber llegado o haberse ido).
+ * @param {import('./Game.js').Game} game
+ */
+export function refreshTownNpcs(game) {
+  if (!game.tileMap?.isTown || !game.profile) return;
+  const em = game.entityManager;
+  const here = new Set(em.getEntitiesWithComponents('npcTown').map((id) => em.getComponent(id, 'npcTown').id));
+  for (const id of em.getEntitiesWithComponents('npcTown')) {
+    if (isNpcAway(game, em.getComponent(id, 'npcTown').id)) em.destroyEntity(id);
+  }
+  for (const npc of TOWN.npcs) {
+    if (!here.has(npc.id) && !isNpcAway(game, npc.id)) spawnTownNpc(game, npc);
+  }
+  game.floorManager?.preloadVisibleSprites();
+  game.needsRender = true;
+}
+
+/**
  * @param {import('./Game.js').Game} game
  * @param {typeof TOWN.npcs[number]} npc
  */

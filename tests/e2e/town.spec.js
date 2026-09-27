@@ -263,3 +263,50 @@ test('se puede elegir el protagonista a mano y el compañero no comparte tipo', 
   await expectInTown(page);
   expect((await town(page)).team.map((p) => p.name)).toEqual(['Squirtle', 'Charmander']);
 });
+
+test('el líder y la táctica que se cambian en el pueblo se guardan y valen para la expedición', async ({ page }) => {
+  await startNewGame(page);
+  const { hero, partner } = await page.evaluate(() => {
+    const { roster, heroUid, partnerUid } = window.game.profile;
+    const name = (uid) => roster.find((m) => m.uid === uid).name;
+    return { hero: { uid: heroUid, name: name(heroUid) }, partner: { uid: partnerUid, name: name(partnerUid) } };
+  });
+
+  // El compañero pasa a liderar y el protagonista se queda esperando
+  await page.keyboard.press('c');
+  await expect(panelTitle(page)).toHaveText('EQUIPO POKÉMON');
+  await option(page, partner.name).first().click();
+  await option(page, 'Establecer como Líder').click();
+  await dismissDialog(page);
+  await option(page, hero.name).first().click();
+  await option(page, 'Cambiar táctica').click();
+  await option(page, 'Esperar ahí').click();
+  await dismissDialog(page);
+  const saved = () =>
+    page.evaluate((heroUid) => {
+      const { teamUids, roster } = window.game.profile;
+      return { leader: teamUids[0], heroTactic: roster.find((m) => m.uid === heroUid).tactic };
+    }, hero.uid);
+  expect(await saved()).toEqual({ leader: partner.uid, heroTactic: 'stay' });
+
+  // Se guarda: al recargar sigue igual
+  await page.reload();
+  await option(page, 'Continuar partida').click();
+  await dismissDialog(page);
+  await expectInTown(page);
+  const inTown = () =>
+    page.evaluate(() => {
+      const game = window.game;
+      const em = game.entityManager;
+      const tactics = game.party.map((p) => em.getComponent(p.id, 'partyMember').tactic);
+      return { leader: game.party[0].name, tactics };
+    });
+  expect(await inTown()).toEqual({ leader: partner.name, tactics: ['follow', 'stay'] });
+
+  // Y la expedición sale con ese líder; al volver, el orden se conserva
+  await enterDungeon(page);
+  expect(await inTown()).toEqual({ leader: partner.name, tactics: ['follow', 'stay'] });
+  await page.evaluate(() => window.game.endExpedition('escaped'));
+  await backInTown(page);
+  expect(await saved()).toEqual({ leader: partner.uid, heroTactic: 'stay' });
+});

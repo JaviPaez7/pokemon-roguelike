@@ -94,7 +94,7 @@ export function triggerFloorEvent(game) {
       const pos = findFreeTileInRoom(targetRoom, game);
       if (pos) {
         // Seleccionar un item raro (rarity <= 0.05)
-        const rareItems = game.itemsData.filter(item => (item.rarity || 0.1) <= 0.05);
+        const rareItems = game.itemsData.filter(item => (item.rarity || 0.1) <= 0.05 && !item.unique);
         const item = rareItems.length > 0 ? rareItems[Math.floor(RNG.getUniform() * rareItems.length)] : game.itemsData[0];
         
         game.entityManager.createItemEntity(item.id, 1, pos.x, pos.y, item.spriteUrl);
@@ -225,9 +225,9 @@ export function createMerchantNPC(game, x, y, presetItems = null) {
     'escape_rope', 'antidote', 'paralyze_heal', 'burn_heal', 'awakening', 'full_heal'
   ]);
   const pool = game.itemsData.filter(i =>
-    preferredIds.has(i.id) || preferredTypes.has(i.type)
+    (preferredIds.has(i.id) || preferredTypes.has(i.type)) && !i.unique
   );
-  const itemsDB = pool.length >= 3 ? pool : game.itemsData;
+  const itemsDB = pool.length >= 3 ? pool : game.itemsData.filter((i) => !i.unique);
 
   const numItems = 4 + Math.floor(RNG.getUniform() * 2); // 4 a 5
   const selectedItems = [];

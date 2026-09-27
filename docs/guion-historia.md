@@ -431,6 +431,8 @@ Jefe: **Arcanine**. No está bajo el Eco: cumple una promesa.
 - **Arcanine** · *Normal* — Persian hizo lo que le pedí. Luego quiso volver a por nosotros, pero el viento no la dejó pasar de la cueva. Me temo que nunca se lo ha perdonado.
 - **Arcanine** · *Determined* — Decidle que no fue culpa suya. …Y que su parte del último botín sigue siendo suya.
 - **Arcanine** · *Normal* — Y si vais a entrar, no hagáis lo que hicimos. No entréis para vencerlo. Entrad para escucharlo.
+- **Arcanine** · *Normal* — Y llevad esto. Lo he llevado diez años esperando a que alguien volviera. Ya ha vuelto alguien.
+- *Narración* — Arcanine os da su pañuelo quemado, con el rayo bordado. ¡Tenéis el Pañuelo Centella!
 
 **6-E · De vuelta**
 
@@ -604,6 +606,27 @@ Son frases para cuando hablas con ellos. Las de Slowpoke y Pidgey sustituyen a l
 | 7 | *(ver 7-A)* | *(ver 7-A)* | Si no volvéis, me quedo con vuestros ahorros. …Es broma. Volved. |
 | Después | Desde que el viento calla, se vende el doble. Si es que yo ya lo decía. | Ahora que el viento calla, hasta la tortilla cuaja mejor. Con cebolla, claro. | El Equipo Centella ha vuelto a abrir cuenta. Tres titulares. Qué cosas. |
 
+**Arcanine y Raichu** *(vecinos desde el epílogo, junto al banco de Persian)*
+
+| Quién | Frase |
+|---|---|
+| Arcanine | Diez años de guardia y ahora no sé qué hacer con las patas. Si subís a la Torre, contadme hasta dónde llegáis. |
+| Raichu | ¡Ponte las pilas, que la Torre no se sube sola! …Yo llegué al piso tres. Porque llovía, ¿eh? |
+
+**Susurros del Eco** *(en los avisos del viento de las mazmorras, hasta el final de la historia)*
+
+| Aviso | Susurro |
+|---|---|
+| 1 | …¿quién eres?… |
+| 2 | …¿por qué se van todos?… |
+| 3 | …¿te…?… |
+
+**Al caer** *(el resumen de la vuelta al pueblo, desde que Pidgeotto lo promete en la 1-E)*
+
+| Desde | Texto |
+|---|---|
+| 1-E | Pidgeotto os encontró y os trajo de vuelta al pueblo. |
+
 ---
 
 ## 7. Variantes según la especie *(opcional)*
@@ -656,7 +679,7 @@ Son frases hechas y memes de toda la vida, cortos y aptos para cualquier edad. N
 | «Hoy no se fía, mañana sí» y «aquí no hay quien viva» | Kecleon | Vecinos |
 | «Ojo al dato» y «al que madruga…» | Pidgey | Vecinos |
 | «Vísteme despacio, que tengo prisa» | Slowpoke | Vecinos |
-| «Ponte las pilas» | Raichu | Variante de Pikachu |
+| «Ponte las pilas» | Raichu | Variante de Pikachu y vecina tras el final |
 | «¡Vamo' a hacesla!» | Squirtle | Variante de Squirtle (2-C y 5-C) |
 
 ---
@@ -674,8 +697,13 @@ Aplicadas con los valores recomendados. Cualquiera se puede cambiar.
 7. **Slowpoke** no está en el pueblo durante el capítulo 5.
 8. **El sobre del capítulo 3** es una misión de historia de entrega que se apunta sola en la escena 3-A. Sale al mirar el tablón o, si no se ha mirado, antes de ir a la Ruta Eléctrica. Paga lo mismo que una entrega normal en ese piso (500 Poké y 20 puntos), no se puede abandonar y se cumple al derrotar a Raichu. No hay objeto en la mochila: así no se puede perder al caer.
 9. **El don del protagonista** (hablar con el viento) es solo narrativo.
-10. **Partidas de antes (v4):** migran a v5 y siguen desde su capítulo, con las escenas de los capítulos anteriores marcadas como vistas. Quien ya había terminado no ve el final de golpe. No hay «Diario» para volver a verlas.
-11. **Recompensas:** ninguna de juego; todo es texto. Quedan como ideas para más adelante el pañuelo del Equipo Centella, los susurros del Eco en los avisos del viento, «Pidgeotto os trajo de vuelta» al caer y Arcanine y Raichu como vecinos. Las variantes por especie de la sección 7 sí están.
+10. **Partidas de antes (v4):** migran a v5 y siguen desde su capítulo, con las escenas de los capítulos anteriores marcadas como vistas. Quien ya había terminado no ve el final de golpe. El **Diario** de la base deja volver a ver las escenas vistas.
+11. **Extras (añadidos después del H4):**
+    - El **Pañuelo Centella**, que Arcanine entrega en la 6-D. Es un equipable único, que no sale en la tienda ni en las mazmorras: +10 % a Ataque, Defensa, At. Esp. y Def. Esp., e inmunidad a la parálisis.
+    - Los **susurros del Eco** en los avisos del viento hasta el final.
+    - «Pidgeotto os encontró y os trajo de vuelta» al caer, desde la 1-E.
+    - **Arcanine y Raichu** como vecinos desde el epílogo.
+    - Las variantes por especie de la sección 7.
 12. **Créditos:** «Guion y desarrollo: JaviStudio» (`STORY_AUTHOR` en `src/ui/menus/CreditsMenu.js`). Cámbialo si prefieres otro nombre.
 
 ---

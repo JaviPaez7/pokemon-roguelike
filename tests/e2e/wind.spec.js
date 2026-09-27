@@ -46,10 +46,13 @@ test('el viento avisa, se guarda con la partida y acaba expulsando al equipo', a
 
   await waitOneTurnFrom(page, 599);
   expect(await logText(page)).toContain('Algo se agita a lo lejos…');
+  // Durante la historia, en el viento se oye el Eco
+  expect(await logText(page)).toContain('El viento susurra: «…¿quién eres?…»');
 
   // El último aviso abre un diálogo
   await waitOneTurnFrom(page, 759);
   expect(await dialogText(page)).toContain('Buscad la escalera cuanto antes');
+  expect(await dialogText(page)).toContain('El viento susurra: «…¿te…?…»');
   await dismissDialog(page);
 
   // Guardar y cargar no calma el viento

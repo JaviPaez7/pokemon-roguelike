@@ -13,6 +13,8 @@ import {
   transferItem,
   defeatLosses,
   markCleared,
+  setLeader,
+  setTactic,
 } from '../../src/core/Profile.js';
 
 const poke = (name, level = 5) => ({ name, level, speciesId: name.toLowerCase() });
@@ -42,6 +44,24 @@ describe('plantilla y equipo', () => {
     updateMember(profile, { ...getMember(profile, profile.heroUid), level: 12 });
     expect(getMember(profile, profile.heroUid).level).toBe(12);
     expect(() => updateMember(profile, { uid: 999 })).toThrow('999');
+  });
+
+  it('setLeader pone al elegido al frente y el líder anterior ocupa su sitio', () => {
+    const profile = newProfile();
+    const a = addToRoster(profile, poke('Rattata'));
+    setTeam(profile, [profile.heroUid, profile.partnerUid, a]);
+    expect(setLeader(profile, a)).toBe(true);
+    expect(profile.teamUids).toEqual([a, profile.partnerUid, profile.heroUid]);
+    expect(setLeader(profile, a)).toBe(false); // ya lo era
+    expect(setLeader(profile, 999)).toBe(false); // no está en el equipo
+    expect(profile.teamUids).toEqual([a, profile.partnerUid, profile.heroUid]);
+  });
+
+  it('setTactic apunta la táctica en la ficha', () => {
+    const profile = newProfile();
+    setTactic(profile, profile.partnerUid, 'wait');
+    expect(getMember(profile, profile.partnerUid).tactic).toBe('wait');
+    setTactic(profile, 999, 'wait'); // sin ficha, nada
   });
 
   it('setTeam acepta hasta 4 con protagonista y compañero', () => {
@@ -134,6 +154,16 @@ describe('derrota y mazmorras completadas', () => {
     expect(defeatLosses([{ itemId: 'apple', quantity: 2 }, { itemId: 'potion', quantity: 1 }], 75)).toEqual({
       lostMoney: 75,
       lostItems: 3,
+      kept: [],
+    });
+  });
+
+  it('defeatLosses conserva lo que se le diga (los objetos únicos)', () => {
+    const bag = [{ itemId: 'apple', quantity: 2 }, { itemId: 'centella_scarf', quantity: 1 }];
+    expect(defeatLosses(bag, 10, (id) => id === 'centella_scarf')).toEqual({
+      lostMoney: 10,
+      lostItems: 2,
+      kept: [{ itemId: 'centella_scarf', quantity: 1 }],
     });
   });
 

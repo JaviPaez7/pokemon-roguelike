@@ -22,6 +22,9 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const SCRIPT_PATH = join(ROOT, 'docs', 'guion-historia.md');
 export const STORY_PATH = join(ROOT, 'src', 'data', 'story.json');
 
+/** Capítulo de después del final (todas las mazmorras de la historia completadas). */
+const AFTER_ENDING = 8;
+
 /** Mazmorra de cada capítulo, en orden. */
 export const CHAPTER_DUNGEONS = [
   'bosque_verde',
@@ -69,6 +72,18 @@ const NPC_EMOTIONS = {
   kecleon: { 1: 'Normal', 2: 'Sigh', 3: 'Happy', 4: 'Normal', 5: 'Worried', 6: 'Happy', 8: 'Joyous' },
   kangaskhan: { 1: 'Happy', 3: 'Normal', 5: 'Sad', 8: 'Happy' },
   persian: { 1: 'Normal', 3: 'Surprised', 4: 'Worried', 7: 'Normal', 8: 'Happy' },
+  arcanine: { 8: 'Happy' },
+  raichu: { 8: 'Joyous' },
+};
+
+/**
+ * Cuándo está cada vecino en el pueblo, si no es siempre: fuera en ciertos
+ * capítulos (`away`) o solo desde que se ha visto una escena (`arrivesWith`).
+ */
+const TOWN_NPCS = {
+  slowpoke: { away: [5] },
+  arcanine: { arrivesWith: 'F-2' },
+  raichu: { arrivesWith: 'F-2' },
 };
 
 /**
@@ -122,8 +137,11 @@ function sceneMeta(id) {
       return { chapter, triggers: [{ on: 'floor_enter', dungeon, floor: 5 }] };
     case 'C':
       return { chapter, triggers: [{ on: 'boss_floor', dungeon }], ...(chapter === 3 ? { effects: ['letter_mission'] } : {}) };
-    case 'D':
-      return { chapter, triggers: [{ on: 'boss_defeated', dungeon }], ...(chapter === 3 ? { effects: ['deliver_letter'] } : {}) };
+    case 'D': {
+      // El sobre llega a Raichu; Arcanine os da su pañuelo
+      const effects = { 3: ['deliver_letter'], 6: ['give:centella_scarf'] }[chapter];
+      return { chapter, triggers: [{ on: 'boss_defeated', dungeon }], ...(effects ? { effects } : {}) };
+    }
     case 'E':
       return { chapter, triggers: [{ on: 'town_return', dungeon, outcome: 'cleared' }] };
     default:
@@ -174,19 +192,22 @@ function parseLine(raw) {
 }
 
 /**
- * Escenas de la sección 5, en orden.
+ * Escenas de la sección 5, en orden, con la parte del guion a la que
+ * pertenecen («Capítulo 1 · «La cartera perdida»», sin la mazmorra).
  * @param {string[]} lines
  */
 function parseScenes(lines) {
   const scenes = [];
   let current = null;
+  let part = '';
   for (const raw of lines) {
     const header = raw.match(SCENE_HEADER);
     if (header) {
-      current = { id: header[1], title: header[2], lines: [] };
+      current = { id: header[1], title: header[2], part, lines: [] };
       scenes.push(current);
       continue;
     }
+    if (raw.startsWith('### ')) part = raw.slice(4).replace(/ · [^·]*\(pisos [^)]*\)$/, '');
     if (raw.startsWith('## ') || raw.startsWith('### ') || raw.startsWith('**Créditos**')) {
       current = null;
       continue;
@@ -293,9 +314,15 @@ export function buildStory(markdown) {
       if (said) npcGreet[npc][chapterOf(chapter)] = said;
     });
   }
+  for (const [who, text] of tableAfter(lines, '**Arcanine y Raichu**')) {
+    const npc = speakerKey(who);
+    npcTalk[npc] = { [AFTER_ENDING]: npcLines(npc, AFTER_ENDING, text) };
+  }
   for (const npc of Object.keys(npcTalk)) {
     for (const [chapter, said] of Object.entries(npcTalk[npc])) if (!said) delete npcTalk[npc][chapter];
   }
+  const whispers = tableAfter(lines, '**Susurros del Eco**').map(([, text]) => text);
+  const [[rescueAfter, rescueText]] = tableAfter(lines, '**Al caer**');
 
   return {
     _formato:
@@ -305,9 +332,11 @@ export function buildStory(markdown) {
       'si el protagonista o el compañero es de esa especie; {"notSpecies": id}, solo si no lo es.',
     chapters: CHAPTER_DUNGEONS,
     speakers: SPEAKERS,
-    absent: { slowpoke: [5] },
+    townNpcs: TOWN_NPCS,
     letterMission: LETTER_MISSION,
-    scenes: scenes.map(({ id, title, lines: sceneLines }) => ({ id, title, ...sceneMeta(id), lines: sceneLines })),
+    whispers,
+    rescue: { after: rescueAfter, text: rescueText },
+    scenes: scenes.map(({ id, title, part, lines: sceneLines }) => ({ id, title, part, ...sceneMeta(id), lines: sceneLines })),
     npcTalk,
     npcGreet,
   };
