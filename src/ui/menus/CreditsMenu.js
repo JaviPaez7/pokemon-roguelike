@@ -1,4 +1,5 @@
 import { GAME_STATES } from '../../constants.js';
+import { playCreditsMusic, playPlaceMusic } from '../../core/MusicSession.js';
 
 /** Quien firma la historia en los créditos finales. */
 export const STORY_AUTHOR = 'JaviStudio';
@@ -63,8 +64,9 @@ export async function openCreditsMenu(ui, back) {
 }
 
 /**
- * Créditos del final de la historia: pasan solos y se pueden cerrar en
- * cualquier momento (Z o Escape).
+ * Créditos del final de la historia: pasan solos, con su música, y se pueden
+ * cerrar en cualquier momento (Z o Escape). Al cerrarlos vuelve la música del
+ * lugar.
  * @param {import('../UIManager.js').UIManager} ui
  * @param {() => void} onContinue
  */
@@ -72,6 +74,11 @@ export async function openEndingCredits(ui, onContinue) {
   // Mientras se cargan los créditos, que Z no active las opciones del menú anterior
   ui.game.changeState(GAME_STATES.MENU);
   ui.menuOptions = [];
+  playCreditsMusic(ui.game);
+  const done = () => {
+    playPlaceMusic(ui.game);
+    onContinue();
+  };
   const html = `
     <div class="game-panel ending-credits" style="width: 420px;">
       <h2 class="game-panel-title">EL ECO DEL NORTE</h2>
@@ -87,9 +94,9 @@ export async function openEndingCredits(ui, onContinue) {
       </div>
     </div>
   `;
-  ui.showMenu('ending_credits', html, { onCancel: onContinue });
+  ui.showMenu('ending_credits', html, { onCancel: done });
   ui.overlay.classList.add('story-black');
-  ui.menuOptions = [onContinue];
+  ui.menuOptions = [done];
   ui.selectedIndex = 0;
   ui.updateSelectionVisuals();
 }

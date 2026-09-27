@@ -12,6 +12,7 @@ import { TOWN, buildTownMap, isTownExit, townThingAt } from '../map/Town.js';
 import { createProfile, getMember, updateMember } from './Profile.js';
 import { toSnapshot, restedSnapshot, spawnFromSnapshot } from './PokemonSnapshot.js';
 import { playStory, storyTalk, storyGreet, isNpcAway } from './StorySession.js';
+import { playPlaceMusic } from './MusicSession.js';
 
 /** Mochila y dinero con los que empieza un equipo nuevo. */
 export const STARTING_BAG = [
@@ -112,9 +113,7 @@ export function enterTown(game, { arrival = 'start', spot: requestedSpot } = {})
   game.floorManager?.preloadVisibleSprites();
   game._updateCamera();
   game.changeState(GAME_STATES.TOWN);
-  try {
-    game.uiManager?.music?.playZone('Pueblo');
-  } catch (e) {}
+  playPlaceMusic(game);
   game.needsRender = true;
 }
 

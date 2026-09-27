@@ -11,6 +11,7 @@ import { relativeFloor } from '../core/Dungeons.js';
 import { spawnMissionTargets } from '../systems/MissionSystem.js';
 import { onFloorEntered } from '../core/StorySession.js';
 import { tipFor } from '../core/Tips.js';
+import { playPlaceMusic } from '../core/MusicSession.js';
 
 /**
  * Generación de pisos, spawn de enemigos y pre-carga de sprites.
@@ -326,8 +327,8 @@ export class FloorManager {
   /**
    * Cambia de piso: conserva al equipo (y a los invitados de escolta), genera
    * el nuevo, coloca enemigos, objetos y objetivos de misión, aplica lo que
-   * pasa al llegar (curación ligera, eventos, escenas) y deja un consejo en el
-   * registro.
+   * pasa al llegar (curación ligera, eventos, música y escenas) y deja un
+   * consejo en el registro.
    * @param {'down' | 'up'} direction
    * @returns {Promise<void>}
    */
@@ -472,12 +473,9 @@ export class FloorManager {
     game._updateFOV();
     game.saveGameData();
 
+    // La música de la mazmorra, o la del jefe si está en este piso
+    playPlaceMusic(game);
     const zone = this.getZoneConfig();
-    if (zone) {
-      if (game.uiManager && game.uiManager.music) {
-        game.uiManager.music.playZone(zone.name);
-      }
-    }
 
     // Pequeña recuperación al cambiar de piso (no al cargar partida)
     const skipHeal = !!game._skipFloorHealOnLoad;

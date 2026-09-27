@@ -1,120 +1,163 @@
 /**
  * MusicManager.js
- * 
- * Generador procedural de música chiptune usando Web Audio API.
- * Crea diferentes ambientes sonoros basados en la zona actual.
+ *
+ * Música chiptune sintetizada con Web Audio API. Toca el tema que se le pide
+ * (`playTheme`) con los parámetros de data/music.json: escala, tempo, forma de
+ * onda, octava y, si los tiene, patrones de melodía y bajo. Qué tema toca en
+ * cada lugar no lo decide aquí: lo elige core/MusicSelect.js.
+ *
+ * Los navegadores no dejan sonar audio hasta que la página recibe una
+ * interacción. Por eso el contexto de audio se crea con la primera tecla o
+ * pulsación (y se reanuda con la siguiente si el navegador lo suspende). Hasta
+ * entonces el tema elegido queda apuntado y no se programan notas, que se
+ * acumularían y sonarían todas de golpe.
  */
+
+import { themeConfig, validTheme, scaleNotes, noteForDegree, patternStep } from '../core/MusicSelect.js';
+
+/** Eventos que el navegador acepta como interacción para arrancar el audio. */
+const UNLOCK_EVENTS = ['keydown', 'mousedown', 'pointerup', 'touchend'];
 
 export class MusicManager {
   constructor() {
-    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    this.masterGain = this.audioCtx.createGain();
-    this.masterGain.gain.value = 0.3; // Volumen por defecto
-    this.masterGain.connect(this.audioCtx.destination);
-    
+    /** @type {AudioContext | null} Se crea con la primera interacción */
+    this.audioCtx = null;
+    /**
+     * Volumen general (lo leen y cambian las opciones). Hasta que existe el
+     * contexto de audio solo guarda el valor.
+     * @type {GainNode | { gain: { value: number } }}
+     */
+    this.masterGain = { gain: { value: 0.3 } };
+
     this.isPlaying = false;
-    this.currentZone = null;
+    /** @type {string | null} Tema que suena (o que sonará en cuanto haya audio) */
+    this.currentTheme = null;
+    /** @type {ReturnType<typeof setInterval> | null} */
     this.intervalId = null;
-    this.beat = 0;
-    this.tempo = 120; // BPM
-    
-    // Escalas musicales (MIDI notes)
-    this.scales = {
-      'c_major': [60, 62, 64, 65, 67, 69, 71, 72],
-      'a_minor': [57, 59, 60, 62, 64, 65, 67, 69],
-      'd_dorian': [62, 64, 65, 67, 69, 71, 72, 74],
-      'e_phrygian': [64, 65, 67, 69, 71, 72, 74, 76]
-    };
-    
-    // Configuración por zona
-    this.zones = {
-      'Bosque Verde': { scale: 'c_major', tempo: 110, waveform: 'triangle', octave: 0 },
-      'Cueva Oscura': { scale: 'e_phrygian', tempo: 80, waveform: 'sine', octave: -1 },
-      'Ruta Eléctrica': { scale: 'd_dorian', tempo: 130, waveform: 'square', octave: 0 },
-      'Monte Lunar': { scale: 'c_major', tempo: 95, waveform: 'sine', octave: 0 },
-      'Profundidades Oscuras': { scale: 'a_minor', tempo: 85, waveform: 'triangle', octave: -1 },
-      'Isla Volcánica': { scale: 'e_phrygian', tempo: 120, waveform: 'square', octave: -1 },
-      'Laboratorio Final': { scale: 'd_dorian', tempo: 140, waveform: 'square', octave: 0 },
-      'Cumbre Escarcha': { scale: 'a_minor', tempo: 90, waveform: 'sine', octave: 1 },
-      'Pico Tronador': { scale: 'd_dorian', tempo: 150, waveform: 'square', octave: 0 },
-      'Caldera Ascua': { scale: 'e_phrygian', tempo: 130, waveform: 'sawtooth', octave: -1 },
-      'Jardín del Primer Sueño': { scale: 'c_major', tempo: 100, waveform: 'triangle', octave: 1 },
-      'default': { scale: 'c_major', tempo: 120, waveform: 'square', octave: 0 }
-    };
+    /** Corchea del tema por la que va. */
+    this.step = 0;
+
+    this._listenForUnlock();
   }
 
   /**
-   * Inicia o cambia la música para una zona.
-   * @param {string} zoneName 
+   * Toca un tema de data/music.json. Si ya está sonando, no lo reinicia; si
+   * no existe, suena el de por defecto.
+   * @param {string} themeId
    */
-  playZone(zoneName) {
-    if (this.currentZone === zoneName && this.isPlaying) return;
-    
-    if (this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume();
-    }
-    
+  playTheme(themeId) {
+    const id = validTheme(themeId);
+    if (this.currentTheme === id && this.isPlaying) return;
+
     this.stop();
-    this.currentZone = zoneName;
+    const theme = themeConfig(id);
+    this.currentTheme = id;
     this.isPlaying = true;
-    
-    const config = this.zones[zoneName] || this.zones['default'];
-    this.tempo = config.tempo;
-    const msPerBeat = 60000 / this.tempo;
-    
-    this.intervalId = setInterval(() => {
-      this._playBeat(config);
-      this.beat++;
-    }, msPerBeat / 2); // Corcheas (1/8 notes)
+
+    const msPerStep = 60000 / theme.tempo / 2; // Corcheas
+    this.intervalId = setInterval(() => this._playStep(theme), msPerStep);
   }
 
   stop() {
     this.isPlaying = false;
-    this.beat = 0;
+    this.step = 0;
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
   }
 
+  /** @param {number} vol - De 0 a 1 */
   setVolume(vol) {
     this.masterGain.gain.value = Math.max(0, Math.min(1, vol));
   }
 
-  _playBeat(config) {
-    const scale = this.scales[config.scale];
-    
-    // Melodía aleatoria dentro de la escala
-    if (Math.random() > 0.3) {
-      const noteIndex = Math.floor(Math.random() * scale.length);
-      const note = scale[noteIndex] + (config.octave * 12);
-      this._playTone(this._midiToFreq(note), config.waveform, 0.1);
+  /** Arranca el audio con cada interacción mientras no esté sonando. */
+  _listenForUnlock() {
+    if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
+    for (const type of UNLOCK_EVENTS) window.addEventListener(type, () => this._unlock(), true);
+  }
+
+  /** Crea el contexto de audio o, si el navegador lo ha suspendido, lo reanuda. */
+  _unlock() {
+    if (!this.audioCtx) {
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return; // Sin Web Audio: el juego sigue en silencio
+        const ctx = new Ctx();
+        const gain = ctx.createGain();
+        gain.gain.value = this.masterGain.gain.value;
+        gain.connect(ctx.destination);
+        this.audioCtx = ctx;
+        this.masterGain = gain;
+      } catch (e) {
+        return;
+      }
     }
-    
-    // Bajo (cada tiempo fuerte)
-    if (this.beat % 2 === 0) {
-      const bassNote = scale[0] - 12 + (config.octave * 12);
-      this._playTone(this._midiToFreq(bassNote), 'triangle', 0.2, 0.3);
+    if (this.audioCtx.state !== 'running') {
+      try {
+        Promise.resolve(this.audioCtx.resume()).catch(() => {});
+      } catch (e) {
+        // Navegadores sin resume(): nada que hacer
+      }
     }
   }
 
+  /**
+   * Una corchea: la nota de la melodía y la del bajo, si tocan.
+   * @param {import('../core/MusicSelect.js').Theme} theme
+   */
+  _playStep(theme) {
+    // Sin audio no avanza: el tema empieza por el principio cuando suene
+    if (this.audioCtx?.state !== 'running') return;
+    const scale = scaleNotes(theme.scale);
+    const shift = (theme.octave ?? 0) * 12;
+
+    // Melodía: el patrón (con alguna nota movida si el tema tiene `variation`)
+    // o, sin patrón, notas al azar de la escala
+    let degree = patternStep(theme.melody, this.step);
+    if (degree === undefined) {
+      degree = Math.random() < (theme.density ?? 0.7) ? Math.floor(Math.random() * (scale.length + 1)) : null;
+    } else if (degree !== null && theme.variation && Math.random() < theme.variation) {
+      degree += Math.random() < 0.5 ? -1 : 1;
+    }
+    if (degree !== null) {
+      this._playTone(this._midiToFreq(noteForDegree(scale, degree) + shift), theme.waveform, theme.noteLength ?? 0.1);
+    }
+
+    // Bajo: el patrón o, sin patrón, la tónica en cada tiempo fuerte
+    let bass = patternStep(theme.bass, this.step);
+    if (bass === undefined) bass = this.step % 2 === 0 ? 0 : null;
+    if (bass !== null) {
+      this._playTone(this._midiToFreq(noteForDegree(scale, bass) - 12 + shift), 'triangle', 0.2, 0.3);
+    }
+    this.step++;
+  }
+
+  /** @param {number} midi @returns {number} Hz */
   _midiToFreq(midi) {
     return 440 * Math.pow(2, (midi - 69) / 12);
   }
 
+  /**
+   * @param {number} freq - Hz
+   * @param {OscillatorType} type
+   * @param {number} duration - Segundos
+   * @param {number} [vol]
+   */
   _playTone(freq, type, duration, vol = 0.5) {
     const osc = this.audioCtx.createOscillator();
     const gain = this.audioCtx.createGain();
-    
+
     osc.type = type;
     osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
-    
+
     gain.gain.setValueAtTime(vol, this.audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
-    
+
     osc.connect(gain);
     gain.connect(this.masterGain);
-    
+
     osc.start();
     osc.stop(this.audioCtx.currentTime + duration);
   }
