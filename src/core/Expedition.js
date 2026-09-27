@@ -27,6 +27,7 @@ import { saveLifetimeStats } from '../ui/menus/StatsMenu.js';
 import { claimRewards, revertDoneMissions, MISSION_TYPE_NAMES } from './Missions.js';
 import { playStory, rescueText } from './StorySession.js';
 import { isUniqueItem } from './Items.js';
+import { joinEscortGuests, greetEscortGuests } from '../systems/MissionSystem.js';
 
 /** Kit con el que se entra en la Torre del Desafío. */
 export const CHALLENGE_KIT = [
@@ -99,6 +100,8 @@ export async function startExpedition(game, dungeonId) {
   });
   game._messageLog = [];
   game.messageLog?.clear?.();
+  // Los clientes de escolta de esta mazmorra se unen como invitados (si caben)
+  const escorts = joinEscortGuests(game);
 
   // Pasar a EXPLORING antes de cambiar de piso vacía la cola de acciones del pueblo
   game.changeState(GAME_STATES.EXPLORING);
@@ -116,6 +119,7 @@ export async function startExpedition(game, dungeonId) {
     text: `${dungeon.name}\n\n${dungeon.description}${rules}${missions}`,
     instant: true,
   });
+  greetEscortGuests(game, escorts);
   // La escena de la historia, detrás de la presentación
   playStory(game, 'dungeon_enter', { dungeonId: dungeon.id });
 }
@@ -230,6 +234,11 @@ function bringTeamHome(game) {
   const team = [];
   // game.party ya viene en el orden de la formación
   for (const member of game.party) {
+    // El cliente de una escolta no es del equipo: vuelve a su casa y la misión sigue pendiente
+    if (member.guestOf) {
+      lines.push(`${member.name} vuelve a casa por su cuenta: la escolta queda pendiente.`);
+      continue;
+    }
     const rested = restedSnapshot(toSnapshot(member), game.movesData);
     if (rested.uid != null && getMember(profile, rested.uid)) {
       updateMember(profile, rested);

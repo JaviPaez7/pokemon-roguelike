@@ -7,6 +7,7 @@ import { onMissionItemFound } from '../systems/MissionSystem.js';
 import { tryRecruit, acceptRecruit, declineRecruit } from '../systems/RecruitSystem.js';
 import { playStory } from './StorySession.js';
 import { refreshTownNpcs } from './TownSession.js';
+import { onEscortGuestFainted, onOutlawDefeated } from '../systems/MissionSystem.js';
 
 /**
  * Registra los listeners globales del EventBus en la instancia del juego.
@@ -73,10 +74,11 @@ export function setupGameEventListeners(game) {
         return;
       }
 
-      // Si hay aliados vivos, cambiar de líder en vez de game over
+      // Si hay aliados vivos, cambiar de líder en vez de game over (el
+      // cliente de una escolta no cuenta: no lidera)
       const livingAlly = (game.entityManager.getEntitiesWithComponents('partyMember', 'fighter') || [])
         .find(id => {
-          if (id === data.entityId) return false;
+          if (id === data.entityId || game.entityManager.hasComponent(id, 'missionGuest')) return false;
           const f = game.entityManager.getComponent(id, 'fighter');
           return f && f.hp > 0;
         });
@@ -144,6 +146,12 @@ export function setupGameEventListeners(game) {
           text: `¡${allyName} revivió gracias a la Semilla Revivir!`,
           color: '#66ff99'
         });
+        game.needsRender = true;
+        return;
+      }
+
+      // El cliente de una escolta no se queda debilitado en el equipo: se va y la misión falla
+      if (onEscortGuestFainted(game, data.entityId)) {
         game.needsRender = true;
         return;
       }
@@ -261,6 +269,8 @@ export function setupGameEventListeners(game) {
         }
       }
 
+      // El forajido de una misión: derrotarlo la cumple
+      onOutlawDefeated(game, data.entityId);
       game.entityManager.destroyEntity(data.entityId);
 
       game.needsRender = true;

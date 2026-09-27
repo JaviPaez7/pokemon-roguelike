@@ -2,6 +2,7 @@ import { openPauseMenu } from './PauseMenu.js';
 import { GAME_STATES } from '../../constants.js';
 import { heldName } from '../../core/HeldItems.js';
 import { isUniqueItem } from '../../core/Items.js';
+import { guestRefusesItem } from '../../systems/MissionSystem.js';
 
 /** Confirmación Sí/No (no usa diálogo, para poder cancelar). */
 function openYesNoConfirm(ui, title, body, onYes, onNo) {
@@ -271,8 +272,9 @@ function openTownItemActionsMenu(ui, name) {
 
 /** @param {import('../UIManager.js').UIManager} ui */
 export function openItemTargetMenu(ui) {
-  const party = ui.game.party;
   const item = ui.game.itemsData.find(i => i.id === ui.selectedItem);
+  // Al cliente de una escolta no se le da lo que le cambiaría para siempre
+  const party = ui.game.party.filter((poke) => !guestRefusesItem(ui.game, poke.id, item.id));
   const held = item.type === 'held';
 
   let html = `
