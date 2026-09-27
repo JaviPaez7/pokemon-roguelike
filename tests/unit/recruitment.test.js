@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { recruitChance, isRecruitable, RECRUITMENT } from '../../src/core/Recruitment.js';
+import { recruitChance, isRecruitable, legendJoins, RECRUITMENT } from '../../src/core/Recruitment.js';
 
 const rattata = { speciesId: 19, captureRate: 255, targetLevel: 5, leaderLevel: 5 };
 
@@ -34,5 +34,24 @@ describe('recruitChance', () => {
       expect(recruitChance({ ...rattata, speciesId: id, leaderLevel: 99, friendBow: true })).toBe(0);
     }
     expect(isRecruitable(19)).toBe(true);
+  });
+});
+
+describe('legendJoins: los legendarios de posjuego', () => {
+  it('se ofrecen siempre al derrotarlos como jefe, sin tirada', () => {
+    for (const speciesId of [144, 145, 146, 151]) {
+      expect(legendJoins({ speciesId, ownedSpecies: [25, 7] })).toBe(true);
+    }
+  });
+
+  it('hasta que se unen: como mucho uno de cada especie', () => {
+    expect(legendJoins({ speciesId: 144, ownedSpecies: [25, 144] })).toBe(false);
+    expect(legendJoins({ speciesId: 145, ownedSpecies: [25, 144] })).toBe(true);
+  });
+
+  it('Mewtwo y los jefes normales no, ni tampoco en la Torre del Desafío', () => {
+    expect(legendJoins({ speciesId: 150, ownedSpecies: [] })).toBe(false);
+    expect(legendJoins({ speciesId: 59, ownedSpecies: [] })).toBe(false);
+    expect(legendJoins({ speciesId: 144, challenge: true, ownedSpecies: [] })).toBe(false);
   });
 });
