@@ -7,6 +7,7 @@ import {
   startInDungeon,
   enterDungeon,
   expectInTown,
+  expectExploring,
   dismissDialog,
   dialogText,
   walk,
@@ -309,4 +310,74 @@ test('el líder y la táctica que se cambian en el pueblo se guardan y valen par
   await page.evaluate(() => window.game.endExpedition('escaped'));
   await backInTown(page);
   expect(await saved()).toEqual({ leader: partner.uid, heroTactic: 'stay' });
+});
+
+test('un cambio de líder en la mazmorra dura solo esa expedición', async ({ page }) => {
+  await startInDungeon(page);
+  const { heroUid, partnerUid } = await page.evaluate(() => window.game.profile);
+  const leaderUid = () =>
+    page.evaluate(() => window.game.entityManager.getComponent(window.game.getPlayerId(), 'partyMember').uid);
+  expect(await leaderUid()).toBe(heroUid);
+
+  await page.keyboard.press('Tab');
+  await expect.poll(leaderUid).toBe(partnerUid);
+  await expectExploring(page);
+
+  await page.evaluate(() => window.game.endExpedition('escaped'));
+  await backInTown(page);
+  expect(await page.evaluate(() => window.game.profile.teamUids)).toEqual([heroUid, partnerUid]);
+  expect(await leaderUid()).toBe(heroUid);
+});
+
+test('una evolución hecha desde el equipo en el pueblo se guarda y vale para la expedición', async ({ page }) => {
+  await startNewGame(page);
+  // Un miembro que evoluciona por nivel, ya a ese nivel y con la evolución
+  // rechazada en la mazmorra: así queda su ficha en la plantilla al volver
+  const target = await page.evaluate(() => {
+    const game = window.game;
+    const { profile } = game;
+    const levelEvo = (m) => game.evolutionsData.find((e) => e.from === m.speciesId && e.trigger === 'level');
+    const member = profile.teamUids.map((uid) => profile.roster.find((m) => m.uid === uid)).find(levelEvo);
+    if (!member) return null;
+    const evo = levelEvo(member);
+    Object.assign(member, { level: evo.level, evolutionDeclinedAtLevel: evo.level });
+    game.saveGameData();
+    return { uid: member.uid, name: member.name, to: evo.to, toName: game.pokemonData.find((p) => p.id === evo.to).name };
+  });
+  expect(target, 'el protagonista o el compañero de la partida de prueba evoluciona por nivel').not.toBeNull();
+  const continueGame = async () => {
+    await page.reload();
+    await option(page, 'Continuar partida').click();
+    await dismissDialog(page);
+    await expectInTown(page);
+  };
+  await continueGame();
+
+  // Equipo → el Pokémon → Intentar evolucionar → Sí
+  await page.keyboard.press('c');
+  await expect(panelTitle(page)).toHaveText('EQUIPO POKÉMON');
+  await option(page, target.name).first().click();
+  await option(page, 'Intentar evolucionar').click();
+  await expect(panelTitle(page)).toHaveText('¡EVOLUCIÓN!');
+  await option(page, 'Sí').click();
+  expect(await dialogText(page)).toContain(`evolucionó a ${target.toName}`);
+  await skipDialogs(page);
+  await expectInTown(page);
+
+  const inProfile = () =>
+    page.evaluate((uid) => {
+      const { speciesId, name } = window.game.profile.roster.find((m) => m.uid === uid);
+      return { speciesId, name };
+    }, target.uid);
+  const evolved = { speciesId: target.to, name: target.toName };
+  expect(await inProfile()).toEqual(evolved);
+
+  // Se guarda: al recargar sigue evolucionado, en la plantilla y en el pueblo
+  await continueGame();
+  expect(await inProfile()).toEqual(evolved);
+  expect((await town(page)).team.map((p) => p.name)).toContain(target.toName);
+
+  // Y la expedición sale con él evolucionado
+  await enterDungeon(page);
+  expect((await town(page)).team.map((p) => p.name)).toContain(target.toName);
 });

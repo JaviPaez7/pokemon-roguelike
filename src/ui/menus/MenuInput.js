@@ -4,6 +4,7 @@ import { openTeamMenu, openPokemonActionsMenu, updateTacticDetails } from './Tea
 import { openPauseMenu, updateMoveDetails } from './PauseMenu.js';
 import { updateItemDetails } from './InventoryMenus.js';
 import { openMerchantMenu } from './MerchantMenu.js';
+import { keepTownMember } from '../../core/TownSession.js';
 
 /** @param {import('../UIManager.js').UIManager} ui @param {Object} data */
 export function handleMenuInput(ui, data) {
@@ -143,6 +144,7 @@ export function handleCancelAction(ui) {
           info.pendingEvolution = null;
           info.evolutionDeclinedAtLevel = info.level;
           ui.game.entityManager.setComponent(evoId, 'pokemonInfo', info);
+          keepTownMember(ui.game, evoId); // en el pueblo, que dure como el «No»
         }
         ui._evolutionEntityId = null;
       }
