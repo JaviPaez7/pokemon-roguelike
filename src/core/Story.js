@@ -218,8 +218,8 @@ export function rescueLine(seen, data = STORY) {
 }
 
 /**
- * Escenas vistas, agrupadas por partes del guion (prólogo, capítulos y final)
- * y en su orden, para el Diario.
+ * Escenas vistas, agrupadas por partes del guion (prólogo, capítulos, final y,
+ * en el posjuego, una parte por mazmorra) y en su orden, para el Diario.
  * @param {string[]} seen
  * @param {typeof STORY} [data]
  * @returns {{ part: string, scenes: { id: string, title: string }[] }[]}

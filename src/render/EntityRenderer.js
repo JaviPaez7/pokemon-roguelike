@@ -60,6 +60,8 @@ const WALK_ANIM_MS = 260;
 /** Sombra bajo los sprites de PMD: tamaño según la especie y color según el bando. */
 const SOMBRA_RADIOS = [[5, 2], [7, 3], [10, 4]];
 const SOMBRA_ALIADO = 'rgba(52, 152, 219, 0.75)';
+/** Cliente de una escolta: va con el equipo, pero no es de él */
+const SOMBRA_INVITADO = 'rgba(255, 209, 102, 0.75)';
 const SOMBRA_ENEMIGO = 'rgba(231, 76, 60, 0.6)';
 const SOMBRA_NEUTRA = 'rgba(0, 0, 0, 0.45)';
 
@@ -420,7 +422,9 @@ export class EntityRenderer {
     // Sprite animado de PMDCollab; si aún no ha cargado, el estático de antes
     const drewPmd = pokemonInfo && hasPmdSprite(pokemonInfo.speciesId) && this._dibujarPokemonPmd(ctx, entityId, pokemonInfo.speciesId, {
       pos, fighter, sx, sy, tileSize, walking,
-      shadow: isFainted ? SOMBRA_NEUTRA : partyMember ? SOMBRA_ALIADO : isEnemy ? SOMBRA_ENEMIGO : SOMBRA_NEUTRA,
+      shadow: isFainted ? SOMBRA_NEUTRA
+        : partyMember ? (entityManager.hasComponent(entityId, 'missionGuest') ? SOMBRA_INVITADO : SOMBRA_ALIADO)
+        : isEnemy ? SOMBRA_ENEMIGO : SOMBRA_NEUTRA,
     });
     if (!drewPmd) {
       // Indicador de aliado/enemigo (borde coloreado detrás del sprite)
@@ -562,12 +566,24 @@ export class EntityRenderer {
   }
 
   /**
-   * Dibuja iconos de alerta (!) y estados alterados sobre el Pokémon.
+   * Dibuja iconos de alerta (!) y estados alterados sobre el Pokémon, y la
+   * diana del forajido de una misión.
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {number} entityId
+   * @param {import('../entities/EntityManager.js').EntityManager} entityManager
+   * @param {number} sx - Esquina de la casilla en pantalla
+   * @param {number} sy
+   * @param {number} tileSize
    * @private
    */
   _dibujarIndicadoresEstado(ctx, entityId, entityManager, sx, sy, tileSize) {
     const ai = entityManager.getComponent(entityId, 'aiControlled');
     const fighter = entityManager.getComponent(entityId, 'fighter');
+
+    // Forajido de una misión: diana roja a su alrededor
+    if (entityManager.hasComponent(entityId, 'outlaw')) {
+      this._dibujarDiana(ctx, sx + tileSize / 2, sy + tileSize / 2, tileSize * 0.62);
+    }
 
     ctx.font = '8px "Press Start 2P", monospace';
     ctx.textAlign = 'center';
@@ -602,6 +618,31 @@ export class EntityRenderer {
 
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
+  }
+
+  /**
+   * Diana pulsante que marca al forajido de una misión.
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {number} cx - Centro en pantalla
+   * @param {number} cy
+   * @param {number} radius
+   * @private
+   */
+  _dibujarDiana(ctx, cx, cy, radius) {
+    const pulse = 0.55 + Math.sin(this._tiempo * 0.01) * 0.35;
+    ctx.save();
+    ctx.strokeStyle = `rgba(255, 90, 60, ${pulse})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      ctx.moveTo(cx + dx * (radius - 3), cy + dy * (radius - 3));
+      ctx.lineTo(cx + dx * (radius + 3), cy + dy * (radius + 3));
+    }
+    ctx.stroke();
+    ctx.restore();
   }
 
   /**

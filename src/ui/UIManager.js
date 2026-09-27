@@ -94,7 +94,10 @@ export class UIManager {
       }
     });
 
-    this.menuContainer.addEventListener('mouseover', (event) => {
+    // Con `mousemove` y no `mouseover`: al bajar por una lista larga con el
+    // teclado, la opción que queda bajo un ratón quieto cambia y el navegador
+    // lanza `mouseover` sin que nadie lo mueva; eso no debe cambiar la selección
+    this.menuContainer.addEventListener('mousemove', (event) => {
       if (!this.game.inputHandler.enabled || this.currentMenuType === 'dialog') return;
       const optionEl = event.target.closest('.menu-option');
       if (!optionEl) return;
@@ -246,7 +249,7 @@ export class UIManager {
   openTeamMenu() { openTeamMenu(this); }
   
   openStairsMenu() { openStairsMenu(this); }
-  openRecruitMenu(targetId, defenderInfo) { openRecruitMenu(this, targetId, defenderInfo); }
+  openRecruitMenu(targetId, defenderInfo, onAnswer = null) { openRecruitMenu(this, targetId, defenderInfo, onAnswer); }
   openLearnMoveMenu(entityId, moveId) { openLearnMoveMenu(this, entityId, moveId); }
   openEvolutionMenu(entityId, evolution, opts) { openEvolutionMenu(this, entityId, evolution, opts); }
   openMerchantMenu(merchantId) { openMerchantMenu(this, merchantId); }

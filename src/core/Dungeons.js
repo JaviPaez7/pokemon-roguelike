@@ -1,13 +1,23 @@
 /**
  * Dungeons.js — Catálogo de mazmorras.
  *
- * Cada mazmorra es un tramo de los 50 pisos "globales" de floors.json: el piso
+ * Cada mazmorra es un tramo de los pisos "globales" de floors.json: el piso
  * global decide la zona, los enemigos, los jefes y la dificultad; el jugador
  * ve el piso relativo a la mazmorra (Cueva Oscura va del 1 al 5 aunque por
- * dentro sean los pisos 6 a 10). La Torre del Desafío recorre los 50.
+ * dentro sean los pisos 6 a 10). La historia ocupa los pisos 1 a 50 y la Torre
+ * del Desafío los recorre todos; las mazmorras de posjuego (los legendarios)
+ * van del 51 en adelante.
  */
 
 import dungeonsData from '../data/dungeons.json';
+
+/**
+ * Qué hace falta para que una mazmorra se abra:
+ * - `{ cleared: 'id' }`: haber completado esa mazmorra.
+ * - `{ cleared: ['a', 'b'] }`: haberlas completado todas.
+ * - `{ story: 'F-3' }`: haber visto esa escena de la historia (el final).
+ * @typedef {{ cleared: string | string[] } | { story: string }} Unlock
+ */
 
 /**
  * @typedef {Object} Dungeon
@@ -15,8 +25,10 @@ import dungeonsData from '../data/dungeons.json';
  * @property {string} name
  * @property {[number, number]} floors - Primer y último piso global
  * @property {string} description
- * @property {{ cleared: string } | null} unlock - Qué hay que completar antes
+ * @property {Unlock | null} unlock - Qué hace falta antes
  * @property {boolean} [challenge] - Reglas de desafío (roguelike)
+ * @property {boolean} [postgame] - Posjuego: se abre tras el final de la historia
+ * @property {string} [tileset] - Tema de casillas (tilesets.json)
  */
 
 /** @type {Dungeon[]} */
@@ -61,15 +73,22 @@ export function isLastFloor(dungeon, globalFloor) {
 /**
  * @param {Dungeon} dungeon
  * @param {string[]} cleared - Ids de mazmorras completadas
+ * @param {string[]} [seen] - Escenas de la historia vistas (`profile.story.seen`)
+ * @returns {boolean}
  */
-export function isUnlocked(dungeon, cleared) {
-  return !dungeon.unlock || cleared.includes(dungeon.unlock.cleared);
+export function isUnlocked(dungeon, cleared, seen = []) {
+  const unlock = dungeon.unlock;
+  if (!unlock) return true;
+  if ('story' in unlock) return seen.includes(unlock.story);
+  const needed = Array.isArray(unlock.cleared) ? unlock.cleared : [unlock.cleared];
+  return needed.every((id) => cleared.includes(id));
 }
 
 /**
  * @param {string[]} cleared
+ * @param {string[]} [seen] - Escenas de la historia vistas
  * @returns {Dungeon[]} Mazmorras disponibles, en orden
  */
-export function unlockedDungeons(cleared) {
-  return DUNGEONS.filter((d) => isUnlocked(d, cleared));
+export function unlockedDungeons(cleared, seen = []) {
+  return DUNGEONS.filter((d) => isUnlocked(d, cleared, seen));
 }

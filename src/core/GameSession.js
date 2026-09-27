@@ -3,6 +3,7 @@ import { loadGame } from './SaveManager.js';
 import { spawnFromSnapshot } from './PokemonSnapshot.js';
 import { enterTown } from './TownSession.js';
 import { TOWN } from '../map/Town.js';
+import { restoreEscortGuests } from '../systems/MissionSystem.js';
 
 /** Estadísticas de un perfil nuevo; las que falten en una partida guardada se rellenan con estas. */
 const EMPTY_STATS = {
@@ -118,6 +119,8 @@ export async function loadSavedGame(game) {
       game.turnManager.setPlayerEntityId(living);
     }
   }
+  // Los clientes de escolta, detrás del equipo (nunca lideran)
+  restoreEscortGuests(game, data.guests);
 
   game._currentFloor--;
   const savedTurnCount = data.turnCount || data.stats?.turnsPlayed || 0;

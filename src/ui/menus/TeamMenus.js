@@ -6,20 +6,7 @@ import { heldName } from '../../core/HeldItems.js';
 import { skillsForIq } from '../../core/IQ.js';
 import { takeHeldItem } from '../../systems/InventorySystem.js';
 import { setLeader, setTactic } from '../../core/Profile.js';
-
-/**
- * En el pueblo el equipo son copias de las fichas: lo que cambia ahí se apunta
- * también en el perfil (y se guarda), porque las expediciones salen de él. En
- * la mazmorra no hace falta: al volver se copian las fichas.
- * @param {import('../UIManager.js').UIManager} ui
- * @param {(profile: Object) => void} change
- */
-function keepInTown(ui, change) {
-  const game = ui.game;
-  if (game.dungeonId || !game.profile) return;
-  change(game.profile);
-  game.saveGameData();
-}
+import { keepInTown } from '../../core/TownSession.js';
 
 /** @param {import('../UIManager.js').UIManager} ui */
 export function openTeamMenu(ui) {
@@ -40,9 +27,11 @@ export function openTeamMenu(ui) {
   };
 
   party.forEach((poke, idx) => {
-    const leaderIndicator = poke.isLeader ? '<span style="color: var(--xp-blue); font-size: 6px; font-weight: bold;">[LÍDER]</span>' : '';
+    const leaderIndicator = poke.isLeader
+      ? '<span style="color: var(--xp-blue); font-size: 6px; font-weight: bold;">[LÍDER]</span>'
+      : poke.guestOf ? '<span style="color: #ffd166; font-size: 6px; font-weight: bold;">[CLIENTE]</span>' : '';
     const faintedTag = poke.hp <= 0 ? '<span style="color: #ff6666; font-size: 5px; font-weight: bold;">[DEBILITADO]</span>' : '';
-    const tacticText = !poke.isLeader && poke.hp > 0
+    const tacticText = !poke.isLeader && !poke.guestOf && poke.hp > 0
       ? `<span style="color: var(--text-accent); font-size: 5px; font-weight: bold; background: rgba(0,204,255,0.1); padding: 1px 3px; border-radius: 2px;">${tacticasNombres[poke.tactic || 'follow']}</span>`
       : '';
 
@@ -108,10 +97,19 @@ const ABILITY_ES = {
   trace: 'Rastro', flame_body: 'Cuerpo Llama'
 };
 
+/**
+ * Acciones de un Pokémon del equipo (el de `ui.selectedPokemon`).
+ * @param {import('../UIManager.js').UIManager} ui
+ */
 export function openPokemonActionsMenu(ui) {
   const info = ui.game.entityManager.getComponent(ui.selectedPokemon, 'pokemonInfo');
   const fighter = ui.game.entityManager.getComponent(ui.selectedPokemon, 'fighter');
   const isLeader = (ui.selectedPokemon === ui.game._playerId);
+  // Al cliente de una escolta no se le manda: solo se miran sus movimientos
+  if (ui.game.entityManager.hasComponent(ui.selectedPokemon, 'missionGuest')) {
+    openGuestActionsMenu(ui, info);
+    return;
+  }
 
   // ¿Puede evolucionar por nivel? (incluso si canceló antes)
   const declined = info.evolutionDeclinedAtLevel;
@@ -157,7 +155,7 @@ export function openPokemonActionsMenu(ui) {
       ui.game._playerId = selectedId;
       ui.game.turnManager.setPlayerEntityId(selectedId);
       ui.game.playerPathHistory = [];
-      keepInTown(ui, (profile) => setLeader(profile, newLeaderMem.uid));
+      keepInTown(ui.game, (profile) => setLeader(profile, newLeaderMem.uid));
       ui.showDialog(`¡${info.name} ahora lidera el equipo!`, () => openTeamMenu(ui));
     } else {
       ui.showDialog('Error al cambiar de líder.', () => openTeamMenu(ui));
@@ -213,6 +211,29 @@ export function openPokemonActionsMenu(ui) {
   ui.updateSelectionVisuals();
 }
 
+/**
+ * Ficha del cliente de una escolta: no lidera, no cambia de táctica ni evoluciona.
+ * @param {import('../UIManager.js').UIManager} ui
+ * @param {{ name: string }} info
+ */
+function openGuestActionsMenu(ui, info) {
+  const { missionId } = ui.game.entityManager.getComponent(ui.selectedPokemon, 'missionGuest');
+  const mission = ui.game.profile?.missions.accepted.find((m) => m.id === missionId);
+  const html = `
+    <div class="game-panel" style="width: 300px;">
+      <h2 class="game-panel-title" style="text-transform: uppercase;">${info.name}</h2>
+      <p class="town-text">Cliente de vuestra escolta${mission ? ` hasta el piso ${mission.floor}` : ''}. Va con el equipo, pero no lo lidera.</p>
+      <div id="options-list">
+        <div class="menu-option selected" data-index="0"><span class="cursor">▶</span> Ver movimientos</div>
+        <div class="menu-option" data-index="1"><span class="cursor">▶</span> Atrás</div>
+      </div>
+    </div>`;
+  ui.showMenu('pokemon_actions', html);
+  ui.menuOptions = [() => openMovesViewMenu(ui), () => openTeamMenu(ui)];
+  ui.selectedIndex = 0;
+  ui.updateSelectionVisuals();
+}
+
 /** @param {import('../UIManager.js').UIManager} ui */
 export function openTacticSelectMenu(ui) {
   const info = ui.game.entityManager.getComponent(ui.selectedPokemon, 'pokemonInfo');
@@ -259,7 +280,7 @@ export function openTacticSelectMenu(ui) {
     if (partyMember) {
       partyMember.tactic = t.id;
       ui.game.entityManager.setComponent(ui.selectedPokemon, 'partyMember', partyMember);
-      keepInTown(ui, (profile) => setTactic(profile, partyMember.uid, t.id));
+      keepInTown(ui.game, (profile) => setTactic(profile, partyMember.uid, t.id));
       ui.showDialog(`Táctica de ${info.name} cambiada a: ¡${t.name}!`, () => openPokemonActionsMenu(ui));
     } else {
       openPokemonActionsMenu(ui);

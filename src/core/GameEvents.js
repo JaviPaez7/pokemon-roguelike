@@ -3,8 +3,8 @@ import { pickupItem } from '../systems/ItemSystem.js';
 import { getAbility } from '../systems/AbilitySystem.js';
 import { revertTransform } from '../systems/CombatSystem.js';
 import { random } from './Random.js';
-import { onMissionItemFound } from '../systems/MissionSystem.js';
-import { tryRecruit, acceptRecruit, declineRecruit } from '../systems/RecruitSystem.js';
+import { onMissionItemFound, onEscortGuestFainted, onOutlawDefeated } from '../systems/MissionSystem.js';
+import { tryRecruit, acceptRecruit, declineRecruit, offerLegendRecruit } from '../systems/RecruitSystem.js';
 import { playStory } from './StorySession.js';
 import { refreshTownNpcs } from './TownSession.js';
 import { playPlaceMusic } from './MusicSession.js';
@@ -74,10 +74,11 @@ export function setupGameEventListeners(game) {
         return;
       }
 
-      // Si hay aliados vivos, cambiar de líder en vez de game over
+      // Si hay aliados vivos, cambiar de líder en vez de game over (el
+      // cliente de una escolta no cuenta: no lidera)
       const livingAlly = (game.entityManager.getEntitiesWithComponents('partyMember', 'fighter') || [])
         .find(id => {
-          if (id === data.entityId) return false;
+          if (id === data.entityId || game.entityManager.hasComponent(id, 'missionGuest')) return false;
           const f = game.entityManager.getComponent(id, 'fighter');
           return f && f.hp > 0;
         });
@@ -149,6 +150,12 @@ export function setupGameEventListeners(game) {
         return;
       }
 
+      // El cliente de una escolta no se queda debilitado en el equipo: se va y la misión falla
+      if (onEscortGuestFainted(game, data.entityId)) {
+        game.needsRender = true;
+        return;
+      }
+
       // Aliado debilitado: no reclutar ni destruir
       game.turnManager.removeEntity(data.entityId);
       game.eventBus.emit('message', { text: `¡${allyName} se ha debilitado!`, color: '#ff6666' });
@@ -203,6 +210,17 @@ export function setupGameEventListeners(game) {
 
         game.entityManager.createItemEntity(selectedItem, 1, dropX, dropY);
 
+        // Quién era, por si es un legendario que se ofrece a unirse al acabar
+        const bossPos = game.entityManager.getComponent(data.entityId, 'position');
+        const bossConfig = game.floorManager.getZoneConfig()?.boss;
+        const legend = {
+          speciesId: targetInfo?.speciesId,
+          level: targetInfo?.level ?? 1,
+          x: bossPos?.x ?? dropX,
+          y: bossPos?.y ?? dropY,
+          moves: bossConfig?.id === targetInfo?.speciesId ? bossConfig.moves : undefined,
+        };
+
         game.entityManager.destroyEntity(data.entityId);
         // Sin jefe en pie, vuelve la música de la mazmorra
         playPlaceMusic(game);
@@ -212,9 +230,13 @@ export function setupGameEventListeners(game) {
           text: isFinalBoss
             ? `¡${bossName} ha sido derrotado!\n\n¡Has completado ${game.dungeon?.name ?? 'la mazmorra'}!\n\nObjeto: ¡${itemName}!`
             : `¡El Jefe ${bossName} ha sido derrotado!\n\nLas escaleras han aparecido en el centro de la sala, y ha caído un objeto valioso: ¡${itemName}!`,
-          // Antes de acabar la mazmorra, la escena de la historia (si toca)
+          // Antes de acabar la mazmorra, la escena de la historia (si toca) y,
+          // si es un legendario de posjuego, su oferta de unirse
           callback: isFinalBoss
-            ? () => playStory(game, 'boss_defeated', { dungeonId: game.dungeonId }, () => game.completeDungeon())
+            ? () =>
+                playStory(game, 'boss_defeated', { dungeonId: game.dungeonId }, () =>
+                  offerLegendRecruit(game, legend, () => game.completeDungeon()),
+                )
             : null
         });
         
@@ -264,6 +286,8 @@ export function setupGameEventListeners(game) {
         }
       }
 
+      // El forajido de una misión: derrotarlo la cumple
+      onOutlawDefeated(game, data.entityId);
       game.entityManager.destroyEntity(data.entityId);
 
       game.needsRender = true;

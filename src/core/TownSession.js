@@ -9,7 +9,7 @@
 
 import { ACTIONS, GAME_STATES } from '../constants.js';
 import { TOWN, buildTownMap, isTownExit, townThingAt } from '../map/Town.js';
-import { createProfile, getMember } from './Profile.js';
+import { createProfile, getMember, updateMember } from './Profile.js';
 import { toSnapshot, restedSnapshot, spawnFromSnapshot } from './PokemonSnapshot.js';
 import { playStory, storyTalk, storyGreet, isNpcAway } from './StorySession.js';
 import { playPlaceMusic } from './MusicSession.js';
@@ -115,6 +115,38 @@ export function enterTown(game, { arrival = 'start', spot: requestedSpot } = {})
   game.changeState(GAME_STATES.TOWN);
   playPlaceMusic(game);
   game.needsRender = true;
+}
+
+/**
+ * En el pueblo el equipo son copias de las fichas de la plantilla (las crea
+ * `enterTown`), y de la plantilla salen las expediciones, el guardado y la
+ * próxima visita al pueblo: lo que cambie en el equipo del pueblo y deba durar
+ * (líder, táctica, una evolución…) se apunta también en el perfil, y se guarda.
+ * En la mazmorra no hace nada: al volver, `endExpedition` copia las fichas.
+ * @param {import('./Game.js').Game} game
+ * @param {(profile: Object) => void} change - Lo que se apunta en el perfil
+ * @returns {boolean} Si se ha apuntado (se estaba en el pueblo)
+ */
+export function keepInTown(game, change) {
+  if (game.dungeonId || !game.profile) return false;
+  change(game.profile);
+  game.saveGameData();
+  return true;
+}
+
+/**
+ * Apunta en la plantilla la ficha de un Pokémon del equipo del pueblo tal como
+ * está ahora (tras una evolución, por ejemplo). Ver `keepInTown`.
+ * @param {import('./Game.js').Game} game
+ * @param {number} entityId - Entidad del Pokémon en el pueblo
+ * @returns {boolean} Si se ha apuntado
+ */
+export function keepTownMember(game, entityId) {
+  const uid = game.entityManager.getComponent(entityId, 'partyMember')?.uid;
+  return keepInTown(game, (profile) => {
+    if (uid == null || !getMember(profile, uid)) return;
+    updateMember(profile, restedSnapshot(toSnapshot(game.memberData(entityId)), game.movesData));
+  });
 }
 
 /**

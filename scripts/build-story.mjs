@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * build-story.mjs — Convierte el guion (docs/guion-historia.md) en los datos
  * que usa el juego (src/data/story.json).
@@ -36,6 +35,12 @@ export const CHAPTER_DUNGEONS = [
   'laboratorio_final',
 ];
 
+/**
+ * Mazmorras del posjuego (H5), en el orden de sus escenas: L1 es la primera,
+ * L2 la segunda… La escena L-0 las presenta tras el final.
+ */
+export const POSTGAME_DUNGEONS = ['cumbre_escarcha', 'pico_tronador', 'caldera_ascua', 'jardin_primer_sueno'];
+
 /** Personajes que hablan, con su nombre y su especie (para el retrato). */
 const SPEAKERS = {
   slowpoke: { name: 'Slowpoke', speciesId: 79 },
@@ -50,6 +55,10 @@ const SPEAKERS = {
   gengar: { name: 'Gengar', speciesId: 94 },
   arcanine: { name: 'Arcanine', speciesId: 59 },
   mewtwo: { name: 'Mewtwo', speciesId: 150 },
+  articuno: { name: 'Articuno', speciesId: 144 },
+  zapdos: { name: 'Zapdos', speciesId: 145 },
+  moltres: { name: 'Moltres', speciesId: 146 },
+  mew: { name: 'Mew', speciesId: 151 },
 };
 
 /** Especies de las variantes (sección 7 del guion). */
@@ -115,6 +124,7 @@ function sceneMeta(id) {
   if (id === 'F-2') return { chapter: 7, requires: ['F-1'], triggers: [{ on: 'new_day' }] };
   if (id === 'F-3') return { chapter: 7, requires: ['F-1'], triggers: [{ on: 'new_day' }], then: 'credits' };
   if (id === 'F-4') return { chapter: 7, triggers: [{ on: 'credits_end' }] };
+  if (id.startsWith('L')) return postgameMeta(id);
 
   const [number, kind] = id.split('-');
   const chapter = Number(number);
@@ -149,6 +159,50 @@ function sceneMeta(id) {
   }
 }
 
+/**
+ * Cuándo salta una escena del posjuego (código L).
+ * - L-0 presenta los tres picos detrás de F-4 (tras los créditos). Quien ya
+ *   había visto el final antes del posjuego la ve la próxima vez que vuelva al
+ *   pueblo, duerma, mire el tablón o elija mazmorra.
+ * - L1 a L4 son las mazmorras de POSTGAME_DUNGEONS, con las mismas letras que
+ *   los capítulos. L4-A (el sobre del jardín) sale al volver del tercer pico, o
+ *   al elegir el jardín si no había salido.
+ * @param {string} id
+ * @returns {{ triggers: Object[], chapter: number, [key: string]: unknown }}
+ */
+function postgameMeta(id) {
+  const chapter = AFTER_ENDING;
+  if (id === 'L-0') {
+    return {
+      chapter,
+      requires: ['F-3'],
+      triggers: [{ on: 'credits_end' }, { on: 'town_return' }, { on: 'new_day' }, { on: 'board_open' }, { on: 'dungeon_select' }],
+    };
+  }
+  const [code, kind] = id.split('-');
+  const dungeon = POSTGAME_DUNGEONS[Number(code.slice(1)) - 1];
+  if (!dungeon) throw new Error(`Escena de posjuego sin mazmorra: ${id}`);
+  const peaks = POSTGAME_DUNGEONS.slice(0, 3);
+  switch (kind) {
+    case 'A':
+      return {
+        chapter,
+        requires: peaks.map((_, i) => `L${i + 1}-D`),
+        triggers: [...peaks.map((d) => ({ on: 'town_return', dungeon: d, outcome: 'cleared' })), { on: 'dungeon_select', dungeon }],
+      };
+    case 'B':
+      return { chapter, triggers: [{ on: 'dungeon_enter', dungeon }] };
+    case 'B2':
+      return { chapter, triggers: [{ on: 'floor_enter', dungeon, floor: 5 }] };
+    case 'C':
+      return { chapter, triggers: [{ on: 'boss_floor', dungeon }] };
+    case 'D':
+      return { chapter, triggers: [{ on: 'boss_defeated', dungeon }] };
+    default:
+      throw new Error(`Escena sin disparador conocido: ${id}`);
+  }
+}
+
 /** Misión de historia del capítulo 3: el sobre sin remite de Persian. */
 const LETTER_MISSION = {
   id: 'story_letter',
@@ -162,7 +216,7 @@ const LETTER_MISSION = {
 
 // ─── Lectura del guion ────────────────────────────────────────────────────
 
-const SCENE_HEADER = /^\*\*([P0-9F]-[A-Z0-9]+) · (.+?)\*\*/;
+const SCENE_HEADER = /^\*\*((?:[P0-9F]|L[0-9]?)-[A-Z0-9]+) · (.+?)\*\*/;
 const LINE_SPEAKER = /^- \*\*(.+?)\*\* · \*(.+?)\* — (.+)$/;
 const LINE_VOICE = /^- \*\*\?\?\?\*\* — (.+)$/;
 const LINE_NARRATION = /^- \*Narración\* — (.+)$/;
@@ -193,7 +247,11 @@ function parseLine(raw) {
 
 /**
  * Escenas de la sección 5, en orden, con la parte del guion a la que
- * pertenecen («Capítulo 1 · «La cartera perdida»», sin la mazmorra).
+ * pertenecen, que es como salen en el Diario: el apartado `###` sin la
+ * mazmorra («Capítulo 1 · «La cartera perdida»») o, dentro del posjuego, el de
+ * cada mazmorra `####` sin el legendario («Cumbre Escarcha»), para que sus
+ * «Entrada» y «Antes del jefe» no se mezclen ni se sepa antes de tiempo quién
+ * espera arriba.
  * @param {string[]} lines
  */
 function parseScenes(lines) {
@@ -208,7 +266,8 @@ function parseScenes(lines) {
       continue;
     }
     if (raw.startsWith('### ')) part = raw.slice(4).replace(/ · [^·]*\(pisos [^)]*\)$/, '');
-    if (raw.startsWith('## ') || raw.startsWith('### ') || raw.startsWith('**Créditos**')) {
+    if (raw.startsWith('#### ')) part = raw.slice(5).replace(/ · [^·]*\(pisos [^)]*\)$/, '');
+    if (raw.startsWith('## ') || raw.startsWith('### ') || raw.startsWith('#### ') || raw.startsWith('**Créditos**')) {
       current = null;
       continue;
     }
@@ -331,6 +390,7 @@ export function buildStory(markdown) {
       'especie de la condición), voice (???), narration o una clave de `speakers`. Condiciones: {"species": id} solo sale ' +
       'si el protagonista o el compañero es de esa especie; {"notSpecies": id}, solo si no lo es.',
     chapters: CHAPTER_DUNGEONS,
+    postgame: POSTGAME_DUNGEONS,
     speakers: SPEAKERS,
     townNpcs: TOWN_NPCS,
     letterMission: LETTER_MISSION,

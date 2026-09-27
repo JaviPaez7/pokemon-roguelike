@@ -1,25 +1,49 @@
 /**
  * Missions.js — Tablón de misiones del pueblo.
  *
- * Cada día el tablón ofrece encargos nuevos en las mazmorras desbloqueadas:
+ * Cada día el tablón ofrece encargos nuevos en las mazmorras desbloqueadas
+ * (también en las de posjuego, tras el final de la historia):
  * - `rescue`: un Pokémon se ha quedado atrapado en un piso; hay que llegar hasta él.
  * - `find_item`: un Pokémon perdió un objeto en un piso; hay que recogerlo.
  * - `deliver`: un Pokémon necesita un objeto en un piso; hay que llevárselo.
+ * - `escort`: un Pokémon quiere llegar a un piso. Se une al entrar en la
+ *   mazmorra como invitado (no es del equipo) y la misión se cumple si llega
+ *   vivo. Si cae, la misión sigue aceptada para otro intento.
+ * - `outlaw`: un forajido, más fuerte que los salvajes de su piso, anda suelto;
+ *   derrotarlo cumple la misión.
  *
  * El equipo acepta hasta MAX_ACCEPTED. Una misión cumplida se cobra al volver
  * al pueblo; si el equipo cae antes, vuelve a quedar pendiente.
  *
- * El tablón depende solo del día (no consume el RNG de la partida).
+ * El tablón depende solo del día (no consume el RNG de la partida). La mezcla
+ * de tipos, las recompensas y los textos de escolta y forajido están en
+ * missions.json.
  */
 
 import floorsData from '../data/floors.json';
+import missionsData from '../data/missions.json';
 import { DUNGEONS, floorCount, isUnlocked } from './Dungeons.js';
 import { floorSeed } from './Random.js';
 
 export const MAX_ACCEPTED = 8;
 export const BOARD_SIZE = 6;
 
-export const MISSION_TYPE_NAMES = { rescue: 'Rescate', find_item: 'Buscar objeto', deliver: 'Entrega' };
+export const MISSION_TYPE_NAMES = { rescue: 'Rescate', find_item: 'Buscar objeto', deliver: 'Entrega', escort: 'Escolta', outlaw: 'Forajido' };
+
+/**
+ * @typedef {Object} MissionRules
+ * @property {Record<string, { weight: number, moneyBonus: number, moneyMultiplier: number, pointsMultiplier: number }>} types
+ *   Peso de cada tipo en el tablón y lo que cambia su recompensa
+ * @property {{ base: number, perFloor: number, roundTo: number }} money - Dinero según el piso global
+ * @property {{ minFloor: number, levelOffset: number, blockedItemTypes: string[], reasons: string[] }} escort
+ *   Piso mínimo de destino, nivel del invitado respecto a los salvajes de ese
+ *   piso, objetos que no se le dan (le cambiarían para siempre) y motivos del viaje
+ * @property {{ levelBonus: number, hpMultiplier: number, fleeBelow: number, crimes: string[] }} outlaw
+ *   Niveles de más, PS de más, vida con la que huye y delitos del cartel
+ */
+
+/** @type {MissionRules} */
+export const MISSION_RULES = missionsData;
 
 /** Dificultad según el piso global: letra y puntos de rango. */
 export const DIFFICULTIES = [
@@ -29,6 +53,8 @@ export const DIFFICULTIES = [
   { rank: 'B', upTo: 35, points: 50 },
   { rank: 'A', upTo: 45, points: 80 },
   { rank: 'S', upTo: 50, points: 120 },
+  // Posjuego: las mazmorras de los legendarios (pisos 51 en adelante)
+  { rank: '★', upTo: Infinity, points: 160 },
 ];
 
 /** Objetos que se pierden (buscar) y que se piden (entregar: se venden en el pueblo). */
@@ -39,7 +65,7 @@ export const REWARD_ITEMS = ['sitrus_berry', 'super_potion', 'reviver_seed', 'et
 /**
  * @typedef {{
  *   id: string,
- *   type: 'rescue' | 'find_item' | 'deliver',
+ *   type: 'rescue' | 'find_item' | 'deliver' | 'escort' | 'outlaw',
  *   dungeonId: string,
  *   floor: number,
  *   clientSpeciesId: number,
@@ -49,17 +75,23 @@ export const REWARD_ITEMS = ['sitrus_berry', 'super_potion', 'reviver_seed', 'et
  *   reward: { money: number, itemId: string | null, rankPoints: number },
  *   status: 'open' | 'accepted' | 'done',
  *   story?: boolean,
- *   text?: string
+ *   text?: string,
+ *   reason?: string,
+ *   crime?: string
  * }} Mission
  *
  * Las misiones de historia (`story: true`) las da una escena, no el tablón:
  * no se pueden abandonar, su cliente no aparece en el piso (lo resuelve la
  * propia escena) y `text` sustituye a la descripción de siempre.
+ *
+ * En la escolta, `floor` es el piso al que hay que llegar y `reason`, el
+ * motivo del viaje. En el forajido, el «cliente» es el propio forajido y
+ * `crime`, lo que dice el cartel.
  */
 
 /** @param {number} globalFloor */
 export function difficultyFor(globalFloor) {
-  return DIFFICULTIES.find((d) => globalFloor <= d.upTo) ?? DIFFICULTIES.at(-1);
+  return DIFFICULTIES.find((d) => globalFloor <= d.upTo);
 }
 
 /**
@@ -68,8 +100,51 @@ export function difficultyFor(globalFloor) {
  * @param {number} globalFloor
  */
 export function rewardMoney(type, globalFloor) {
-  const bonus = type === 'rescue' ? 0 : 40;
-  return Math.round((80 + globalFloor * 25 + bonus) / 10) * 10;
+  const { base, perFloor, roundTo } = MISSION_RULES.money;
+  const { moneyBonus = 0, moneyMultiplier = 1 } = MISSION_RULES.types[type] ?? {};
+  return Math.round(((base + globalFloor * perFloor + moneyBonus) * moneyMultiplier) / roundTo) * roundTo;
+}
+
+/**
+ * Puntos de rango que da un encargo según su tipo y su dificultad.
+ * @param {Mission['type']} type
+ * @param {{ points: number }} difficulty
+ * @returns {number}
+ */
+export function rewardPoints(type, difficulty) {
+  return Math.round(difficulty.points * (MISSION_RULES.types[type]?.pointsMultiplier ?? 1));
+}
+
+/**
+ * Tipo de encargo según los pesos de missions.json. La escolta necesita una
+ * mazmorra con pisos de sobra (hay que llegar al menos a `escort.minFloor`).
+ * @param {() => number} rng
+ * @param {number} maxFloor - Último piso en el que puede haber encargos
+ * @returns {Mission['type']}
+ */
+function pickMissionType(rng, maxFloor) {
+  const types = Object.entries(MISSION_RULES.types).filter(
+    ([type]) => type !== 'escort' || maxFloor >= MISSION_RULES.escort.minFloor,
+  );
+  const total = types.reduce((sum, [, t]) => sum + t.weight, 0);
+  let roll = rng() * total;
+  for (const [type, t] of types) {
+    roll -= t.weight;
+    if (roll < 0) return /** @type {Mission['type']} */ (type);
+  }
+  return /** @type {Mission['type']} */ (types.at(-1)[0]);
+}
+
+/**
+ * Lo que cuenta el cartel de una escolta (el motivo) o de un forajido (el delito).
+ * @param {Mission['type']} type
+ * @param {<T>(list: T[]) => T} pick
+ * @returns {{ reason?: string, crime?: string }}
+ */
+function missionFlavor(type, pick) {
+  if (type === 'escort') return { reason: pick(MISSION_RULES.escort.reasons) };
+  if (type === 'outlaw') return { crime: pick(MISSION_RULES.outlaw.crimes) };
+  return {};
 }
 
 /** Generador pseudoaleatorio local (LCG), para no tocar el RNG de la partida. */
@@ -83,13 +158,19 @@ function localRng(seed) {
 
 /**
  * Encargos del tablón para un día.
- * @param {{ day: number, clearedDungeons: string[], pokemonData: { id: number, name: string }[], count?: number }} options
+ * @param {{
+ *   day: number,
+ *   clearedDungeons: string[],
+ *   storySeen?: string[],
+ *   pokemonData: { id: number, name: string }[],
+ *   count?: number
+ * }} options - `storySeen`: escenas vistas (abren las mazmorras de posjuego)
  * @returns {Mission[]}
  */
-export function generateBoard({ day, clearedDungeons, pokemonData, count = BOARD_SIZE }) {
+export function generateBoard({ day, clearedDungeons, storySeen = [], pokemonData, count = BOARD_SIZE }) {
   const rng = localRng(floorSeed(day, 0, 'misiones'));
   const pick = (list) => list[Math.floor(rng() * list.length)];
-  const dungeons = DUNGEONS.filter((d) => !d.challenge && isUnlocked(d, clearedDungeons));
+  const dungeons = DUNGEONS.filter((d) => !d.challenge && isUnlocked(d, clearedDungeons, storySeen));
   const missions = [];
   for (let i = 0; i < count; i++) {
     const dungeon = pick(dungeons);
@@ -97,11 +178,13 @@ export function generateBoard({ day, clearedDungeons, pokemonData, count = BOARD
     const bossAtEnd = floorsData.zones.some((z) => z.boss && z.floors[1] === lastGlobal);
     // El piso del jefe no es sitio para un encargo
     const maxFloor = floorCount(dungeon) - (bossAtEnd ? 1 : 0);
-    const floor = 1 + Math.floor(rng() * maxFloor);
+    const type = pickMissionType(rng, maxFloor);
+    // Una escolta al piso 1 se cumpliría al entrar
+    const minFloor = type === 'escort' ? MISSION_RULES.escort.minFloor : 1;
+    const floor = minFloor + Math.floor(rng() * (maxFloor - minFloor + 1));
     const globalFloor = dungeon.floors[0] + floor - 1;
     const zone = floorsData.zones.find((z) => globalFloor >= z.floors[0] && globalFloor <= z.floors[1]);
     const clientSpeciesId = pick(zone.pokemon).id;
-    const type = pick(['rescue', 'rescue', 'find_item', 'deliver']);
     const itemId = type === 'find_item' ? pick(LOST_ITEMS) : type === 'deliver' ? pick(DELIVERY_ITEMS) : null;
     const difficulty = difficultyFor(globalFloor);
     missions.push({
@@ -116,9 +199,10 @@ export function generateBoard({ day, clearedDungeons, pokemonData, count = BOARD
       reward: {
         money: rewardMoney(type, globalFloor),
         itemId: rng() < 0.4 ? pick(REWARD_ITEMS) : null,
-        rankPoints: difficulty.points,
+        rankPoints: rewardPoints(type, difficulty),
       },
       status: 'open',
+      ...missionFlavor(type, pick),
     });
   }
   return missions;
@@ -152,7 +236,12 @@ export function refreshBoard(profile, pokemonData) {
   const missions = profile.missions;
   if (missions.day === profile.day) return;
   const taken = new Set(missions.accepted.map((m) => m.id));
-  missions.board = generateBoard({ day: profile.day, clearedDungeons: profile.clearedDungeons, pokemonData }).filter(
+  missions.board = generateBoard({
+    day: profile.day,
+    clearedDungeons: profile.clearedDungeons,
+    storySeen: profile.story?.seen ?? [],
+    pokemonData,
+  }).filter(
     (m) => !taken.has(m.id),
   );
   missions.day = profile.day;
@@ -278,7 +367,110 @@ export function describeMission(mission, { dungeonName, itemName }) {
       return `${mission.clientName} perdió su ${itemName(mission.itemId)} en ${where}. ¿Podéis encontrarlo?`;
     case 'deliver':
       return `${mission.clientName} está en ${where} y necesita ${itemName(mission.itemId)}. ¿Se lo lleváis?`;
+    case 'escort':
+      return [
+        `${mission.clientName} quiere llegar a ${where}.`,
+        mission.reason,
+        'Se une al entrar en la mazmorra y necesita un hueco en el equipo.',
+      ]
+        .filter(Boolean)
+        .join(' ');
+    case 'outlaw':
+      return [`SE BUSCA: ${mission.clientName}, visto en ${where}.`, mission.crime, 'Es más fuerte que los Pokémon de la zona.']
+        .filter(Boolean)
+        .join(' ');
     default:
       return where;
   }
+}
+
+/**
+ * Lo que se dice al aceptar un encargo.
+ * @param {Mission} mission
+ * @param {string} dungeonName
+ * @returns {string}
+ */
+export function acceptedText(mission, dungeonName) {
+  const where = `${dungeonName}, piso ${mission.floor}`;
+  if (mission.type === 'escort') {
+    return `Misión aceptada: ${mission.clientName} espera en la entrada de ${dungeonName} para llegar al piso ${mission.floor}.`;
+  }
+  if (mission.type === 'outlaw') return `Misión aceptada: ${mission.clientName} anda suelto por ${where}.`;
+  return `Misión aceptada: ${mission.clientName} os espera en ${where}.`;
+}
+
+// ─── Escolta y forajido ────────────────────────────────────────────────────
+
+/**
+ * Nivel medio de los salvajes de un piso global (el que usa FloorManager, sin
+ * la variación de ±1).
+ * @param {number} globalFloor
+ * @returns {number}
+ */
+export function wildLevelAt(globalFloor) {
+  const zone = floorsData.zones.find((z) => globalFloor >= z.floors[0] && globalFloor <= z.floors[1]) ?? floorsData.zones.at(-1);
+  const [minLvl, maxLvl] = zone.levelRange;
+  const span = Math.max(1, zone.floors[1] - zone.floors[0]);
+  const t = Math.max(0, Math.min(1, (globalFloor - zone.floors[0]) / span));
+  return Math.round(minLvl + (maxLvl - minLvl) * t);
+}
+
+/**
+ * Piso global de una misión.
+ * @param {Mission} mission
+ * @returns {number}
+ */
+export function missionGlobalFloor(mission) {
+  const dungeon = DUNGEONS.find((d) => d.id === mission.dungeonId);
+  return (dungeon?.floors[0] ?? 1) + mission.floor - 1;
+}
+
+/**
+ * Nivel del forajido: unos cuantos más que los salvajes de su piso.
+ * @param {number} globalFloor
+ * @returns {number}
+ */
+export function outlawLevel(globalFloor) {
+  return wildLevelAt(globalFloor) + MISSION_RULES.outlaw.levelBonus;
+}
+
+/**
+ * Nivel del cliente de una escolta: el de los salvajes del piso al que va.
+ * @param {number} globalFloor
+ * @returns {number}
+ */
+export function escortGuestLevel(globalFloor) {
+  return Math.max(1, wildLevelAt(globalFloor) + MISSION_RULES.escort.levelOffset);
+}
+
+/**
+ * Escoltas que empiezan al entrar en una mazmorra. Cada cliente ocupa un hueco
+ * del equipo mientras va con él, así que solo se unen los que caben (primero
+ * los que van a los pisos más cercanos); el resto espera a otra expedición.
+ * En la Torre del Desafío no hay encargos.
+ * @param {Object} profile
+ * @param {{ id: string, challenge?: boolean }} dungeon
+ * @param {number} freeSlots - Huecos libres en el equipo
+ * @returns {{ joining: Mission[], waiting: Mission[] }}
+ */
+export function escortsToJoin(profile, dungeon, freeSlots) {
+  if (dungeon.challenge) return { joining: [], waiting: [] };
+  const escorts = profile.missions.accepted
+    .filter((m) => m.type === 'escort' && m.status === 'accepted' && !m.story && m.dungeonId === dungeon.id)
+    .sort((a, b) => a.floor - b.floor || a.id.localeCompare(b.id));
+  const room = Math.max(0, freeSlots);
+  return { joining: escorts.slice(0, room), waiting: escorts.slice(room) };
+}
+
+/**
+ * Escoltas que se cumplen al llegar a un piso: las de ese piso cuyo cliente
+ * sigue con el equipo.
+ * @param {Object} profile
+ * @param {string} dungeonId
+ * @param {number} floor - Piso relativo a la mazmorra
+ * @param {string[]} guestMissionIds - Misiones de los invitados que siguen en pie
+ * @returns {Mission[]}
+ */
+export function escortArrivals(profile, dungeonId, floor, guestMissionIds) {
+  return missionsHere(profile, dungeonId, floor).filter((m) => m.type === 'escort' && guestMissionIds.includes(m.id));
 }

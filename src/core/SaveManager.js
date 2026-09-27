@@ -10,7 +10,10 @@
  * - `profile`: el equipo de exploración (core/Profile.js), con la Pokédex,
  *   las estadísticas y las escenas de la historia ya vistas (`story`).
  * - `bag` y `wallet`: lo que lleva encima el equipo ahora mismo.
- * - `run`: la expedición en curso, o null si el equipo está en el pueblo.
+ * - `run`: la expedición en curso, o null si el equipo está en el pueblo. Los
+ *   clientes de escolta van en `run.guests`, aparte del equipo (`run.party`);
+ *   una partida sin ese campo no tiene invitados, así que no hizo falta
+ *   cambiar de versión.
  */
 
 import { toSnapshot } from './PokemonSnapshot.js';
@@ -273,7 +276,9 @@ function collectRun(gameState) {
     runSeed: gameState.runSeed,
     currentWeather: gameState.currentWeather || 'normal',
     turnCount: (typeof gameState.turnManager?.getTurnCount === 'function' ? gameState.turnManager.getTurnCount() : 0),
-    party: gameState.party.map(toSnapshot),
+    party: gameState.party.filter((p) => !p.guestOf).map(toSnapshot),
+    // Clientes de escolta: van con el equipo, pero no son miembros (ver MissionSystem)
+    guests: gameState.party.filter((p) => p.guestOf).map((p) => ({ ...toSnapshot(p), missionId: p.guestOf })),
     expedition: gameState.expedition ?? null,
     floorItems: collectFloorItems(gameState),
     floorTraps: collectFloorTraps(gameState),

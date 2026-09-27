@@ -16,12 +16,6 @@ import { STORY } from '../../src/core/Story.js';
 import { GAME_STATES } from '../../src/constants.js';
 import viteConfig from '../../vite.config.js';
 
-/**
- * Mazmorras de posjuego de la rama h5/legendarios: ya tienen tema en
- * music.json aunque todavía no estén en dungeons.json. Al fusionarla, sobra.
- */
-const PENDING_DUNGEONS = ['cumbre_escarcha', 'pico_tronador', 'caldera_ascua', 'jardin_primer_sueno'];
-
 const { places } = MUSIC;
 const scene = (id) => STORY.scenes.find((s) => s.id === id);
 const inDungeon = (dungeonId, extra = {}) => ({ state: GAME_STATES.EXPLORING, town: false, dungeonId, boss: false, ...extra });
@@ -123,8 +117,8 @@ describe('datos de música (music.json)', () => {
     }
   });
 
-  it('las mazmorras con tema existen (o llegan con h5/legendarios): así se pillan las erratas', () => {
-    const known = new Set([...DUNGEONS.map((d) => d.id), ...PENDING_DUNGEONS]);
+  it('las mazmorras con tema existen: así se pillan las erratas', () => {
+    const known = new Set(DUNGEONS.map((d) => d.id));
     const listed = [...Object.keys(places.dungeons), ...Object.keys(places.boss.dungeons ?? {})];
     expect(listed.filter((id) => !known.has(id))).toEqual([]);
   });

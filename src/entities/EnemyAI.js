@@ -162,9 +162,15 @@ export function getEnemyAction(entityId, entityManager, tileMap, playerPos, play
   // Si HP bajo, huir (los jefes no huyen). Fuga (run_away) huye antes.
   const info = entityManager.getComponent(entityId, 'pokemonInfo');
   const ability = info?.ability ? String(info.ability).toLowerCase().replace(/-/g, '_') : '';
-  const fleeThreshold = (ability === 'run_away' || ability === 'runaway') ? 0.4 : 0.25;
+  // El forajido de una misión huye con la vida que diga missions.json (y lo avisa)
+  const outlaw = entityManager.getComponent(entityId, 'outlaw');
+  const fleeThreshold = outlaw ? outlaw.fleeBelow : (ability === 'run_away' || ability === 'runaway') ? 0.4 : 0.25;
   if (!isBoss && fighter.hp / fighter.maxHp < fleeThreshold) {
     behavior = 'flee';
+    if (outlaw && !outlaw.fled) {
+      outlaw.fled = true;
+      game?.eventBus?.emit('message', { text: `¡${info?.name ?? 'El forajido'} intenta escapar!`, color: '#ff8866' });
+    }
   }
   // Si el equipo está en rango de detección, perseguir
   else if (distance <= detectRange) {

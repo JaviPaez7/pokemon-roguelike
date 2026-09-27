@@ -724,7 +724,7 @@ export class CombatHandler {
             natural_cure: 'Cura Natural', intimidate: 'Intimidación', inner_focus: 'Foco Interno' }[abKey];
           const abHint = abEs ? ` · ${abEs}` : '';
           game.eventBus.emit('message', {
-            text: `${lookInfo.name} (aliado) Nv.${lookInfo.level} — ${lookFighter.hp}/${lookFighter.maxHp} PS (${hpPct}%)${abHint}${stHint}`,
+            text: `${lookInfo.name} (${game.entityManager.hasComponent(lookId, 'missionGuest') ? 'cliente' : 'aliado'}) Nv.${lookInfo.level} — ${lookFighter.hp}/${lookFighter.maxHp} PS (${hpPct}%)${abHint}${stHint}`,
             color: '#88ccff'
           });
           return { success: false, type: 'examine' };
@@ -732,6 +732,7 @@ export class CombatHandler {
         const hpPct = Math.round((lookFighter.hp / Math.max(1, lookFighter.maxHp)) * 100);
         const types = (lookInfo.types || []).map(t => TYPE_NAMES_ES[t] || t).join('/');
         const boss = game.entityManager.hasComponent(lookId, 'isBoss') || game.entityManager.hasComponent(lookId, 'boss');
+        const outlaw = game.entityManager.hasComponent(lookId, 'outlaw');
         const abilityKey = lookInfo.ability ? String(lookInfo.ability).toLowerCase().replace(/-/g, '_') : '';
         const abilityEs = {
           overgrow: 'Espesura', blaze: 'Mar Llamas', torrent: 'Torrente', swarm: 'Enjambre',
@@ -785,7 +786,7 @@ export class CombatHandler {
         if (lookFighter.substitute > 0) stHint = (stHint ? stHint + ' ' : '') + 'SUS';
         const statusHint = stHint ? ` · ${stHint}` : '';
         game.eventBus.emit('message', {
-          text: `${boss ? '¡Jefe! ' : ''}${lookInfo.name} Nv.${lookInfo.level} (${types}) — PS ~${hpPct}%${abilityHint}${statusHint}`,
+          text: `${boss ? '¡Jefe! ' : outlaw ? '¡Se busca! ' : ''}${lookInfo.name} Nv.${lookInfo.level} (${types}) — PS ~${hpPct}%${abilityHint}${statusHint}`,
           color: boss ? '#ff6666' : '#ffaa66'
         });
         return { success: false, type: 'examine' };
@@ -1025,6 +1026,8 @@ export class CombatHandler {
           const mFighter = game.entityManager.getComponent(memberId, 'fighter');
           
           if (!mInfo || !mFighter || mFighter.hp <= 0) continue;
+          // El cliente de una escolta no es del equipo: no gana experiencia
+          if (game.entityManager.hasComponent(memberId, 'missionGuest')) continue;
           xpRecipients++;
 
           const xpResult = grantExperience(mInfo, mFighter, xpGained, game.pokemonData, game.movesData);
