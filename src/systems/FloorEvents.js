@@ -2,6 +2,19 @@ import { RNG } from 'rot-js';
 import { MAX_PARTY_SIZE } from '../constants.js';
 
 /**
+ * Si puede salir un evento (mercader, tesoro, viento…) en un piso. En el
+ * primero de cada mazmorra no: ya tiene su presentación, la escena de la
+ * historia y los clientes de escolta. Va por el piso que ve el jugador, no por
+ * el global: la Cueva Oscura empieza en el piso global 6 y la Cumbre Escarcha
+ * en el 51, y su primer piso tampoco lleva evento.
+ * @param {number} floor - Piso de la mazmorra (`game.getCurrentFloor()`)
+ * @returns {boolean}
+ */
+export function floorEventsAllowed(floor) {
+  return floor > 1;
+}
+
+/**
  * Orquesta y activa eventos aleatorios al entrar en un nuevo piso.
  * Probabilidad base: ~38% de que ocurra un evento.
  * 
@@ -42,7 +55,7 @@ export function triggerFloorEvent(game) {
   // Asegurar que el modificador de FOV del viento fuerte se reinicia en cada piso
   game.fovRadiusModifier = 0;
 
-  if (game._currentFloor === 1) return; // No hay eventos en el primer piso
+  if (!floorEventsAllowed(game.getCurrentFloor())) return;
 
   // 30% de probabilidad de activar un evento
   if (RNG.getUniform() > 0.38) return;

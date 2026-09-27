@@ -22,3 +22,17 @@ export function tipFor(counter, tips = TIPS) {
   const index = ((n % tips.length) + tips.length) % tips.length;
   return `Consejo: ${tips[index]}`;
 }
+
+/**
+ * Qué avisos del registro tocan al llegar a un piso: el recordatorio de
+ * guardar cada 5 pisos y un consejo cada 2. Cuentan los pisos de la
+ * expedición, no los globales: así nunca salen en el primer piso (que ya tiene
+ * la presentación de la mazmorra) y caen igual en todas las mazmorras, empiecen
+ * donde empiecen (la Cueva Oscura empieza en el piso global 6 y el Jardín del
+ * Primer Sueño en el 75).
+ * @param {number} floor - Piso de la mazmorra (`game.getCurrentFloor()`)
+ * @returns {{ saveReminder: boolean, tip: boolean }}
+ */
+export function floorReminders(floor) {
+  return { saveReminder: floor > 1 && floor % 5 === 0, tip: floor > 1 && floor % 2 === 0 };
+}
