@@ -255,7 +255,9 @@ export function joinEscortGuests(game) {
 
 /**
  * Lo que dicen los clientes de escolta al empezar la expedición (se encola
- * detrás de la presentación de la mazmorra).
+ * detrás de la presentación de la mazmorra). De los que no caben ya ha avisado
+ * el menú de la salida (`TownMenus`), antes de salir: aquí basta una línea en
+ * el registro.
  * @param {import('../core/Game.js').Game} game
  * @param {{ joining: import('../core/Missions.js').Mission[], waiting: import('../core/Missions.js').Mission[] }} escorts
  */
@@ -269,10 +271,7 @@ export function greetEscortGuests(game, { joining, waiting }) {
     game.eventBus.emit('message', { text: `${m.clientName} os acompaña como invitado hasta el piso ${m.floor}.`, color: '#ffd166' });
   }
   for (const m of waiting) {
-    ui.showDialog(
-      `${m.clientName} esperaba en la entrada, pero en el equipo no cabe nadie más.\n\n` +
-        'Para una escolta hace falta un hueco: dejadlo libre en la formación de la base y volved.',
-    );
+    game.eventBus.emit('message', { text: `${m.clientName} se queda en la entrada: no cabe en el equipo.`, color: '#ffd166' });
   }
 }
 
