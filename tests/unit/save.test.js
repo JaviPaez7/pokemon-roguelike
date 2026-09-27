@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseSave, migrateSave, SAVE_VERSION, MIGRATED_TEAM_NAME } from '../../src/core/SaveManager.js';
+import { profileDungeons } from '../../src/core/Profile.js';
+import { scenesFor, storyChapter, STORY } from '../../src/core/Story.js';
 
 /** Partida mínima con el formato de la versión 1 (antes de runSeed). */
 function saveV1(overrides = {}) {
@@ -170,6 +172,19 @@ describe('v4 → v5: la historia', () => {
     expect(v5.profile.story).toEqual({ seen: ['P-1', 'P-2', 'P-3'] });
   });
 
+  it('quien había terminado la historia llega con los picos del posjuego abiertos y su escena por ver', () => {
+    const base = saveV4();
+    const v5 = migrateSave(saveV4({ profile: { ...base.profile, clearedDungeons: [...STORY.chapters] } }));
+    const { seen } = v5.profile.story;
+    expect(seen).toContain('F-3');
+    expect(seen.filter((id) => id.startsWith('L'))).toEqual([]);
+    const postgame = profileDungeons(v5.profile).filter((d) => d.postgame).map((d) => d.id);
+    expect(postgame).toEqual(['cumbre_escarcha', 'pico_tronador', 'caldera_ascua']);
+    // Pidgeotto se lo cuenta en cuanto pasa algo en el pueblo
+    const state = { seen, chapter: storyChapter(v5.profile.clearedDungeons) };
+    expect(scenesFor('board_open', {}, state).map((s) => s.id)).toEqual(['L-0']);
+  });
+
   it('conserva lo demás y no modifica los datos de entrada', () => {
     const original = saveV4();
     const v5 = migrateSave(original);
@@ -196,6 +211,21 @@ describe('parseSave', () => {
     const current = migrateSave(saveV2());
     const result = parseSave(JSON.stringify(current));
     expect(result).toEqual({ status: 'ok', data: current, migratedFrom: null });
+  });
+
+  it('una partida v5 de antes del posjuego se lee sin migrar y, si había visto el final, abre los picos', () => {
+    const base = saveV4().profile;
+    const beforePostgame = {
+      version: 5,
+      timestamp: 1,
+      profile: { ...base, clearedDungeons: [...STORY.chapters], story: { seen: ['P-1', 'F-1', 'F-2', 'F-3', 'F-4'] } },
+      bag: [],
+      wallet: 0,
+      run: null,
+    };
+    const result = parseSave(JSON.stringify(beforePostgame));
+    expect(result).toEqual({ status: 'ok', data: beforePostgame, migratedFrom: null });
+    expect(profileDungeons(result.data.profile).filter((d) => d.postgame)).toHaveLength(3);
   });
 
   it('una partida de una versión más nueva no se toca', () => {

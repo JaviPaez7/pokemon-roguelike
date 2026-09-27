@@ -20,6 +20,11 @@ export default defineConfig(({ mode }) => ({
   base: resolveBase(mode),
   build: {
     rolldownOptions: {
+      // rot-js no tiene efectos al importarse. Sin decirlo, el empaquetador
+      // conserva módulos que el juego no usa (Display, Color, Text…): ~20 kB.
+      treeshake: {
+        moduleSideEffects: [{ test: /node_modules[\\/]rot-js[\\/]/, sideEffects: false }],
+      },
       output: {
         // El juego en trozos: ninguno pasa de 500 kB y cada uno se cachea por su
         // cuenta (cambiar un diálogo no invalida el motor ni los datos). Los
@@ -30,7 +35,7 @@ export default defineConfig(({ mode }) => ({
             { name: 'sprites', test: new RegExp(`${DATA}pmd-sprites\\.json$`) },
             {
               name: 'datos',
-              test: new RegExp(`${DATA}(pokemon|moves|items|types|evolutions|floors|dungeons|tilesets|town|personality|recruitment|iq|missions)\\.json$`),
+              test: new RegExp(`${DATA}(pokemon|moves|items|types|evolutions|floors|dungeons|tilesets|town|personality|recruitment|iq|tips|missions)\\.json$`),
             },
             { name: 'libs', test: /node_modules/ },
           ],

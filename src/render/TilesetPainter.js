@@ -88,8 +88,8 @@ function paintWall(ctx, tileMap, x, y, px, py, s, ts, h) {
   const left = open(-1, 0);
   const right = open(1, 0);
 
-  if (ts.deco === 'grass') {
-    // Copas de árbol: tres manchas
+  if (ts.deco === 'grass' || ts.deco === 'dream') {
+    // Copas de árbol (o nubes, en el jardín del sueño): tres manchas
     const blobs = [[0.3, 0.35, 0.3], [0.7, 0.4, 0.28], [0.5, 0.7, 0.3]];
     for (let i = 0; i < blobs.length; i++) {
       const [bx, by, r] = blobs[i];
@@ -104,6 +104,17 @@ function paintWall(ctx, tileMap, x, y, px, py, s, ts, h) {
     if (h % 17 === 0) {
       ctx.fillStyle = ts.decoColors[2];
       ctx.fillRect(px + 4, py + s / 2 - 1, s - 8, 2);
+    }
+  } else if (ts.deco === 'frost') {
+    // Hielo: caras claras en diagonal y algún destello
+    ctx.fillStyle = ts.wallTop;
+    for (let i = 0; i < 2; i++) {
+      const off = 2 + ((h >> (i * 4)) % (s - 14)) + i * 4;
+      for (let k = 0; k < 6; k++) ctx.fillRect(px + off + k, py + 3 + k * 2, 1, 2);
+    }
+    if (h % 7 === 0) {
+      ctx.fillStyle = ts.decoColors[0];
+      ctx.fillRect(px + 4 + (h % (s - 8)), py + 4 + ((h >> 5) % (s - 12)), 1, 1);
     }
   } else {
     // Roca: motas claras y oscuras
@@ -223,6 +234,82 @@ function paintDecoration(ctx, px, py, s, ts, h) {
       ctx.fillRect(px + s - 4, py + 3, 1, 1);
       ctx.fillRect(px + 3, py + s - 4, 1, 1);
       ctx.fillRect(px + s - 4, py + s - 4, 1, 1);
+      break;
+    case 'frost':
+      if (r < 9) {
+        // Copo: cruz con puntas
+        ctx.fillStyle = c0;
+        ctx.fillRect(ax, ay + 2, 5, 1);
+        ctx.fillRect(ax + 2, ay, 1, 5);
+        ctx.fillRect(ax, ay, 1, 1);
+        ctx.fillRect(ax + 4, ay, 1, 1);
+        ctx.fillRect(ax, ay + 4, 1, 1);
+        ctx.fillRect(ax + 4, ay + 4, 1, 1);
+      } else if (r < 24) {
+        // Grieta en el hielo
+        ctx.fillStyle = c1;
+        ctx.fillRect(ax, ay, 2, 1);
+        ctx.fillRect(ax + 2, ay + 1, 2, 1);
+        ctx.fillRect(ax + 4, ay + 2, 1, 2);
+      } else if (r < 34) {
+        ctx.fillStyle = c2;
+        ctx.fillRect(ax, ay, 1, 1);
+        ctx.fillRect(ax + 3, ay + 2, 1, 1);
+      }
+      break;
+    case 'storm':
+      if (r < 12) {
+        // Charco de lluvia con reflejo
+        ctx.fillStyle = c0;
+        ctx.fillRect(ax, ay + 1, 7, 2);
+        ctx.fillRect(ax + 1, ay, 5, 4);
+        ctx.fillStyle = c2;
+        ctx.fillRect(ax + 2, ay + 1, 2, 1);
+      } else if (r < 17) {
+        // Marca de rayo
+        ctx.fillStyle = c1;
+        ctx.fillRect(ax + 2, ay, 2, 2);
+        ctx.fillRect(ax + 1, ay + 2, 2, 1);
+        ctx.fillRect(ax + 2, ay + 3, 2, 1);
+        ctx.fillRect(ax + 1, ay + 4, 2, 2);
+      } else if (r < 34) {
+        // Gotas
+        ctx.fillStyle = c2;
+        ctx.fillRect(ax, ay, 1, 2);
+        ctx.fillRect(ax + 4, ay + 3, 1, 2);
+      }
+      break;
+    case 'embers':
+      if (r < 12) {
+        // Brasa con el centro al rojo
+        ctx.fillStyle = c0;
+        ctx.fillRect(ax, ay, 3, 2);
+        ctx.fillRect(ax + 1, ay - 1, 1, 4);
+        ctx.fillStyle = c1;
+        ctx.fillRect(ax + 1, ay, 1, 2);
+      } else if (r < 30) {
+        // Ceniza
+        ctx.fillStyle = c2;
+        ctx.fillRect(ax, ay, 2, 1);
+        ctx.fillRect(ax + 4, ay + 2, 1, 1);
+      }
+      break;
+    case 'dream':
+      if (r < 8) {
+        // Destello
+        ctx.fillStyle = c0;
+        ctx.fillRect(ax + 2, ay, 1, 5);
+        ctx.fillRect(ax, ay + 2, 5, 1);
+      } else if (r < 18) {
+        // Burbuja
+        ctx.strokeStyle = r % 2 ? c1 : c2;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(ax + 3, ay + 3, 2.5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = c0;
+        ctx.fillRect(ax + 2, ay + 1, 1, 1);
+      }
       break;
     default:
       break;

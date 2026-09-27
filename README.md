@@ -11,14 +11,14 @@ Un Pokémon Mundo Misterioso hecho por fans, con los 151 Pokémon de la primera 
   - Kecleon vende provisiones, Kangaskhan guarda objetos y Persian guarda el dinero.
   - En la base se forma el equipo, se duerme hasta el día siguiente, se guarda la partida y está el Diario para volver a ver escenas.
   - El tablón tiene encargos nuevos cada día: rescates, objetos perdidos, entregas, escoltas (el cliente va con el equipo hasta su piso) y forajidos buscados.
-- **Mazmorras.** Hay siete, del Bosque Verde al Laboratorio Final, cada una con su jefe.
+- **Mazmorras.** Hay siete en la historia, del Bosque Verde al Laboratorio Final, cada una con su jefe, y cuatro más tras el final.
   - Los pisos se generan al entrar y se juega por turnos.
   - Cada movimiento tiene su alcance: delante, en línea, alrededor, la sala entera, uno mismo o el equipo.
   - Si pasáis demasiado tiempo en un piso, el viento os expulsa.
   - Al caer se pierde el dinero y la mochila; lo del banco y el almacén no se pierde.
 - **Reclutar.** No hay Poké Balls. A veces, el Pokémon que derrota el líder se levanta y pide unirse.
 - **Objetos equipables y CI.** Cada Pokémon puede llevar un objeto. Las gominolas suben su CI (el cociente intelectual de Mundo Misterioso), y el CI desbloquea habilidades.
-- **Historia.** Cada mazmorra es un capítulo, con escenas y retratos. La Torre del Desafío (50 pisos seguidos a nivel 5) espera tras el final.
+- **Historia.** Cada mazmorra es un capítulo, con escenas y retratos. Tras el final esperan la Torre del Desafío (50 pisos seguidos a nivel 5) y «Las leyendas del valle»: los picos de Articuno, Zapdos y Moltres y, después, el jardín de Mew. Al derrotarlos, cada legendario se ofrece a unirse al equipo.
 
 ### Controles
 

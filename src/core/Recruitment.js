@@ -6,6 +6,10 @@
  * ratio de captura: un Rattata se deja reclutar más que un Snorlax), de la
  * diferencia de nivel con el líder y del Lazo Amigo. Los números están en
  * recruitment.json.
+ *
+ * Los legendarios nunca se unen como salvajes. Los de las mazmorras de
+ * posjuego (`legendBosses`) tienen su propia regla: al derrotarlos como jefe se
+ * ofrecen siempre, sin tirada, hasta que se unen (ver `legendJoins`).
  */
 
 import recruitmentData from '../data/recruitment.json';
@@ -17,7 +21,8 @@ import recruitmentData from '../data/recruitment.json';
  * @property {number} levelBonusMax - Tope de esa bonificación, en los dos sentidos
  * @property {number} friendBowBonus - Con el Lazo Amigo equipado
  * @property {number} maxChance
- * @property {number[]} unrecruitable - Especies que no se unen (legendarios)
+ * @property {number[]} unrecruitable - Especies que no se unen como salvajes (legendarios)
+ * @property {number[]} legendBosses - Legendarios que se ofrecen al derrotarlos como jefe
  */
 
 /** @type {RecruitmentConfig} */
@@ -41,4 +46,17 @@ export function recruitChance({ speciesId, captureRate, targetLevel, leaderLevel
   const level = Math.max(-config.levelBonusMax, Math.min(config.levelBonusMax, diff));
   const bow = friendBow ? config.friendBowBonus : 0;
   return Math.max(0, Math.min(config.maxChance, species + level + bow));
+}
+
+/**
+ * Si el jefe legendario derrotado se ofrece a unirse. Se ofrece siempre, sin
+ * tirada, cada vez que se le derrota como jefe de su mazmorra, hasta que se
+ * une: como mucho hay uno de cada especie en la base y el equipo. Si se le dice
+ * que no, se puede volver a por él. En la Torre del Desafío no se ofrece.
+ * @param {{ speciesId: number, challenge?: boolean, ownedSpecies: number[] }} params
+ * @param {RecruitmentConfig} [config]
+ * @returns {boolean}
+ */
+export function legendJoins({ speciesId, challenge = false, ownedSpecies }, config = RECRUITMENT) {
+  return !challenge && config.legendBosses.includes(speciesId) && !ownedSpecies.includes(speciesId);
 }
