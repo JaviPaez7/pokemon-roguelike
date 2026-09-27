@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { TIPS, tipFor } from '../../src/core/Tips.js';
+import storyData from '../../src/data/story.json';
+import townData from '../../src/data/town.json';
+import itemsData from '../../src/data/items.json';
 
 describe('consejos de carga', () => {
   it('rotan por toda la lista, también con contadores grandes o raros', () => {
@@ -19,5 +22,21 @@ describe('consejos de carga', () => {
   it('no hablan de cosas que ya no existen: capturas, Poké Balls, borrar la partida al caer o Mewtwo como final', () => {
     const outdated = TIPS.filter((tip) => /captur|pok[ée] ?ball|permadeath|borra el guardado|mewtwo/i.test(tip));
     expect(outdated).toEqual([]);
+  });
+
+  it('no destripan la historia: ni personajes que no están en el pueblo desde el principio, ni objetos únicos, ni el Eco', () => {
+    // Los vecinos que ya están al empezar (Kecleon, Persian, Pidgey…) se pueden nombrar
+    const fromStart = new Set(
+      townData.npcs.filter((npc) => !storyData.townNpcs[npc.id]?.arrivesWith).map((npc) => npc.name),
+    );
+    const names = [
+      ...Object.values(storyData.speakers).map((s) => s.name).filter((name) => !fromStart.has(name)),
+      ...itemsData.filter((item) => item.unique).map((item) => item.name),
+      'Eco',
+    ];
+    expect(names).toContain('Pidgeotto');
+    expect(names).toContain('Pañuelo Centella');
+    const spoilers = TIPS.filter((tip) => names.some((name) => new RegExp(`\\b${name}\\b`).test(tip)));
+    expect(spoilers).toEqual([]);
   });
 });
