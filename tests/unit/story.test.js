@@ -123,10 +123,11 @@ describe('los datos de la historia', () => {
   });
 
   it('los textos solo usan los marcadores conocidos y no dan género al equipo', () => {
-    const texts = STORY.scenes.flatMap((s) => s.lines.map((l) => l[2]));
+    const neighbours = [...Object.values(STORY.npcTalk), ...Object.values(STORY.npcGreet)].flatMap((byChapter) => Object.values(byChapter).flat());
+    const texts = [...STORY.scenes.flatMap((s) => s.lines), ...neighbours].map((l) => l[2]);
     for (const text of texts) {
       for (const marker of text.match(/\{[^}]*\}/g) ?? []) expect(['{héroe}', '{compañero}', '{equipo}']).toContain(marker);
-      expect(text).not.toMatch(/\b(vosotros|vosotras|juntos|juntas)\b/i);
+      expect(text).not.toMatch(/(?<![\p{L}])(vosotros|vosotras|juntos|juntas|bienvenidos|bienvenidas)(?![\p{L}])/iu);
     }
   });
 });
@@ -339,6 +340,31 @@ describe('el mundo durante la historia', () => {
       },
     ]);
     expect(diaryParts(ids(STORY.scenes)).map((p) => p.part)).toContain('Final · «Antes de que anochezca»');
+  });
+
+  it('en el Diario, el posjuego va detrás del final y cada mazmorra de legendario es su parte', () => {
+    const parts = diaryParts(ids(STORY.scenes)).map((p) => p.part);
+    expect(parts.slice(parts.indexOf('Final · «Antes de que anochezca»'))).toEqual([
+      'Final · «Antes de que anochezca»',
+      'Posjuego · «Las leyendas del valle»',
+      'Cumbre Escarcha',
+      'Pico Tronador',
+      'Caldera Ascua',
+      'Jardín del Primer Sueño',
+    ]);
+    // Sin repetir títulos dentro de una parte ni decir quién espera arriba
+    expect(diaryParts(['F-4', 'L-0', 'L2-B', 'L1-B', 'L1-C'])).toEqual([
+      { part: 'Final · «Antes de que anochezca»', scenes: [{ id: 'F-4', title: 'Tras los créditos' }] },
+      { part: 'Posjuego · «Las leyendas del valle»', scenes: [{ id: 'L-0', title: 'Tres picos nuevos' }] },
+      {
+        part: 'Cumbre Escarcha',
+        scenes: [{ id: 'L1-B', title: 'Entrada' }, { id: 'L1-C', title: 'Antes del jefe (piso 8)' }],
+      },
+      { part: 'Pico Tronador', scenes: [{ id: 'L2-B', title: 'Entrada' }] },
+    ]);
+    for (const { part, scenes } of diaryParts(ids(STORY.scenes))) {
+      expect(new Set(scenes.map((s) => s.title)).size, part).toBe(scenes.length);
+    }
   });
 });
 

@@ -41,9 +41,6 @@ export const CHAPTER_DUNGEONS = [
  */
 export const POSTGAME_DUNGEONS = ['cumbre_escarcha', 'pico_tronador', 'caldera_ascua', 'jardin_primer_sueno'];
 
-/** Capítulo de las escenas de después del final (el posjuego). */
-const AFTER_ENDING_CHAPTER = CHAPTER_DUNGEONS.length + 1;
-
 /** Personajes que hablan, con su nombre y su especie (para el retrato). */
 const SPEAKERS = {
   slowpoke: { name: 'Slowpoke', speciesId: 79 },
@@ -173,7 +170,7 @@ function sceneMeta(id) {
  * @param {string} id
  */
 function postgameMeta(id) {
-  const chapter = AFTER_ENDING_CHAPTER;
+  const chapter = AFTER_ENDING;
   if (id === 'L-0') {
     return {
       chapter,
@@ -249,7 +246,11 @@ function parseLine(raw) {
 
 /**
  * Escenas de la sección 5, en orden, con la parte del guion a la que
- * pertenecen («Capítulo 1 · «La cartera perdida»», sin la mazmorra).
+ * pertenecen, que es como salen en el Diario: el apartado `###` sin la
+ * mazmorra («Capítulo 1 · «La cartera perdida»») o, dentro del posjuego, el de
+ * cada mazmorra `####` sin el legendario («Cumbre Escarcha»), para que sus
+ * «Entrada» y «Antes del jefe» no se mezclen ni se sepa antes de tiempo quién
+ * espera arriba.
  * @param {string[]} lines
  */
 function parseScenes(lines) {
@@ -264,7 +265,8 @@ function parseScenes(lines) {
       continue;
     }
     if (raw.startsWith('### ')) part = raw.slice(4).replace(/ · [^·]*\(pisos [^)]*\)$/, '');
-    if (raw.startsWith('## ') || raw.startsWith('### ') || raw.startsWith('**Créditos**')) {
+    if (raw.startsWith('#### ')) part = raw.slice(5).replace(/ · [^·]*\(pisos [^)]*\)$/, '');
+    if (raw.startsWith('## ') || raw.startsWith('### ') || raw.startsWith('#### ') || raw.startsWith('**Créditos**')) {
       current = null;
       continue;
     }

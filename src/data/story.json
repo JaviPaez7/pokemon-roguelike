@@ -668,7 +668,7 @@
     {
       "id": "L-0",
       "title": "Tres picos nuevos",
-      "part": "Posjuego · «Las leyendas del valle» (H5)",
+      "part": "Posjuego · «Las leyendas del valle»",
       "chapter": 8,
       "requires": ["F-3"],
       "triggers": [
@@ -691,7 +691,7 @@
     {
       "id": "L1-B",
       "title": "Entrada",
-      "part": "Posjuego · «Las leyendas del valle» (H5)",
+      "part": "Cumbre Escarcha",
       "chapter": 8,
       "triggers": [{"on": "dungeon_enter", "dungeon": "cumbre_escarcha"}],
       "lines": [
@@ -702,7 +702,7 @@
     {
       "id": "L1-C",
       "title": "Antes del jefe (piso 8)",
-      "part": "Posjuego · «Las leyendas del valle» (H5)",
+      "part": "Cumbre Escarcha",
       "chapter": 8,
       "triggers": [{"on": "boss_floor", "dungeon": "cumbre_escarcha"}],
       "lines": [
@@ -715,7 +715,7 @@
     {
       "id": "L1-D",
       "title": "Después del jefe",
-      "part": "Posjuego · «Las leyendas del valle» (H5)",
+      "part": "Cumbre Escarcha",
       "chapter": 8,
       "triggers": [{"on": "boss_defeated", "dungeon": "cumbre_escarcha"}],
       "lines": [
@@ -728,7 +728,7 @@
     {
       "id": "L2-B",
       "title": "Entrada",
-      "part": "Posjuego · «Las leyendas del valle» (H5)",
+      "part": "Pico Tronador",
       "chapter": 8,
       "triggers": [{"on": "dungeon_enter", "dungeon": "pico_tronador"}],
       "lines": [
@@ -739,7 +739,7 @@
     {
       "id": "L2-C",
       "title": "Antes del jefe (piso 8)",
-      "part": "Posjuego · «Las leyendas del valle» (H5)",
+      "part": "Pico Tronador",
       "chapter": 8,
       "triggers": [{"on": "boss_floor", "dungeon": "pico_tronador"}],
       "lines": [
@@ -752,7 +752,7 @@
     {
       "id": "L2-D",
       "title": "Después del jefe",
-      "part": "Posjuego · «Las leyendas del valle» (H5)",
+      "part": "Pico Tronador",
       "chapter": 8,
       "triggers": [{"on": "boss_defeated", "dungeon": "pico_tronador"}],
       "lines": [
@@ -765,7 +765,7 @@
     {
       "id": "L3-B",
       "title": "Entrada",
-      "part": "Posjuego · «Las leyendas del valle» (H5)",
+      "part": "Caldera Ascua",
       "chapter": 8,
       "triggers": [{"on": "dungeon_enter", "dungeon": "caldera_ascua"}],
       "lines": [
@@ -776,7 +776,7 @@
     {
       "id": "L3-C",
       "title": "Antes del jefe (piso 8)",
-      "part": "Posjuego · «Las leyendas del valle» (H5)",
+      "part": "Caldera Ascua",
       "chapter": 8,
       "triggers": [{"on": "boss_floor", "dungeon": "caldera_ascua"}],
       "lines": [
@@ -789,7 +789,7 @@
     {
       "id": "L3-D",
       "title": "Después del jefe",
-      "part": "Posjuego · «Las leyendas del valle» (H5)",
+      "part": "Caldera Ascua",
       "chapter": 8,
       "triggers": [{"on": "boss_defeated", "dungeon": "caldera_ascua"}],
       "lines": [
@@ -801,7 +801,7 @@
     {
       "id": "L4-A",
       "title": "Otro sobre sin remite",
-      "part": "Posjuego · «Las leyendas del valle» (H5)",
+      "part": "Jardín del Primer Sueño",
       "chapter": 8,
       "requires": ["L1-D", "L2-D", "L3-D"],
       "triggers": [
@@ -821,7 +821,7 @@
     {
       "id": "L4-B",
       "title": "Entrada",
-      "part": "Posjuego · «Las leyendas del valle» (H5)",
+      "part": "Jardín del Primer Sueño",
       "chapter": 8,
       "triggers": [{"on": "dungeon_enter", "dungeon": "jardin_primer_sueno"}],
       "lines": [
@@ -833,7 +833,7 @@
     {
       "id": "L4-B2",
       "title": "Piso 5",
-      "part": "Posjuego · «Las leyendas del valle» (H5)",
+      "part": "Jardín del Primer Sueño",
       "chapter": 8,
       "triggers": [{"on": "floor_enter", "dungeon": "jardin_primer_sueno", "floor": 5}],
       "lines": [["voice", null, "¡Templado, templado! …¡Caliente!"]]
@@ -841,7 +841,7 @@
     {
       "id": "L4-C",
       "title": "Antes del jefe (piso 10)",
-      "part": "Posjuego · «Las leyendas del valle» (H5)",
+      "part": "Jardín del Primer Sueño",
       "chapter": 8,
       "triggers": [{"on": "boss_floor", "dungeon": "jardin_primer_sueno"}],
       "lines": [
@@ -856,7 +856,7 @@
     {
       "id": "L4-D",
       "title": "Después del jefe",
-      "part": "Posjuego · «Las leyendas del valle» (H5)",
+      "part": "Jardín del Primer Sueño",
       "chapter": 8,
       "triggers": [{"on": "boss_defeated", "dungeon": "jardin_primer_sueno"}],
       "lines": [

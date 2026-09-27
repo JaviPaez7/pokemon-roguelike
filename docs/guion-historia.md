@@ -566,9 +566,9 @@ Jefe: **Mewtwo**. Es el origen del Eco: la soledad.
 
 ---
 
-### Posjuego · «Las leyendas del valle» (H5)
+### Posjuego · «Las leyendas del valle»
 
-Se abre con el final: cuando el Eco se calla, desde el cielo se ven tres picos que antes tapaba el viento. En cada uno anida uno de los tres pájaros legendarios, que llevaban semanas sin dormir por culpa del Eco. Los tres picos se abren a la vez y se pueden hacer en cualquier orden. Al completar los tres llega un sobre sin remite que lleva al **Jardín del Primer Sueño**, donde se esconde **Mew**.
+El posjuego del hito H5. Se abre con el final: cuando el Eco se calla, desde el cielo se ven tres picos que antes tapaba el viento. En cada uno anida uno de los tres pájaros legendarios, que llevaban semanas sin dormir por culpa del Eco. Los tres picos se abren a la vez y se pueden hacer en cualquier orden. Al completar los tres llega un sobre sin remite que lleva al **Jardín del Primer Sueño**, donde se esconde **Mew**.
 
 Ningún legendario es malo: Articuno cuida el silencio, Zapdos echaba de menos oír sus truenos, Moltres teme que su luz asuste en vez de guiar y Mew solo quiere jugar. Al derrotarlos, cada uno se ofrece a unirse al equipo (si se le dice que no, se puede volver a por él).
 
@@ -849,4 +849,4 @@ Aplicadas con los valores recomendados. Cualquiera se puede cambiar.
   - Hablar con los vecinos.
 - **Final:** F-1 al volver del laboratorio. Al día siguiente (durmiendo o tras otra expedición), F-2 y F-3, los créditos sobre negro y F-4.
 - **Tests E2E:** `tests/e2e/story.spec.js` cubre el prólogo, el capítulo 1 con Pidgeotto, Squirtle y el monstersito, el sobre, la ausencia de Slowpoke y el final con los créditos. `tests/e2e/legends.spec.js` cubre el posjuego: L-0 tras los créditos, los picos abiertos, Articuno que se une y el sobre del jardín.
-- **Posjuego:** las escenas L son del «capítulo» 8 (después del final), así que las partidas antiguas no las dan por vistas. Las mazmorras dicen cuándo se abren en `src/data/dungeons.json` (`unlock: { story: "F-3" }` o varias mazmorras completadas) y la regla de los legendarios está en `src/data/recruitment.json` (`legendBosses`) y `src/core/Recruitment.js`.
+- **Posjuego:** las escenas L son del «capítulo» 8 (después del final), así que las partidas antiguas no las dan por vistas. En el Diario, L-0 va en la parte «Posjuego · «Las leyendas del valle»» y las de cada mazmorra en la suya, con el nombre de la mazmorra («Cumbre Escarcha»). Las mazmorras dicen cuándo se abren en `src/data/dungeons.json` (`unlock: { story: "F-3" }` o varias mazmorras completadas) y la regla de los legendarios está en `src/data/recruitment.json` (`legendBosses`) y `src/core/Recruitment.js`.

@@ -1,6 +1,7 @@
 /**
  * DiaryMenu.js — El Diario de la base: las escenas de la historia ya vistas,
- * por partes (prólogo, capítulos y final), para volver a verlas.
+ * por partes (prólogo, capítulos, final y las mazmorras del posjuego), para
+ * volver a verlas.
  */
 
 import { GAME_STATES } from '../../constants.js';
