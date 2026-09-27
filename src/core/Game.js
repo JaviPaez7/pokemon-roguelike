@@ -48,6 +48,7 @@ import { heldBellyDrain } from './HeldItems.js';
 import { hasIqSkill } from './IQ.js';
 import { setSeed, newRunSeed } from './Random.js';
 import { roomAt } from '../systems/MoveTargeting.js';
+import { checkEscortArrivals } from '../systems/MissionSystem.js';
 
 // Importar JSONs estáticos directamente para empaquetarlos con Vite
 import pokemonData from '../data/pokemon.json';
@@ -99,6 +100,12 @@ export class Game {
      * en mitad de un turno.
      */
     this._pendingExpeditionEnd = null;
+
+    /**
+     * @type {boolean} El piso nuevo es el destino de una escolta: al acabar sus
+     * diálogos se mira si el cliente ha llegado (systems/MissionSystem.js)
+     */
+    this._pendingEscortCheck = false;
 
     /** @type {number|null} ID de la entidad del jugador (líder del equipo) */
     this._playerId = null;
@@ -540,6 +547,9 @@ export class Game {
       this.inputHandler.setContext('exploration');
     }
     if (this.uiManager.hasOpenDialog()) return;
+
+    // El cliente de una escolta que acaba de llegar a su piso se despide
+    if (this._pendingEscortCheck && checkEscortArrivals(this)) return;
 
     // Verificar si hay algún Pokémon con movimientos pendientes por aprender
     const pendingPoke = this.entityManager.getEntitiesWithComponents('partyMember', 'pokemonInfo').find(pid => {
@@ -1170,7 +1180,9 @@ export class Game {
       _statusTick: fighter._statusTick || 0,
       isLeader: member?.isLeader ?? false,
       tactic: member?.tactic || 'follow',
-      uid: member?.uid ?? null
+      uid: member?.uid ?? null,
+      // Cliente de una escolta: va con el equipo, pero no es de él
+      guestOf: this.entityManager.getComponent(id, 'missionGuest')?.missionId ?? null
     };
   }
 
@@ -1395,12 +1407,12 @@ export class Game {
     
     if (oldLeaderIdx === -1) return;
 
-    // Siguiente aliado vivo (saltar debilitados)
+    // Siguiente aliado vivo (saltar debilitados y al cliente de una escolta, que no lidera)
     let newLeaderId = null;
     for (let step = 1; step <= partyEntities.length; step++) {
       const cand = partyEntities[(oldLeaderIdx + step) % partyEntities.length];
       const f = this.entityManager.getComponent(cand, 'fighter');
-      if (f && f.hp > 0) {
+      if (f && f.hp > 0 && !this.entityManager.hasComponent(cand, 'missionGuest')) {
         newLeaderId = cand;
         break;
       }

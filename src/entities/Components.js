@@ -138,6 +138,16 @@ export function createComponentStore() {
     missionClient: new Map(),
 
     /** @type {Map<number, {missionId: string}>} Objeto perdido de una misión */
-    missionItem: new Map()
+    missionItem: new Map(),
+
+    /**
+     * @type {Map<number, {missionId: string}>} Cliente de una escolta que va con
+     * el equipo: es `partyMember` (le sigue y pelea con la IA aliada), pero no
+     * lidera, no gana experiencia y no pasa a la plantilla
+     */
+    missionGuest: new Map(),
+
+    /** @type {Map<number, {missionId: string, fleeBelow: number, fled: boolean}>} Forajido de una misión */
+    outlaw: new Map()
   };
 }

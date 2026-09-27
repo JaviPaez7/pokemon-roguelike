@@ -10,7 +10,7 @@ Un Pokémon Mundo Misterioso hecho por fans, con los 151 Pokémon de la primera 
 - **Pueblo Raíz.** Es la base, sin turnos ni enemigos:
   - Kecleon vende provisiones, Kangaskhan guarda objetos y Persian guarda el dinero.
   - En la base se forma el equipo, se duerme hasta el día siguiente, se guarda la partida y está el Diario para volver a ver escenas.
-  - El tablón tiene encargos nuevos cada día.
+  - El tablón tiene encargos nuevos cada día: rescates, objetos perdidos, entregas, escoltas (el cliente va con el equipo hasta su piso) y forajidos buscados.
 - **Mazmorras.** Hay siete en la historia, del Bosque Verde al Laboratorio Final, cada una con su jefe, y cuatro más tras el final.
   - Los pisos se generan al entrar y se juega por turnos.
   - Cada movimiento tiene su alcance: delante, en línea, alrededor, la sala entera, uno mismo o el equipo.

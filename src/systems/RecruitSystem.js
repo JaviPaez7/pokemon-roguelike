@@ -53,7 +53,8 @@ export function canTakeRecruit(game) {
 export function tryRecruit(game, defeatedId, attackerId) {
   const em = game.entityManager;
   if (attackerId == null || attackerId !== game._playerId) return false;
-  if (!em.hasComponent(defeatedId, 'aiControlled') || em.hasComponent(defeatedId, 'boss')) return false;
+  // Ni los jefes ni los forajidos de las misiones se ofrecen a unirse
+  if (!em.hasComponent(defeatedId, 'aiControlled') || em.hasComponent(defeatedId, 'boss') || em.hasComponent(defeatedId, 'outlaw')) return false;
   const info = em.getComponent(defeatedId, 'pokemonInfo');
   const leader = em.getComponent(game._playerId, 'pokemonInfo');
   const fighter = em.getComponent(defeatedId, 'fighter');

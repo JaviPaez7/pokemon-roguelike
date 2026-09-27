@@ -147,7 +147,12 @@ export class HUD {
   }
 
   /**
-   * Estado del equipo (esquina superior derecha)
+   * Estado del equipo (esquina superior derecha). El cliente de una escolta
+   * sale en dorado.
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {import('../core/Game.js').Game} gameState
+   * @param {number} canvasWidth
+   * @param {number} canvasHeight
    */
   renderPartyStatus(ctx, gameState, canvasWidth, canvasHeight) {
     if (!gameState.party || gameState.party.length === 0) return;
@@ -179,7 +184,8 @@ export class HUD {
       ctx.font = '5px "Press Start 2P", monospace';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      ctx.fillStyle = poke.hp > 0 ? (poke.isLeader ? COLORS.UI_TEXT : 'rgba(200,200,220,0.85)') : '#555';
+      // El cliente de una escolta, en dorado
+      ctx.fillStyle = poke.hp > 0 ? (poke.isLeader ? COLORS.UI_TEXT : poke.guestOf ? '#ffd166' : 'rgba(200,200,220,0.85)') : '#555';
 
       let nameLabel = poke.name.length > 7 ? poke.name.slice(0, 6) + '…' : poke.name;
       if (poke.isLeader && poke.hp > 0) {
@@ -339,7 +345,12 @@ export class HUD {
   }
 
   /**
-   * Minimap (esquina superior derecha, debajo del party status)
+   * Minimap (esquina superior derecha, debajo del party status). El forajido
+   * de una misión sale en naranja.
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {import('../core/Game.js').Game} gameState
+   * @param {number} canvasWidth
+   * @param {number} [canvasHeight]
    */
   renderMinimap(ctx, gameState, canvasWidth, canvasHeight = 480) {
     const tileMap = gameState.tileMap;
@@ -503,7 +514,8 @@ export class HUD {
         const pos = em.getComponent(id, 'position');
         if (pos && tileMap.getVisibility(pos.x, pos.y) === 2) {
           const boss = em.hasComponent(id, 'isBoss') || em.hasComponent(id, 'boss');
-          ctx.fillStyle = boss ? '#ff00aa' : '#ff4444';
+          // El forajido de una misión, en naranja
+          ctx.fillStyle = boss ? '#ff00aa' : em.hasComponent(id, 'outlaw') ? '#ffae00' : '#ff4444';
           ctx.fillRect(x + pos.x * scale, y + pos.y * scale, scale, scale);
         }
       });

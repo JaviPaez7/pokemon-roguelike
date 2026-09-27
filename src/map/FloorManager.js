@@ -324,8 +324,10 @@ export class FloorManager {
   }
 
   /**
-   * Cambia de piso: genera el nuevo, coloca al equipo, aplica lo que pasa al
-   * llegar (curación ligera, eventos, escenas) y deja un consejo en el registro.
+   * Cambia de piso: conserva al equipo (y a los invitados de escolta), genera
+   * el nuevo, coloca enemigos, objetos y objetivos de misión, aplica lo que
+   * pasa al llegar (curación ligera, eventos, escenas) y deja un consejo en el
+   * registro.
    * @param {'down' | 'up'} direction
    * @returns {Promise<void>}
    */
@@ -361,7 +363,8 @@ export class FloorManager {
       const fighter = game.entityManager.getComponent(pid, 'fighter');
       const mem = game.entityManager.getComponent(pid, 'partyMember');
       if (!fighter || fighter.hp <= 0) return; // debilitados no actúan
-      if (!firstLiving) firstLiving = pid;
+      // El cliente de una escolta no lidera nunca
+      if (!firstLiving && !game.entityManager.hasComponent(pid, 'missionGuest')) firstLiving = pid;
       game.turnManager.addEntity(pid, fighter.speed || 50, !!(mem && mem.isLeader));
       if (mem && mem.isLeader) leaderId = pid;
     });

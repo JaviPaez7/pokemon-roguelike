@@ -10,6 +10,7 @@ import {
   acceptMission,
   abandonMission,
   describeMission,
+  acceptedText,
   MAX_ACCEPTED,
   MISSION_TYPE_NAMES,
 } from '../../core/Missions.js';
@@ -129,7 +130,7 @@ function openBoardMission(ui, mission, index) {
             return;
           }
           ui.game.saveGameData();
-          ui.showDialog(`Misión aceptada: ${mission.clientName} os espera en ${names(ui).dungeonName(mission.dungeonId)}, piso ${mission.floor}.`, () =>
+          ui.showDialog(acceptedText(mission, names(ui).dungeonName(mission.dungeonId)), () =>
             openBoardList(ui, Math.max(0, index - 1)),
           );
         },
