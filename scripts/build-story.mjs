@@ -168,6 +168,7 @@ function sceneMeta(id) {
  *   los capítulos. L4-A (el sobre del jardín) sale al volver del tercer pico, o
  *   al elegir el jardín si no había salido.
  * @param {string} id
+ * @returns {{ triggers: Object[], chapter: number, [key: string]: unknown }}
  */
 function postgameMeta(id) {
   const chapter = AFTER_ENDING;
