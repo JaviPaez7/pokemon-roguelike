@@ -44,7 +44,7 @@ En el móvil hay controles táctiles.
 - Vite 8 para el desarrollo y el build.
 - La única dependencia en tiempo de ejecución es [rot-js](https://ondras.github.io/rot.js/): mazmorras, campo de visión y el generador aleatorio con semilla.
 - Sprites animados y retratos de [PMDCollab](https://sprites.pmdcollab.org/).
-- Música y efectos sintetizados en el propio juego.
+- Música y efectos sintetizados en el propio juego, con un tema para cada lugar (`src/data/music.json`).
 
 ## Estructura
 
