@@ -123,6 +123,33 @@ const rosterMember = (page, speciesId) =>
     return m ? { uid: m.uid, level: m.level, maxHp: m.maxHp, moves: m.currentMoves.map((s) => s.moveId), inTeam: profile.teamUids.includes(m.uid) } : null;
   }, speciesId);
 
+/**
+ * Pone al líder junto a la entidad con ese componente y devuelve la tecla para
+ * chocar con ella.
+ * @param {import('@playwright/test').Page} page
+ * @param {string} component
+ */
+function standNextTo(page, component) {
+  return page.evaluate((comp) => {
+    const game = window.game;
+    const em = game.entityManager;
+    const [target] = em.getEntitiesWithComponents(comp, 'position');
+    const t = em.getComponent(target, 'position');
+    const keys = { '1,0': 'ArrowLeft', '-1,0': 'ArrowRight', '0,1': 'ArrowUp', '0,-1': 'ArrowDown' };
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const x = t.x + dx;
+      const y = t.y + dy;
+      if (!game.tileMap.isWalkable(x, y) || em.getEntityAt(x, y, true) !== null || em.getTrapAt(x, y) !== null) continue;
+      const leader = em.getComponent(game.getPlayerId(), 'position');
+      Object.assign(leader, { x, y, prevX: x, prevY: y });
+      game._updateCamera();
+      game._updateFOV();
+      return keys[`${dx},${dy}`];
+    }
+    throw new Error('No hay sitio junto al objetivo');
+  }, component);
+}
+
 /** PS máximos de una especie a un nivel, sin extras de jefe. */
 const normalMaxHp = (page, speciesId, level) =>
   page.evaluate(
@@ -200,7 +227,8 @@ test('Cumbre Escarcha: Articuno habla con su retrato y, al derrotarlo, se une al
 
   // L1-C en el piso del jefe: Articuno, nivel 55
   await toBossFloor(page);
-  expect(await dialogText(page)).toContain('la nieve cae hacia arriba');
+  // Según la semilla, antes puede salir un evento del piso (un claro, un tesoro…)
+  await advanceTo(page, 'la nieve cae hacia arriba');
   expect(await bossInfo(page)).toMatchObject({ speciesId: 144, level: 55 });
   await advanceTo(page, 'subís a hacer ruido');
   expect(await speaker(page)).toEqual({ name: 'Articuno', portrait: expect.stringMatching(/portraits\/0144\/Normal\.png$/) });
@@ -286,7 +314,7 @@ test('Caldera Ascua: Moltres trae su kit; si se le dice que no, se va y a la sig
   await skipDialogs(page);
   await toBossFloor(page);
   await defeatBoss(page);
-  expect(await dialogText(page)).toContain('¡Moltres ha sido derrotado!');
+  await advanceTo(page, '¡Moltres ha sido derrotado!');
   await advanceUntilTown(page);
   expect(await dialogText(page)).toContain('¡Caldera Ascua completada!');
   expect(await page.evaluate(() => window.game.profile.roster.filter((m) => m.speciesId === 146).length)).toBe(1);
@@ -319,4 +347,117 @@ test('al completar el tercer pico llega un sobre sin remite y se abre el jardín
   expect(await speaker(page)).toEqual({ name: 'Mew', portrait: expect.stringMatching(/portraits\/0151\/Joyous\.png$/) });
   await skipDialogs(page);
   await expectExploring(page);
+});
+
+test('el Diario guarda el posjuego detrás del final, con una parte por mazmorra', async ({ page }) => {
+  await startNewGame(page);
+  await setProgress(page, { seen: [...STORY_SCENES, 'L-0', 'L1-B', 'L1-C'] });
+  const before = await page.evaluate(() => [...window.game.profile.story.seen]);
+
+  await page.evaluate(() => window.game.uiManager.openBaseMenu());
+  await option(page, 'Diario').click();
+  await expect(panelTitle(page)).toHaveText('DIARIO DEL EQUIPO');
+  const parts = await page.locator('#options-list .menu-option .town-option-label').allTextContents();
+  expect(parts.slice(-4)).toEqual(['Final · «Antes de que anochezca»', 'Posjuego · «Las leyendas del valle»', 'Cumbre Escarcha', 'Volver']);
+
+  await option(page, 'Cumbre Escarcha').click();
+  await expect(panelTitle(page)).toHaveText('CUMBRE ESCARCHA');
+  await expect(page.locator('#options-list .menu-option .town-option-label')).toHaveText(['Entrada', 'Antes del jefe (piso 8)', 'Volver']);
+  await option(page, 'Antes del jefe').click();
+  expect(await dialogText(page)).toContain('la nieve cae hacia arriba');
+  await advanceTo(page, 'subís a hacer ruido');
+  expect(await speaker(page)).toEqual({ name: 'Articuno', portrait: expect.stringMatching(/portraits\/0144\/Normal\.png$/) });
+  await skipDialogs(page);
+  await expect(panelTitle(page)).toHaveText('CUMBRE ESCARCHA');
+  // Volver a verla no cambia la partida
+  expect(await page.evaluate(() => window.game.profile.story.seen)).toEqual(before);
+});
+
+test('el tablón da encargos ★ en los picos, y la partida se guarda y se carga dentro de uno', async ({ page }) => {
+  await startNewGame(page);
+  await setProgress(page, { seen: [...STORY_SCENES, 'L-0', 'L1-B', 'L2-B', 'L3-B'] });
+
+  // El primer día con un rescate en un pico
+  const { mission, index } = await page.evaluate(() => {
+    const game = window.game;
+    const profile = game.profile;
+    const peaks = ['cumbre_escarcha', 'pico_tronador', 'caldera_ascua'];
+    for (let day = 2; day < 100; day++) {
+      profile.day = day;
+      game.uiManager.openMissionBoard();
+      const board = profile.missions.board;
+      const i = board.findIndex((m) => peaks.includes(m.dungeonId) && m.type === 'rescue');
+      if (i >= 0) return { mission: board[i], index: i };
+    }
+    throw new Error('Ningún rescate en los picos en 100 días');
+  });
+  expect(mission.difficulty).toBe('★');
+  expect(mission.reward.rankPoints).toBe(160);
+  const peak = {
+    cumbre_escarcha: { name: 'Cumbre Escarcha', tileset: 'escarcha', weather: 'granizo' },
+    pico_tronador: { name: 'Pico Tronador', tileset: 'tronador', weather: 'lluvia' },
+    caldera_ascua: { name: 'Caldera Ascua', tileset: 'ascua', weather: 'sol' },
+  }[mission.dungeonId];
+
+  await option(page, 'Encargos del día').click();
+  await page.locator(`#menu-container .menu-option[data-index="${index}"]`).click();
+  await expect(panelTitle(page)).toHaveText('RESCATE · ★');
+  await option(page, 'Aceptar').click();
+  expect(await dialogText(page)).toContain(`${mission.clientName} os espera en`);
+  await dismissDialog(page);
+  await page.evaluate(() => window.game.uiManager.closeMenu());
+  await expectInTown(page);
+
+  // Al piso del encargo
+  await enterByName(page, peak.name);
+  await skipDialogs(page);
+  await expectExploring(page);
+  if (mission.floor > 1) {
+    await page.evaluate(async (floor) => {
+      const game = window.game;
+      game._currentFloor = game.dungeon.floors[0] + floor - 2;
+      await game.floorManager.changeFloor('down');
+    }, mission.floor);
+    // Según la semilla, el piso trae algún aviso (una casa de monstruos…) o nada
+    for (let i = 0; i < 50 && (await page.locator('.dialog-panel').isVisible()); i++) await page.keyboard.press('z');
+    await expectExploring(page);
+  }
+
+  /** Dónde está el equipo y cómo es el piso. */
+  const where = () =>
+    page.evaluate(() => {
+      const game = window.game;
+      return {
+        dungeonId: game.dungeonId,
+        floor: game.getCurrentFloor(),
+        globalFloor: game._currentFloor,
+        biome: game.tileMap.biome.id,
+        weather: game.currentWeather,
+        clients: game.entityManager.getEntitiesWithComponents('missionClient').length,
+      };
+    });
+  const here = await where();
+  expect(here).toMatchObject({ dungeonId: mission.dungeonId, floor: mission.floor, biome: peak.tileset, clients: 1 });
+  expect(here.globalFloor).toBeGreaterThan(50);
+  expect(['normal', peak.weather]).toContain(here.weather);
+
+  // Guardar y cargar dentro del pico: mismo sitio, mismo tema y el cliente sigue ahí
+  await page.evaluate(() => window.game.saveGameData());
+  await page.reload();
+  await option(page, 'Continuar partida').click();
+  await dismissDialog(page);
+  await expectExploring(page);
+  expect(await where()).toEqual(here);
+
+  // Se cumple hablando con el cliente y se cobra al volver
+  const key = await standNextTo(page, 'missionClient');
+  await page.keyboard.press(key);
+  expect(await dialogText(page)).toContain('¡Habéis venido a por mí!');
+  await dismissDialog(page);
+  await expect(panelTitle(page)).toHaveText('¡MISIÓN CUMPLIDA!');
+  await option(page, 'Volver al pueblo').click();
+  await expect.poll(() => page.evaluate(() => window.game.getState())).toBe('TOWN');
+  const summary = await dialogText(page);
+  expect(summary).toContain(`Misión de ${mission.clientName}: +${mission.reward.money} Poké`);
+  expect(summary).toContain('+160 puntos de rango.');
 });

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { RNG } from 'rot-js';
 import { weatherOptions, WeatherSystem } from '../../src/systems/WeatherSystem.js';
 import floorsData from '../../src/data/floors.json';
 
@@ -22,6 +23,22 @@ describe('clima de cada piso', () => {
     for (const zone of floorsData.zones.filter((z) => z.weather)) {
       expect(zone.weather.chance, zone.name).toBeGreaterThan(0);
       for (const type of zone.weather.types) expect(known, zone.name).toContain(type);
+    }
+  });
+
+  it('al generar el piso, cada mazmorra de legendario solo trae su clima', () => {
+    const system = new WeatherSystem();
+    RNG.setSeed(20260927);
+    const expected = { 52: 'granizo', 60: 'lluvia', 70: 'sol' };
+    for (const [floor, weather] of Object.entries(expected)) {
+      // Lo mínimo del juego que usa: el piso, su zona y el aviso
+      const game = { _currentFloor: Number(floor), floorManager: { getZoneConfig: () => zoneAt(Number(floor)) }, eventBus: { emit() {} } };
+      const seen = new Set();
+      for (let i = 0; i < 200; i++) {
+        system.generateFloorWeather(game);
+        seen.add(game.currentWeather);
+      }
+      expect([...seen].sort(), `piso ${floor}`).toEqual(['normal', weather].sort());
     }
   });
 });
