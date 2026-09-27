@@ -179,6 +179,8 @@ export function updateSelectionVisuals(ui) {
       opt.classList.add('selected');
       const cursor = opt.querySelector('.cursor');
       if (cursor) cursor.style.opacity = '1';
+      // En las listas largas (con scroll), que la seleccionada se vea
+      opt.scrollIntoView?.({ block: 'nearest' });
     } else {
       opt.classList.remove('selected');
       const cursor = opt.querySelector('.cursor');

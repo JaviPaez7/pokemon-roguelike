@@ -173,7 +173,13 @@ export class FloorManager {
         );
         game.entityManager.setComponent(bossId, 'isBoss', true);
         game.entityManager.setComponent(bossId, 'boss', { active: true });
-        
+        // Algunos jefes traen su propio kit (`moves` en floors.json)
+        if (bossInfo.moves) {
+          const info = game.entityManager.getComponent(bossId, 'pokemonInfo');
+          info.currentMoves = game.entityManager.moveSlots(bossInfo.moves);
+          game.entityManager.setComponent(bossId, 'pokemonInfo', info);
+        }
+
         // Boost de PS para el jefe (Mewtwo un poco menos muro; `hpMultiplier` en floors.json manda)
         const fighter = game.entityManager.getComponent(bossId, 'fighter');
         if (fighter) {

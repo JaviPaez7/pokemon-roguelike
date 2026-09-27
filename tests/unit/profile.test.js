@@ -13,9 +13,11 @@ import {
   transferItem,
   defeatLosses,
   markCleared,
+  profileDungeons,
   setLeader,
   setTactic,
 } from '../../src/core/Profile.js';
+import storyData from '../../src/data/story.json';
 
 const poke = (name, level = 5) => ({ name, level, speciesId: name.toLowerCase() });
 
@@ -172,5 +174,20 @@ describe('derrota y mazmorras completadas', () => {
     expect(markCleared(profile, 'bosque_verde')).toEqual(['cueva_oscura']);
     expect(markCleared(profile, 'bosque_verde')).toEqual([]);
     expect(profile.clearedDungeons).toEqual(['bosque_verde']);
+  });
+
+  it('tras el final se abren los tres picos, y el jardín al completarlos', () => {
+    const profile = newProfile();
+    profile.clearedDungeons = [...storyData.chapters, 'torre_desafio'];
+    expect(profileDungeons(profile).some((d) => d.postgame)).toBe(false);
+    // Una partida de antes de la historia, sin `story`, no se rompe
+    delete profile.story;
+    expect(profileDungeons(profile).some((d) => d.postgame)).toBe(false);
+
+    profile.story = { seen: ['F-1', 'F-2', 'F-3'] };
+    expect(profileDungeons(profile).filter((d) => d.postgame).map((d) => d.id)).toEqual(['cumbre_escarcha', 'pico_tronador', 'caldera_ascua']);
+    expect(markCleared(profile, 'cumbre_escarcha')).toEqual([]);
+    expect(markCleared(profile, 'pico_tronador')).toEqual([]);
+    expect(markCleared(profile, 'caldera_ascua')).toEqual(['jardin_primer_sueno']);
   });
 });

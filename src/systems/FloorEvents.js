@@ -296,6 +296,22 @@ export function restoreMerchantNPC(game, x, y, items) {
 }
 
 /**
+ * Nivel de un Pokémon amistoso: el del piso global, como siempre en la
+ * historia (en el piso 50 del laboratorio, nivel 50 frente a salvajes de hasta
+ * 44), pero sin pasar de `margin` niveles por encima del salvaje más fuerte de
+ * la zona. En el posjuego el piso global (51 a 84) ya no dice nada del nivel:
+ * sin tope, en el jardín de Mew habría amistosos de nivel 84.
+ * @param {number} globalFloor
+ * @param {{ levelRange?: [number, number] } | null | undefined} zone
+ * @param {number} [margin] - `friendlyLevelMargin` en floors.json
+ * @returns {number}
+ */
+export function friendlyLevel(globalFloor, zone, margin = Infinity) {
+  const cap = zone?.levelRange ? zone.levelRange[1] + margin : Infinity;
+  return Math.max(1, Math.min(globalFloor || 1, cap));
+}
+
+/**
  * Crea una entidad de Pokémon amigable.
  * @param {import('../core/Game.js').Game} game
  * @param {number} x
@@ -306,7 +322,7 @@ function createFriendlyNPC(game, x, y) {
   const validPokemon = game.pokemonData.filter(p => p.id < 144 && p.id !== 150);
   const species = validPokemon[Math.floor(RNG.getUniform() * validPokemon.length)];
   
-  const level = Math.max(1, game._currentFloor);
+  const level = friendlyLevel(game._currentFloor, game.floorManager?.getZoneConfig?.(), game.floorsData?.friendlyLevelMargin);
   const npcId = game.entityManager.createPokemon(species.id, level, x, y, false);
   
   // Agregar componente de interacción amistosa
