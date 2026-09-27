@@ -28,6 +28,7 @@ import {
 } from './menus/TownMenus.js';
 import { openMissionReturnPrompt, openAcceptedList } from './menus/MissionMenus.js';
 import { openEndingCredits } from './menus/CreditsMenu.js';
+import { playPlaceMusic } from '../core/MusicSession.js';
 
 export class UIManager {
   /**
@@ -214,15 +215,18 @@ export class UIManager {
   /**
    * Reacción de la UI a `state_changed`. No puede llamar a `changeState`
    * (Game lo impide). Entrar en MENU no abre nada: MENU es la consecuencia de
-   * abrir un menú, nunca la causa.
+   * abrir un menú, nunca la causa. El título y la nueva aventura ponen su
+   * música (la del pueblo y la de cada piso las ponen TownSession y FloorManager).
    * @param {string} state
    */
   handleStateChange(state) {
     switch (state) {
       case GAME_STATES.TITLE:
+        playPlaceMusic(this.game);
         this.openTitleScreen();
         break;
       case GAME_STATES.STARTER_SELECT:
+        playPlaceMusic(this.game);
         openNewAdventure(this);
         break;
       case GAME_STATES.EXPLORING:

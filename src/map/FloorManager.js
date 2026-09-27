@@ -10,6 +10,7 @@ import { floorSeed } from '../core/Random.js';
 import { relativeFloor } from '../core/Dungeons.js';
 import { spawnMissionTargets } from '../systems/MissionSystem.js';
 import { onFloorEntered } from '../core/StorySession.js';
+import { playPlaceMusic } from '../core/MusicSession.js';
 
 /**
  * Generación de pisos, spawn de enemigos y pre-carga de sprites.
@@ -316,6 +317,11 @@ export class FloorManager {
     }
   }
 
+  /**
+   * Genera el piso nuevo, coloca al equipo y pone la música y las escenas del piso.
+   * @param {'down' | 'up'} direction
+   * @returns {Promise<void>}
+   */
   async _changeFloorInner(direction) {
     const game = this.game;
 
@@ -456,12 +462,9 @@ export class FloorManager {
     game._updateFOV();
     game.saveGameData();
 
+    // La música de la mazmorra, o la del jefe si está en este piso
+    playPlaceMusic(game);
     const zone = this.getZoneConfig();
-    if (zone) {
-      if (game.uiManager && game.uiManager.music) {
-        game.uiManager.music.playZone(zone.name);
-      }
-    }
 
     // Pequeña recuperación al cambiar de piso (no al cargar partida)
     const skipHeal = !!game._skipFloorHealOnLoad;

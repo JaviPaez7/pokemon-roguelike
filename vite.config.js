@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => ({
             { name: 'sprites', test: new RegExp(`${DATA}pmd-sprites\\.json$`) },
             {
               name: 'datos',
-              test: new RegExp(`${DATA}(pokemon|moves|items|types|evolutions|floors|dungeons|tilesets|town|personality|recruitment|iq)\\.json$`),
+              test: new RegExp(`${DATA}(pokemon|moves|items|types|evolutions|floors|dungeons|tilesets|town|personality|recruitment|iq|music)\\.json$`),
             },
             { name: 'libs', test: /node_modules/ },
           ],

@@ -7,6 +7,9 @@
  * quiere seguir después, con `onDone`. Si no hay escena, `onDone` se llama en
  * el momento. Las escenas se apuntan como vistas al empezar, así que salen una
  * sola vez aunque se cierre el juego a medias.
+ *
+ * Cada escena suena con su tema (core/MusicSelect.js) desde que sale su
+ * primera línea; al acabar, vuelve la música del lugar.
  */
 
 import { getMember } from './Profile.js';
@@ -25,6 +28,7 @@ import {
   rescueLine,
 } from './Story.js';
 import { MAX_INVENTORY } from '../constants.js';
+import { playPlaceMusic, playSceneMusic } from './MusicSession.js';
 
 /**
  * Protagonista, compañero y nombre del equipo de la partida.
@@ -92,12 +96,17 @@ export function replayScene(game, sceneId, onDone) {
     onDone();
     return;
   }
-  showLines(game, sceneLines(scene, storyCast(game)), onDone, { backdrop: scene.backdrop });
+  const done = () => {
+    playPlaceMusic(game);
+    onDone();
+  };
+  showLines(game, sceneLines(scene, storyCast(game)), done, { backdrop: scene.backdrop, scene });
 }
 
 /**
- * Muestra escenas una detrás de otra. Tras una escena con `then: 'credits'`
- * salen los créditos finales y luego las escenas de después de los créditos.
+ * Muestra escenas una detrás de otra, cada una con su música. Tras una escena
+ * con `then: 'credits'` salen los créditos finales y luego las escenas de
+ * después de los créditos. Al acabar vuelve la música del lugar.
  * @param {import('./Game.js').Game} game
  * @param {import('./Story.js').Scene[]} scenes
  * @param {(() => void) | null} onDone
@@ -105,6 +114,7 @@ export function replayScene(game, sceneId, onDone) {
 function playScenes(game, scenes, onDone) {
   const [scene, ...rest] = scenes;
   if (!scene) {
+    playPlaceMusic(game);
     // Tras la historia, el pueblo pone al día quién está (Arcanine y Raichu llegan en el epílogo)
     game.eventBus.emit('story_scenes_done');
     onDone?.();
@@ -121,16 +131,18 @@ function playScenes(game, scenes, onDone) {
             playStory(game, 'credits_end', {}, next);
           })
       : next;
-  showLines(game, sceneLines(scene, storyCast(game)), afterScene, { backdrop: scene.backdrop });
+  showLines(game, sceneLines(scene, storyCast(game)), afterScene, { backdrop: scene.backdrop, scene });
 }
 
 /**
  * @param {import('./Game.js').Game} game
  * @param {import('./Story.js').ShownLine[]} lines
  * @param {() => void} onDone
- * @param {{ backdrop?: string }} [options]
+ * @param {{ backdrop?: 'black', scene?: import('./Story.js').Scene }} [options]
+ *   `scene`: su música empieza al salir la primera línea (no mientras espera
+ *   detrás de otro diálogo, como el resumen de la vuelta al pueblo)
  */
-function showLines(game, lines, onDone, { backdrop } = {}) {
+function showLines(game, lines, onDone, { backdrop, scene } = {}) {
   if (lines.length === 0) {
     onDone();
     return;
@@ -140,6 +152,7 @@ function showLines(game, lines, onDone, { backdrop } = {}) {
       speaker: line.speaker ?? undefined,
       portrait: line.portrait ?? undefined,
       backdrop,
+      onShow: scene && i === 0 ? () => playSceneMusic(game, scene) : undefined,
     });
   });
 }

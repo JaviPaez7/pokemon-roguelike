@@ -6,6 +6,8 @@ import { portraitUrl } from '../render/PmdSprites.js';
  * @property {string} [speaker] - Quién habla (se muestra encima del texto)
  * @property {{ speciesId: number, emotion?: string }} [portrait] - Retrato de PMDCollab a la izquierda
  * @property {'black'} [backdrop] - Fondo negro en vez del juego (la voz del prólogo)
+ * @property {() => void} [onShow] - Al salir en pantalla, no al entrar en la cola
+ *   (la música de una escena empieza con su primera línea)
  */
 
 /** Diálogos RPG con cola y animación letra a letra. */
@@ -38,6 +40,7 @@ export class DialogController {
     }
   }
 
+  /** Muestra el primer diálogo de la cola o, si no queda ninguno, cierra. */
   displayNextDialog() {
     const { ui } = this;
 
@@ -70,6 +73,7 @@ export class DialogController {
 
     ui.menuContainer.innerHTML = html;
     ui.currentMenuType = 'dialog';
+    options.onShow?.();
 
     if (instant) {
       const el = document.getElementById('dialog-text');

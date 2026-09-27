@@ -7,6 +7,7 @@ import { onMissionItemFound } from '../systems/MissionSystem.js';
 import { tryRecruit, acceptRecruit, declineRecruit } from '../systems/RecruitSystem.js';
 import { playStory } from './StorySession.js';
 import { refreshTownNpcs } from './TownSession.js';
+import { playPlaceMusic } from './MusicSession.js';
 
 /**
  * Registra los listeners globales del EventBus en la instancia del juego.
@@ -203,6 +204,8 @@ export function setupGameEventListeners(game) {
         game.entityManager.createItemEntity(selectedItem, 1, dropX, dropY);
 
         game.entityManager.destroyEntity(data.entityId);
+        // Sin jefe en pie, vuelve la música de la mazmorra
+        playPlaceMusic(game);
 
         const isFinalBoss = game.isLastFloor();
         game.eventBus.emit('show_dialog', { 

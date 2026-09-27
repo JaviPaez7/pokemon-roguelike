@@ -1,0 +1,164 @@
+{
+  "_formato": "Música chiptune sintetizada (audio/MusicManager.js); qué tema suena en cada lugar lo decide core/MusicSelect.js. `scales`: escalas de 7 notas MIDI. `places`: tema de cada lugar (título, pueblo, cada mazmorra por su id de dungeons.json, piso de jefe, escenas de la historia y créditos finales); un lugar sin tema usa `default`. En `places.story`, `scenes` (por id de escena de story.json) y `triggers` (por disparador) eligen un ambiente de `moods`; si no, suena su `default`. Cada tema: `scale`, `tempo` (negras por minuto), `waveform` (sine, square, sawtooth o triangle) y `octave` (desplazamiento en octavas). Opcionales: `melody` y `bass`, patrones de corcheas con grados de la escala (0 = tónica, 7 = una octava más arriba, negativos por debajo, null = silencio; el bajo suena una octava más grave); sin `melody` salen notas al azar de la escala con probabilidad `density`, y sin `bass`, la tónica en cada tiempo. `variation`: probabilidad de que una nota del patrón se mueva un grado. `noteLength`: segundos que dura cada nota de la melodía.",
+  "default": "mazmorra",
+  "scales": {
+    "c_major": [60, 62, 64, 65, 67, 69, 71],
+    "a_minor": [57, 59, 60, 62, 64, 65, 67],
+    "d_dorian": [62, 64, 65, 67, 69, 71, 72],
+    "e_phrygian": [64, 65, 67, 69, 71, 72, 74],
+    "f_lydian": [65, 67, 69, 71, 72, 74, 76],
+    "g_mixolydian": [55, 57, 59, 60, 62, 64, 65],
+    "a_harmonic_minor": [57, 59, 60, 62, 64, 65, 68]
+  },
+  "places": {
+    "title": "titulo",
+    "town": "pueblo",
+    "dungeons": {
+      "bosque_verde": "bosque_verde",
+      "cueva_oscura": "cueva_oscura",
+      "ruta_electrica": "ruta_electrica",
+      "monte_lunar": "monte_lunar",
+      "profundidades_oscuras": "profundidades_oscuras",
+      "isla_volcanica": "isla_volcanica",
+      "laboratorio_final": "laboratorio_final",
+      "torre_desafio": "torre_desafio",
+      "cumbre_escarcha": "cumbre_escarcha",
+      "pico_tronador": "pico_tronador",
+      "caldera_ascua": "caldera_ascua",
+      "jardin_primer_sueno": "jardin_primer_sueno"
+    },
+    "boss": {
+      "default": "jefe",
+      "dungeons": { "laboratorio_final": "jefe_final" }
+    },
+    "story": {
+      "default": "historia",
+      "moods": {
+        "tension": "historia_tension",
+        "emocion": "historia_emocion",
+        "eco": "eco"
+      },
+      "triggers": { "boss_floor": "tension" },
+      "scenes": {
+        "P-1": "eco",
+        "5-B2": "tension",
+        "7-B2": "eco",
+        "3-E": "emocion",
+        "4-D": "emocion",
+        "6-D": "emocion",
+        "6-E": "emocion",
+        "7-D": "emocion",
+        "F-2": "emocion",
+        "F-3": "emocion"
+      }
+    },
+    "credits": "creditos"
+  },
+  "themes": {
+    "mazmorra": { "scale": "c_major", "tempo": 120, "waveform": "square", "octave": 0, "density": 0.7 },
+    "titulo": {
+      "scale": "c_major", "tempo": 104, "waveform": "square", "octave": 0,
+      "melody": [0, null, 4, null, 7, null, 6, 4, 5, null, 4, 2, 4, null, null, null, 0, null, 4, null, 7, null, 9, 8, 7, null, 6, 4, 7, null, null, null],
+      "bass": [0, null, 0, null, 3, null, 3, null, 4, null, 4, null, 0, null, 4, null]
+    },
+    "pueblo": {
+      "scale": "g_mixolydian", "tempo": 92, "waveform": "triangle", "octave": 0, "noteLength": 0.18, "variation": 0.08,
+      "melody": [4, null, 2, 3, 4, null, 7, null, 6, null, 4, null, 3, 2, 0, null, 1, null, 2, 3, 4, null, 2, null, 1, null, 0, null, null, null, null, null],
+      "bass": [0, null, null, null, 4, null, null, null, 3, null, null, null, 0, null, 4, null]
+    },
+    "bosque_verde": {
+      "scale": "c_major", "tempo": 110, "waveform": "triangle", "octave": 0, "variation": 0.1,
+      "melody": [2, 4, 5, null, 4, 2, 0, null, 2, 4, 7, null, 6, 5, 4, null, 5, 4, 2, null, 4, 2, 1, null, 2, 1, 0, null, null, 0, 1, null],
+      "bass": [0, null, 4, null, 5, null, 4, null, 3, null, 0, null, 4, null, 0, null]
+    },
+    "cueva_oscura": {
+      "scale": "e_phrygian", "tempo": 80, "waveform": "sine", "octave": -1, "noteLength": 0.3,
+      "melody": [0, null, null, 1, null, null, 0, null, null, null, 4, null, 3, null, 1, null, 0, null, null, 1, null, 3, null, null, 2, null, 1, null, 0, null, null, null],
+      "bass": [0, null, null, null, null, null, null, null, 1, null, null, null, 0, null, null, null]
+    },
+    "ruta_electrica": {
+      "scale": "d_dorian", "tempo": 130, "waveform": "square", "octave": 0,
+      "melody": [0, 2, 4, 7, 4, 2, 0, null, 1, 3, 5, 8, 5, 3, 1, null, 2, 4, 6, 9, 6, 4, 2, null, 4, 3, 2, 1, 0, null, 7, null],
+      "bass": [0, 0, null, 0, null, 0, 3, null, 1, 1, null, 1, null, 1, 4, null]
+    },
+    "monte_lunar": {
+      "scale": "c_major", "tempo": 95, "waveform": "sine", "octave": 0, "noteLength": 0.25,
+      "melody": [7, null, 4, null, 9, null, 7, null, 6, null, 4, null, 2, null, null, null, 5, null, 4, null, 2, null, 4, null, 1, null, 0, null, null, null, null, null],
+      "bass": [0, null, null, null, 5, null, null, null, 3, null, null, null, 4, null, null, null]
+    },
+    "profundidades_oscuras": {
+      "scale": "a_minor", "tempo": 85, "waveform": "triangle", "octave": -1, "noteLength": 0.2,
+      "melody": [0, null, 2, null, 1, null, 0, null, -1, null, 0, null, 4, null, 3, null, 2, null, 1, null, 0, null, -2, null, -1, null, null, null, 0, null, null, null],
+      "bass": [0, null, null, null, 0, null, null, null, 5, null, null, null, 3, null, 6, null]
+    },
+    "isla_volcanica": {
+      "scale": "e_phrygian", "tempo": 120, "waveform": "square", "octave": -1,
+      "melody": [0, 0, 1, null, 0, 0, 3, null, 0, 0, 1, null, 4, 3, 1, null, 0, 0, 1, null, 0, 0, 5, null, 4, null, 3, null, 1, null, 0, null],
+      "bass": [0, null, 0, null, 0, null, 1, null, 0, null, 0, null, 3, null, 1, null]
+    },
+    "laboratorio_final": {
+      "scale": "d_dorian", "tempo": 140, "waveform": "square", "octave": 0,
+      "melody": [0, 4, 7, 4, 1, 5, 8, 5, 2, 6, 9, 6, 1, 5, 8, 5, 0, 4, 7, 4, 6, 3, 5, 2, 4, 1, 3, 0, null, 0, null, null],
+      "bass": [0, null, 0, null, 1, null, 1, null, 2, null, 2, null, 1, null, 1, null]
+    },
+    "torre_desafio": {
+      "scale": "a_harmonic_minor", "tempo": 125, "waveform": "sawtooth", "octave": 0,
+      "melody": [0, null, 2, 4, 7, null, 6, null, 4, null, 5, 4, 2, null, 1, null, 2, null, 4, 5, 6, null, 7, null, 4, null, 2, 1, 0, null, null, null],
+      "bass": [0, null, 0, null, 3, null, 3, null, 4, null, 4, null, 0, null, 4, null]
+    },
+    "jefe": {
+      "scale": "a_harmonic_minor", "tempo": 150, "waveform": "sawtooth", "octave": 0,
+      "melody": [0, 0, 7, 0, 6, 0, 5, 4, 0, 0, 7, 0, 6, 0, 8, 7, 2, 2, 9, 2, 8, 2, 7, 6, 4, 4, 11, 4, 10, 9, 8, 7],
+      "bass": [0, 0, null, 0, 0, null, 0, 0, 5, 5, null, 5, 4, null, 4, 4]
+    },
+    "jefe_final": {
+      "scale": "e_phrygian", "tempo": 160, "waveform": "sawtooth", "octave": -1,
+      "melody": [0, null, 1, 0, 7, null, 6, 5, 4, null, 5, 4, 1, null, 0, null, 0, null, 1, 0, 8, null, 7, 6, 5, null, 4, 3, 1, null, null, null],
+      "bass": [0, 0, 0, null, 1, 1, 1, null, 0, 0, 0, null, 3, 3, 1, null]
+    },
+    "historia": {
+      "scale": "c_major", "tempo": 80, "waveform": "triangle", "octave": 0, "noteLength": 0.3,
+      "melody": [4, null, null, 2, 3, null, 4, null, 2, null, null, null, 0, null, null, null, 1, null, null, 2, 3, null, 1, null, 4, null, null, null, null, null, null, null],
+      "bass": [0, null, null, null, null, null, null, null, 5, null, null, null, null, null, null, null, 3, null, null, null, null, null, null, null, 4, null, null, null, null, null, null, null]
+    },
+    "historia_tension": {
+      "scale": "e_phrygian", "tempo": 100, "waveform": "square", "octave": -1,
+      "melody": [null, null, null, null, 1, null, 0, null, null, null, null, null, 4, null, 3, null],
+      "bass": [0, 0, null, null, 0, 0, null, null, 0, 0, null, null, 1, 1, null, null]
+    },
+    "historia_emocion": {
+      "scale": "f_lydian", "tempo": 72, "waveform": "sine", "octave": 0, "noteLength": 0.4,
+      "melody": [4, null, 3, null, 2, null, 4, null, 7, null, null, null, 6, null, 4, null, 5, null, 4, null, 2, null, 1, null, 2, null, null, null, null, null, null, null],
+      "bass": [0, null, null, null, null, null, null, null, 3, null, null, null, null, null, null, null, 1, null, null, null, null, null, null, null, 4, null, null, null, null, null, null, null]
+    },
+    "eco": {
+      "scale": "f_lydian", "tempo": 60, "waveform": "sine", "octave": 1, "density": 0.3, "noteLength": 0.5,
+      "bass": [0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+    },
+    "creditos": {
+      "scale": "c_major", "tempo": 108, "waveform": "triangle", "octave": 0, "noteLength": 0.15,
+      "melody": [0, null, 4, null, 7, null, 6, 4, 5, null, 4, 2, 4, null, 2, null, 3, null, 5, null, 8, null, 7, 5, 4, null, 2, 1, 0, null, null, null],
+      "bass": [0, null, 4, null, 3, null, 4, null, 5, null, 4, null, 3, null, 4, null]
+    },
+    "cumbre_escarcha": {
+      "scale": "a_minor", "tempo": 90, "waveform": "sine", "octave": 1, "noteLength": 0.25,
+      "melody": [7, null, 4, null, 2, null, 4, 7, 9, null, 7, null, 4, null, null, null],
+      "bass": [0, null, null, null, 5, null, null, null, 3, null, null, null, 4, null, null, null]
+    },
+    "pico_tronador": {
+      "scale": "d_dorian", "tempo": 150, "waveform": "square", "octave": 0,
+      "melody": [0, 4, 0, 4, 1, 5, 1, 5, 2, 6, 2, 6, 4, 3, 2, 1],
+      "bass": [0, null, 0, 0, null, 0, 0, null, 1, null, 1, 1, null, 1, 4, null]
+    },
+    "caldera_ascua": {
+      "scale": "e_phrygian", "tempo": 130, "waveform": "sawtooth", "octave": -1,
+      "melody": [0, 1, 0, null, 3, 1, 0, null, 0, 1, 0, null, 4, 3, 1, null],
+      "bass": [0, 0, null, 0, 1, null, 0, null, 0, 0, null, 0, 3, null, 1, null]
+    },
+    "jardin_primer_sueno": {
+      "scale": "c_major", "tempo": 100, "waveform": "triangle", "octave": 1, "noteLength": 0.2,
+      "melody": [4, null, 5, null, 7, null, 9, null, 8, null, 7, null, 5, null, 4, null, 2, null, 4, null, 5, null, 4, null, 2, null, 1, null, 0, null, null, null],
+      "bass": [0, null, null, null, 3, null, null, null, 5, null, null, null, 4, null, null, null]
+    }
+  }
+}
