@@ -46,7 +46,9 @@ export function spawnItems(itemPoints, count, itemsDB, entityManager, floor = 1)
  * @returns {Object|null} Item seleccionado
  */
 function selectRandomItem(itemsDB, floor = 1) {
-  if (!itemsDB || itemsDB.length === 0) return null;
+  // Los objetos únicos (`unique`, los de la historia) no aparecen en el suelo
+  itemsDB = (itemsDB || []).filter((item) => !item.unique);
+  if (itemsDB.length === 0) return null;
 
   const earlyBoostIds = new Set([
     'apple', 'oran_berry', 'potion', 'ether',

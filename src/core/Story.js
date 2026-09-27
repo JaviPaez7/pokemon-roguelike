@@ -26,6 +26,7 @@ export const AFTER_ENDING = STORY.chapters.length + 1;
  * @typedef {{
  *   id: string,
  *   title: string,
+ *   part: string,
  *   chapter: number,
  *   triggers: StoryTrigger[],
  *   when?: { chapter?: number },
@@ -180,13 +181,61 @@ export function npcGreeting(npcId, chapter, seen, data = STORY) {
 }
 
 /**
- * Si un vecino está fuera del pueblo en este capítulo (Slowpoke en el 5).
+ * Si un vecino está fuera del pueblo: Slowpoke en el capítulo 5, y Arcanine
+ * y Raichu hasta que llegan en el epílogo.
  * @param {string} npcId
  * @param {number} chapter
+ * @param {string[]} [seen]
  * @param {typeof STORY} [data]
  */
-export function npcAbsent(npcId, chapter, data = STORY) {
-  return (data.absent[npcId] ?? []).includes(chapter);
+export function npcAbsent(npcId, chapter, seen = [], data = STORY) {
+  const rule = data.townNpcs[npcId];
+  if (!rule) return false;
+  if (rule.away?.includes(chapter)) return true;
+  return !!rule.arrivesWith && !seen.includes(rule.arrivesWith);
+}
+
+/**
+ * Lo que susurra el Eco en un aviso del viento (hasta el final de la historia).
+ * @param {number} warning - 0, 1 o 2
+ * @param {number} chapter
+ * @param {typeof STORY} [data]
+ * @returns {string | null}
+ */
+export function windWhisper(warning, chapter, data = STORY) {
+  if (chapter >= AFTER_ENDING) return null;
+  return data.whispers[warning] ?? null;
+}
+
+/**
+ * Quién os trae de vuelta al caer, si la historia ya lo ha contado.
+ * @param {string[]} seen
+ * @param {typeof STORY} [data]
+ * @returns {string | null}
+ */
+export function rescueLine(seen, data = STORY) {
+  return seen.includes(data.rescue.after) ? data.rescue.text : null;
+}
+
+/**
+ * Escenas vistas, agrupadas por partes del guion (prólogo, capítulos y final)
+ * y en su orden, para el Diario.
+ * @param {string[]} seen
+ * @param {typeof STORY} [data]
+ * @returns {{ part: string, scenes: { id: string, title: string }[] }[]}
+ */
+export function diaryParts(seen, data = STORY) {
+  const parts = [];
+  for (const scene of data.scenes) {
+    if (!seen.includes(scene.id)) continue;
+    let group = parts.find((p) => p.part === scene.part);
+    if (!group) {
+      group = { part: scene.part, scenes: [] };
+      parts.push(group);
+    }
+    group.scenes.push({ id: scene.id, title: scene.title });
+  }
+  return parts;
 }
 
 /**
@@ -200,15 +249,31 @@ export function markSeen(profile, ids) {
 }
 
 /**
- * Lo que cambia una escena en el perfil.
+ * Lo que cambia una escena en la partida.
  * - `letter_mission`: apunta el encargo del sobre sin remite (si no lo estaba).
  * - `deliver_letter`: el sobre ha llegado a Raichu; se cobra al volver.
+ * - `give:<objeto>`: un objeto a la mochila o, si no cabe, al almacén.
  * @param {Object} profile
  * @param {string} effect
+ * @param {{ bag?: { itemId: string, quantity: number }[], maxSlots?: number }} [pack] - Mochila en juego
  * @param {typeof STORY} [data]
+ * @returns {'bag' | 'storage' | null} Dónde ha ido el objeto, si la escena da uno
  */
-export function applyStoryEffect(profile, effect, data = STORY) {
+export function applyStoryEffect(profile, effect, { bag = [], maxSlots = Infinity } = {}, data = STORY) {
   const spec = data.letterMission;
+  if (effect.startsWith('give:')) {
+    const itemId = effect.slice('give:'.length);
+    const inBag = bag.find((s) => s.itemId === itemId);
+    if (inBag || bag.length < maxSlots) {
+      if (inBag) inBag.quantity += 1;
+      else bag.push({ itemId, quantity: 1 });
+      return 'bag';
+    }
+    const stored = profile.storage.find((s) => s.itemId === itemId);
+    if (stored) stored.quantity += 1;
+    else profile.storage.push({ itemId, quantity: 1 });
+    return 'storage';
+  }
   switch (effect) {
     case 'letter_mission':
       if (!profile.missions.accepted.some((m) => m.id === spec.id)) profile.missions.accepted.push(storyMission(spec));
@@ -219,6 +284,7 @@ export function applyStoryEffect(profile, effect, data = STORY) {
     default:
       throw new Error(`Efecto de historia desconocido: ${effect}`);
   }
+  return null;
 }
 
 /**

@@ -5,6 +5,21 @@ import { GAME_STATES, TYPE_NAMES_ES } from '../../constants.js';
 import { heldName } from '../../core/HeldItems.js';
 import { skillsForIq } from '../../core/IQ.js';
 import { takeHeldItem } from '../../systems/InventorySystem.js';
+import { setLeader, setTactic } from '../../core/Profile.js';
+
+/**
+ * En el pueblo el equipo son copias de las fichas: lo que cambia ahí se apunta
+ * también en el perfil (y se guarda), porque las expediciones salen de él. En
+ * la mazmorra no hace falta: al volver se copian las fichas.
+ * @param {import('../UIManager.js').UIManager} ui
+ * @param {(profile: Object) => void} change
+ */
+function keepInTown(ui, change) {
+  const game = ui.game;
+  if (game.dungeonId || !game.profile) return;
+  change(game.profile);
+  game.saveGameData();
+}
 
 /** @param {import('../UIManager.js').UIManager} ui */
 export function openTeamMenu(ui) {
@@ -142,6 +157,7 @@ export function openPokemonActionsMenu(ui) {
       ui.game._playerId = selectedId;
       ui.game.turnManager.setPlayerEntityId(selectedId);
       ui.game.playerPathHistory = [];
+      keepInTown(ui, (profile) => setLeader(profile, newLeaderMem.uid));
       ui.showDialog(`¡${info.name} ahora lidera el equipo!`, () => openTeamMenu(ui));
     } else {
       ui.showDialog('Error al cambiar de líder.', () => openTeamMenu(ui));
@@ -243,6 +259,7 @@ export function openTacticSelectMenu(ui) {
     if (partyMember) {
       partyMember.tactic = t.id;
       ui.game.entityManager.setComponent(ui.selectedPokemon, 'partyMember', partyMember);
+      keepInTown(ui, (profile) => setTactic(profile, partyMember.uid, t.id));
       ui.showDialog(`Táctica de ${info.name} cambiada a: ¡${t.name}!`, () => openPokemonActionsMenu(ui));
     } else {
       openPokemonActionsMenu(ui);
