@@ -1,0 +1,38 @@
+{
+  "types": {
+    "rescue": { "weight": 4, "moneyBonus": 0, "moneyMultiplier": 1, "pointsMultiplier": 1 },
+    "find_item": { "weight": 2, "moneyBonus": 40, "moneyMultiplier": 1, "pointsMultiplier": 1 },
+    "deliver": { "weight": 2, "moneyBonus": 40, "moneyMultiplier": 1, "pointsMultiplier": 1 },
+    "escort": { "weight": 2, "moneyBonus": 60, "moneyMultiplier": 1, "pointsMultiplier": 1.2 },
+    "outlaw": { "weight": 2, "moneyBonus": 60, "moneyMultiplier": 1.5, "pointsMultiplier": 1.5 }
+  },
+  "money": { "base": 80, "perFloor": 25, "roundTo": 10 },
+  "escort": {
+    "minFloor": 2,
+    "levelOffset": 0,
+    "blockedItemTypes": ["held", "evolution_stone", "level_up", "gummi"],
+    "reasons": [
+      "Va a la boda de su prima y no se sabe el camino.",
+      "Dicen que desde allí se ve el mejor amanecer del valle. Quiere comprobarlo antes de creérselo.",
+      "Su abuela vive allí y hace unas tortas de baya de otro mundo.",
+      "Perdió una apuesta y tiene que dar allí un concierto de flauta. Con público o sin él.",
+      "Busca un sitio tranquilo para echarse la siesta. En el pueblo, con tanto ajetreo, imposible.",
+      "Le han dicho que ahí abajo ponen el mejor bocadillo de calamares del valle.",
+      "Tiene una cita a ciegas. No sabe con quién, pero se ha peinado y todo."
+    ]
+  },
+  "outlaw": {
+    "levelBonus": 3,
+    "hpMultiplier": 1.5,
+    "fleeBelow": 0.25,
+    "crimes": [
+      "Se come las bayas ajenas y le echa la culpa al viento.",
+      "Descolgó todas las bufandas del tendedero de Kangaskhan. Todas.",
+      "Vendía mapas del tesoro en la puerta de la tienda. Los mapas eran de Kecleon.",
+      "Cuenta el final de las historias sin avisar. A todo el mundo.",
+      "Se coló dos veces en la cola del banco. Persian aún no se lo ha perdonado.",
+      "Ronca tan fuerte que la cueva entera ha pedido un cambio de piso.",
+      "Pintó bigotes en todos los carteles del tablón. Pidgey no le habla."
+    ]
+  }
+}
