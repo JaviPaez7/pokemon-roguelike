@@ -600,18 +600,25 @@ function levelAtFloor(progress, globalFloor) {
 
 /**
  * Combate contra los salvajes de cada zona (en su piso de en medio) y contra
- * cada jefe, con el nivel del equipo que da la simulación.
+ * cada jefe, con el nivel del equipo que da la simulación. Cada enfrentamiento
+ * siembra el RNG por su cuenta: los jefes salen igual se calculen o no los
+ * salvajes.
  * @param {DungeonProgress[]} progress - Historia y posjuego seguidos
+ * @param {{ wilds?: boolean }} [options] - `wilds: false` calcula solo los jefes
  */
-export function combatTable(progress) {
-  setSeed(MODEL_SEED);
-  return floorsData.zones.map((zone) => {
+export function combatTable(progress, { wilds = true } = {}) {
+  return floorsData.zones.map((zone, i) => {
     const floor = midFloor(zone);
     const heroLevel = levelAtFloor(progress, floor);
     const wildLevel = Math.round(meanWildLevel(floor));
-    const wild = matchup(heroLevel, wildFoes(zone, wildLevel));
+    let wild = null;
+    if (wilds) {
+      setSeed(MODEL_SEED + i);
+      wild = matchup(heroLevel, wildFoes(zone, wildLevel));
+    }
     let boss = null;
     if (zone.boss) {
+      setSeed(MODEL_SEED + 1000 + i);
       const bossHeroLevel = levelAtFloor(progress, zone.floors[1]);
       const foe = makeBoss(zone);
       boss = { name: zone.boss.name, level: zone.boss.level, hp: foe.fighter.maxHp, hpMultiplier: bossHpMultiplier(zone.boss), heroLevel: bossHeroLevel, ...matchup(bossHeroLevel, [{ foe, p: 1 }]) };
@@ -793,6 +800,26 @@ export function shopTable() {
     const item = ITEMS.get(id);
     return { id, name: item.name, type: item.type, staple: SHOP_STAPLES.includes(id), days: n / days, buy: buyPrice(item), sell: sellPrice(item), fixed: item.price != null };
   }).sort((a, b) => Number(b.staple) - Number(a.staple) || a.buy - b.buy || a.id.localeCompare(b.id));
+}
+
+/**
+ * Objetos de la tienda que cuestan lo mismo o menos que otro de su tipo más
+ * corriente y que hace menos (`value`). Pasa con el tope de 250 de `buyPrice`
+ * si el objeto no tiene `price`.
+ * @param {ReturnType<typeof shopTable>} shop
+ * @returns {{ better: ReturnType<typeof shopTable>[number], worse: ReturnType<typeof shopTable>[number] }[]}
+ */
+export function priceInversions(shop) {
+  const out = [];
+  for (const better of shop) {
+    const item = ITEMS.get(better.id);
+    const worse = shop.find((o) => {
+      const other = ITEMS.get(o.id);
+      return o.id !== better.id && other.type === item.type && o.buy >= better.buy && (other.rarity ?? 0.1) > (item.rarity ?? 0.1) && (other.value ?? 0) < (item.value ?? 0);
+    });
+    if (worse) out.push({ better, worse });
+  }
+  return out;
 }
 
 // ─── Viento ──────────────────────────────────────────────────────────────────
@@ -1040,6 +1067,22 @@ export function buildReport({ windRuns = 6 } = {}) {
 // ─── Avisos ──────────────────────────────────────────────────────────────────
 
 /**
+ * Mazmorras que se abren a la vez que otras (mismo `unlock`) y su puesto en el
+ * menú entre ellas: 0 la primera. Se pueden hacer en cualquier orden.
+ * @returns {Map<string, number>}
+ */
+export function anyOrderDungeons() {
+  const groups = new Map();
+  for (const d of DUNGEONS.filter((x) => !x.challenge && x.unlock)) {
+    const key = JSON.stringify(d.unlock);
+    groups.set(key, [...(groups.get(key) ?? []), d.id]);
+  }
+  const out = new Map();
+  for (const ids of groups.values()) if (ids.length > 1) ids.forEach((id, i) => out.set(id, i));
+  return out;
+}
+
+/**
  * Umbrales de los avisos del informe (y de los tests de la curva).
  */
 export const LIMITS = {
@@ -1089,14 +1132,20 @@ export function findIssues(report) {
     if (z.boss && z.boss.hpMultiplier == null) add('Combate', 'nota', `${z.boss.name} no tiene hpMultiplier en floors.json: usa el de FloorManager (×${bossHpMultiplier(z.boss)}).`);
   }
 
-  // Equipo frente a los jefes
+  // Equipo frente a los jefes. Las mazmorras que se abren a la vez (los tres
+  // picos) se hacen en cualquier orden: la simulación va en el del menú, así
+  // que lo que pase en la segunda o la tercera es una nota, no un aviso
+  const parallel = anyOrderDungeons();
   const [lo, hi] = LIMITS.bossLevelGap;
   for (const [key, label] of [['typical', 'típico'], ['full', 'que lo derrota todo']]) {
     const { story, postgame } = report.progress[key];
     for (const d of [...story.dungeons, ...postgame.dungeons]) {
       if (!d.boss) continue;
       const gap = d.atBoss - d.boss.level;
-      if (key === 'typical' && (gap < lo || gap > hi)) add('Experiencia', 'aviso', `Equipo ${label} llega a ${d.boss.name} (${d.boss.level}) con nivel ${d.atBoss} (${gap > 0 ? '+' : ''}${gap}).`);
+      const late = parallel.has(d.dungeonId) && parallel.get(d.dungeonId) > 0;
+      if (key === 'typical' && (gap < lo || gap > hi)) {
+        add('Experiencia', late ? 'nota' : 'aviso', `Equipo ${label} llega a ${d.boss.name} (${d.boss.level}) con nivel ${d.atBoss} (${gap > 0 ? '+' : ''}${gap})${late ? ' si hace su mazmorra después de las otras que se abren con ella' : ''}.`);
+      }
       if (key === 'full' && gap > hi + 2) add('Experiencia', 'nota', `Equipo ${label} llega a ${d.boss.name} (${d.boss.level}) con nivel ${d.atBoss} (+${gap}).`);
     }
   }
@@ -1108,7 +1157,12 @@ export function findIssues(report) {
     add('Posjuego', 'aviso', `El posjuego empieza con salvajes de nivel ${firstPost.levelRange[0]}, lejos de Mewtwo (${mewtwo.level}).`);
   }
   for (const d of report.progress.typical.postgame.dungeons) {
-    if (d.entry > d.wild[1]) add('Posjuego', 'aviso', `En ${d.name} el equipo típico entra con nivel ${d.entry}, por encima de todos sus salvajes (${d.wild.join('-')}).`);
+    if (d.entry <= d.wild[1]) continue;
+    if (parallel.get(d.dungeonId) > 0) {
+      add('Posjuego', 'nota', `${d.name} se hace en cualquier orden: si va después de las otras, el equipo típico entra con nivel ${d.entry}, por encima de todos sus salvajes (${d.wild.join('-')}).`);
+    } else {
+      add('Posjuego', 'aviso', `En ${d.name} el equipo típico entra con nivel ${d.entry}, por encima de todos sus salvajes (${d.wild.join('-')}).`);
+    }
   }
 
   // Combate
@@ -1140,15 +1194,8 @@ export function findIssues(report) {
   for (const s of report.shop) {
     if (s.buy <= s.sell) add('Economía', 'aviso', `${s.name} se compra por ${s.buy} y se vende por ${s.sell}.`);
   }
-  // El tope de 250 de buyPrice: un objeto más raro y que hace más que otro de su
-  // tipo no puede costar lo mismo
-  for (const s of report.shop) {
-    const item = ITEMS.get(s.id);
-    const cheaper = report.shop.find((o) => {
-      const other = ITEMS.get(o.id);
-      return o.id !== s.id && other.type === item.type && o.buy >= s.buy && (other.rarity ?? 0.1) > (item.rarity ?? 0.1) && (other.value ?? 0) < (item.value ?? 0);
-    });
-    if (cheaper) add('Economía', 'aviso', `${s.name} (rareza ${item.rarity}) cuesta ${s.buy}, lo mismo o menos que ${cheaper.name} (rareza ${ITEMS.get(cheaper.id).rarity}), y hace más.`);
+  for (const { better, worse } of priceInversions(report.shop)) {
+    add('Economía', 'aviso', `${better.name} (rareza ${ITEMS.get(better.id).rarity}) cuesta ${better.buy}, lo mismo o menos que ${worse.name} (rareza ${ITEMS.get(worse.id).rarity}), y hace más.`);
   }
 
   // Viento
