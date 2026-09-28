@@ -69,8 +69,9 @@ async function enterByName(page, name) {
   await option(page, name).click();
   await option(page, '¡En marcha!').click();
   await expect.poll(() => page.evaluate(() => window.game.getState())).toBe('EXPLORING');
-  // Según la semilla, un evento del piso puede salir antes de la presentación
-  await advanceTo(page, `${name}\n\n`);
+  // Lo primero es la presentación: en el primer piso de una mazmorra no hay
+  // eventos, aunque sea el 51 o el 67 de los globales
+  expect(await dialogText(page)).toContain(`${name}\n\n`);
 }
 
 /** Salta al piso del jefe de la mazmorra en curso. */

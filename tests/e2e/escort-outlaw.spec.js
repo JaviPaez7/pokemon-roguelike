@@ -242,10 +242,12 @@ test('escolta: si el cliente cae sin Semilla Revivir, falla y queda para otro in
   expect((await party(page)).filter((p) => p.guestOf)).toHaveLength(1);
 });
 
-test('escolta: con el equipo completo el cliente no cabe y espera a otra expedición', async ({ page }) => {
-  await startNewGame(page);
-  // Dos miembros más en la formación (copias del protagonista): cuatro en total
-  await page.evaluate(() => {
+/**
+ * Dos miembros más en la formación (copias del protagonista): cuatro en total.
+ * @param {import('@playwright/test').Page} page
+ */
+function fillTeam(page) {
+  return page.evaluate(() => {
     const profile = window.game.profile;
     for (let i = 0; i < 2; i++) {
       const copy = { ...profile.roster[0], uid: profile.nextUid++ };
@@ -253,14 +255,82 @@ test('escolta: con el equipo completo el cliente no cabe y espera a otra expedic
       profile.teamUids.push(copy.uid);
     }
   });
+}
+
+test('escolta: con el equipo completo, la salida avisa de que el cliente no cabe; si se sale igualmente, espera a otra expedición', async ({ page }) => {
+  await startNewGame(page);
+  await fillTeam(page);
   await acceptDirectly(page, ESCORT);
   await recordDialogs(page);
-  await enterDungeon(page);
-  expect((await dialogs(page)).join('\n')).toContain('Oddish esperaba en la entrada, pero en el equipo no cabe nadie más.');
+
+  // El aviso sale al elegir la mazmorra, antes de salir. «Mejor no» vuelve a la lista
+  await page.evaluate(() => window.game.uiManager.openDungeonSelect());
+  await option(page, 'Bosque Verde').click();
+  await option(page, '¡En marcha!').click();
+  await expect(panelTitle(page)).toHaveText('ESCOLTA');
+  await expect(page.locator('#menu-container')).toContainText(
+    'Oddish os espera en la entrada de Bosque Verde, pero el equipo ya está completo y no cabe.',
+  );
+  await option(page, 'Mejor no').click();
+  await expect(panelTitle(page)).toHaveText('¿A DÓNDE VAMOS?');
+  expect(await page.evaluate(() => window.game.getState())).toBe('MENU');
+
+  // Salir igualmente: el cliente se queda y en la entrada no se repite el aviso
+  await option(page, 'Bosque Verde').click();
+  await option(page, '¡En marcha!').click();
+  await expect(panelTitle(page)).toHaveText('ESCOLTA');
+  await option(page, 'Salir igualmente').click();
+  await expect.poll(() => page.evaluate(() => window.game.getState())).toBe('EXPLORING');
+  await skipDialogs(page);
+  await expectExploring(page);
+  expect((await dialogs(page)).join('\n')).not.toContain('no cabe');
+  expect(await page.evaluate(() => window.game._messageLog.join('\n'))).toContain('Oddish se queda en la entrada: no cabe en el equipo.');
   const team = await party(page);
   expect(team).toHaveLength(4);
   expect(team.some((p) => p.guestOf)).toBe(false);
   expect(await missionStatus(page, ESCORT.id)).toBe('accepted');
+});
+
+test('escolta: la salida no avisa si la escolta es de otra mazmorra', async ({ page }) => {
+  await startNewGame(page);
+  await fillTeam(page);
+  await acceptDirectly(page, ESCORT);
+  await page.evaluate(() => {
+    window.game.profile.clearedDungeons = ['bosque_verde'];
+  });
+  // Cueva Oscura: «¡En marcha!» sale directamente (enterDungeon espera la presentación)
+  await enterDungeon(page, 1);
+  expect(await page.evaluate(() => window.game.dungeonId)).toBe('cueva_oscura');
+  expect((await party(page)).some((p) => p.guestOf)).toBe(false);
+  expect(await page.evaluate(() => window.game._messageLog.join('\n'))).not.toContain('Oddish');
+});
+
+test('escolta: con un hueco y dos clientes, el aviso dice quién va y quién se queda', async ({ page }) => {
+  await startNewGame(page);
+  // Tres en la formación: queda un hueco
+  await page.evaluate(() => {
+    const profile = window.game.profile;
+    const copy = { ...profile.roster[0], uid: profile.nextUid++ };
+    profile.roster.push(copy);
+    profile.teamUids.push(copy.uid);
+  });
+  await acceptDirectly(page, ESCORT);
+  await acceptDirectly(page, { ...ESCORT, id: 'e2e-escolta-2', floor: 3, clientSpeciesId: 69, clientName: 'Bellsprout' });
+
+  await page.evaluate(() => window.game.uiManager.openDungeonSelect());
+  await option(page, 'Bosque Verde').click();
+  await option(page, '¡En marcha!').click();
+  await expect(panelTitle(page)).toHaveText('ESCOLTA');
+  // Va el del piso más cercano
+  await expect(page.locator('#menu-container')).toContainText(
+    'Bellsprout os espera en la entrada de Bosque Verde, pero con Oddish el equipo ya va completo y no cabe.',
+  );
+  await option(page, 'Salir igualmente').click();
+  await expect.poll(() => page.evaluate(() => window.game.getState())).toBe('EXPLORING');
+  await skipDialogs(page);
+  await expectExploring(page);
+  expect((await party(page)).filter((p) => p.guestOf).map((p) => p.name)).toEqual(['Oddish']);
+  expect(await page.evaluate(() => window.game._messageLog.join('\n'))).toContain('Bellsprout se queda en la entrada: no cabe en el equipo.');
 });
 
 test('escolta: si solo queda en pie el cliente, no toma el mando: el equipo cae', async ({ page }) => {
