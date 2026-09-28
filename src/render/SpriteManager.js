@@ -40,6 +40,14 @@ export class SpriteManager {
      * @type {Map<string, Promise<HTMLImageElement>>}
      */
     this._loading = new Map();
+
+    /**
+     * URLs que ya fallaron. No se vuelven a pedir: `drawSprite` se llama en
+     * cada fotograma y una imagen que no existe se pediría sin parar (en
+     * producción, eso son 404 seguidos y fail2ban banea al jugador).
+     * @type {Set<string>}
+     */
+    this._failed = new Set();
   }
 
   /**
@@ -54,6 +62,10 @@ export class SpriteManager {
     // Verificar si ya está en caché
     if (this._cache.has(url)) {
       return Promise.resolve(this._cache.get(url));
+    }
+
+    if (this._failed.has(url)) {
+      return Promise.resolve(null);
     }
 
     // Verificar si ya se está cargando (evitar carga duplicada)
@@ -75,6 +87,7 @@ export class SpriteManager {
       imagen.onerror = (error) => {
         // Registrar el error pero no bloquear - se usará placeholder
         console.warn(`[SpriteManager] Error cargando sprite: ${url}`, error);
+        this._failed.add(url);
         this._loading.delete(url);
         // Resolver con null en vez de rechazar para manejar graciosamente
         resolve(null);
@@ -139,7 +152,7 @@ export class SpriteManager {
       this._drawPlaceholder(ctx, x, y, width, height, nombre);
 
       // Intentar cargar el sprite para la próxima vez que se dibuje
-      if (url && !this._loading.has(url)) {
+      if (url && !this._loading.has(url) && !this._failed.has(url)) {
         this.loadSprite(url).then(() => {
           if (window.game) {
             window.game.needsRender = true;

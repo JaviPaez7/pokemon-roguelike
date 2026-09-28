@@ -10,7 +10,7 @@ import { floorSeed } from '../core/Random.js';
 import { relativeFloor } from '../core/Dungeons.js';
 import { spawnMissionTargets } from '../systems/MissionSystem.js';
 import { onFloorEntered } from '../core/StorySession.js';
-import { tipFor } from '../core/Tips.js';
+import { tipFor, floorReminders } from '../core/Tips.js';
 import { playPlaceMusic } from '../core/MusicSession.js';
 
 /**
@@ -530,16 +530,16 @@ export class FloorManager {
       });
     }
 
-    // Recordatorio suave de guardado
-    if (game._currentFloor > 1 && game._currentFloor % 5 === 0) {
+    // Recordatorio suave de guardado y un consejo (data/tips.json), según el
+    // piso de la mazmorra; los consejos rotan con los turnos jugados
+    const reminders = floorReminders(game.getCurrentFloor());
+    if (reminders.saveReminder) {
       game.eventBus.emit('message', {
         text: 'Recuerda: Esc → Guardar (objetos/trampas se conservan; el mapa se regenera).',
         color: '#aaccff'
       });
     }
-
-    // Un consejo cada dos pisos (data/tips.json); rotan con los turnos jugados
-    if (game._currentFloor > 1 && game._currentFloor % 2 === 0) {
+    if (reminders.tip) {
       game.eventBus.emit('message', { text: tipFor(game.stats?.turnsPlayed ?? 0), color: '#aaccff' });
     }
 
