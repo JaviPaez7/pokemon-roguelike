@@ -158,7 +158,7 @@ function saveV4(overrides = {}) {
 describe('v4 → v5: la historia', () => {
   it('sigue desde su capítulo: prólogo y capítulos superados cuentan como vistos', () => {
     const v5 = migrateSave(saveV4());
-    expect(v5.version).toBe(5);
+    expect(v5.version).toBe(SAVE_VERSION);
     const { seen } = v5.profile.story;
     for (const id of ['P-1', 'P-3', '1-B', '1-E', '2-D', '2-E']) expect(seen).toContain(id);
     // El capítulo 3 queda por jugar, con su sobre
@@ -194,6 +194,89 @@ describe('v4 → v5: la historia', () => {
   });
 });
 
+/**
+ * Partida v5 con movimientos con `enabled: false`: reservas para la IA (sin
+ * `_disableTurns`) y una Anulación en curso, en la plantilla y en la
+ * expedición en curso.
+ */
+function saveV5(overrides = {}) {
+  const moves = (...list) =>
+    list.map((entry) => entry && { moveId: entry[0], currentPP: 10, maxPP: 20, enabled: true, ...entry[1] });
+  return {
+    version: 5,
+    timestamp: 1,
+    profile: {
+      teamName: 'Equipo Aurora',
+      roster: [
+        { uid: 1, name: 'Charmander', currentMoves: moves([10], [52, { enabled: false }]) },
+        { uid: 2, name: 'Squirtle', currentMoves: moves([33]) },
+        { uid: 3, name: 'Pidgey' },
+      ],
+      heroUid: 1,
+      clearedDungeons: [],
+      story: { seen: ['P-1'] },
+      flags: {},
+      stash: null,
+    },
+    bag: [],
+    wallet: 0,
+    run: {
+      dungeonId: 'bosque_verde',
+      party: [
+        { uid: 1, isLeader: true, currentMoves: moves([10, { enabled: false }], [52, { enabled: false, _disableTurns: 3 }]) },
+        { uid: 2, currentMoves: moves([33, { enabled: false }], [55], null) },
+      ],
+      guests: [{ name: 'Caterpie', missionId: 'm1', currentMoves: moves([33, { enabled: false }]) }],
+    },
+    ...overrides,
+  };
+}
+
+describe('v5 → v6: la reserva para la IA se separa de Anulación', () => {
+  it('un movimiento con enabled: false sin turnos de Anulación era una reserva', () => {
+    const v6 = migrateSave(saveV5());
+    expect(v6.version).toBe(6);
+    // En la plantilla (fuera de combate)
+    const [charmander, squirtle] = v6.profile.roster;
+    expect(charmander.currentMoves[1]).toEqual({ moveId: 52, currentPP: 10, maxPP: 20, enabled: true, reserved: true });
+    expect(charmander.currentMoves[0]).not.toHaveProperty('reserved');
+    expect(squirtle.currentMoves).toEqual(saveV5().profile.roster[1].currentMoves);
+    // En la expedición en curso: el líder también, y los invitados
+    const [leader, partner] = v6.run.party;
+    expect(leader.currentMoves[0]).toMatchObject({ moveId: 10, enabled: true, reserved: true });
+    expect(partner.currentMoves[0]).toMatchObject({ moveId: 33, enabled: true, reserved: true });
+    expect(v6.run.guests[0].currentMoves[0]).toMatchObject({ enabled: true, reserved: true });
+  });
+
+  it('una Anulación en curso sigue siendo Anulación', () => {
+    const [leader] = migrateSave(saveV5()).run.party;
+    expect(leader.currentMoves[1]).toEqual({ moveId: 52, currentPP: 10, maxPP: 20, enabled: false, _disableTurns: 3 });
+  });
+
+  it('conserva lo demás (casillas vacías, fichas sin movimientos, sin expedición ni invitados) y no modifica la entrada', () => {
+    const original = saveV5();
+    const v6 = migrateSave(original);
+    expect(original).toEqual(saveV5());
+    expect(v6.profile.roster[2]).toEqual({ uid: 3, name: 'Pidgey' });
+    expect(v6.run.party[1].currentMoves[2]).toBeNull();
+    expect(v6.run.dungeonId).toBe('bosque_verde');
+    expect(v6.profile.story).toEqual({ seen: ['P-1'] });
+
+    const base = saveV5();
+    const inTown = migrateSave(saveV5({ run: null }));
+    expect(inTown.run).toBeNull();
+    const noGuests = migrateSave(saveV5({ run: { ...base.run, guests: undefined } }));
+    expect(noGuests.run.guests).toBeUndefined();
+  });
+
+  it('parseSave la migra y dice que venía de la v5 (loadGame guarda la copia de la original)', () => {
+    const result = parseSave(JSON.stringify(saveV5()));
+    expect(result.status).toBe('ok');
+    expect(result.migratedFrom).toBe(5);
+    expect(result.data.version).toBe(SAVE_VERSION);
+  });
+});
+
 describe('parseSave', () => {
   it('sin partida devuelve none', () => {
     expect(parseSave(null)).toEqual({ status: 'none' });
@@ -213,7 +296,7 @@ describe('parseSave', () => {
     expect(result).toEqual({ status: 'ok', data: current, migratedFrom: null });
   });
 
-  it('una partida v5 de antes del posjuego se lee sin migrar y, si había visto el final, abre los picos', () => {
+  it('una partida v5 de antes del posjuego solo cambia de versión y, si había visto el final, abre los picos', () => {
     const base = saveV4().profile;
     const beforePostgame = {
       version: 5,
@@ -224,7 +307,7 @@ describe('parseSave', () => {
       run: null,
     };
     const result = parseSave(JSON.stringify(beforePostgame));
-    expect(result).toEqual({ status: 'ok', data: beforePostgame, migratedFrom: null });
+    expect(result).toEqual({ status: 'ok', data: { ...beforePostgame, version: 6 }, migratedFrom: 5 });
     expect(profileDungeons(result.data.profile).filter((d) => d.postgame)).toHaveLength(3);
   });
 
