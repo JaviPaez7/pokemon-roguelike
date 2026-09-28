@@ -14,7 +14,8 @@
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "sprites:pmd": "node scripts/fetch-pmd-sprites.mjs",
-    "story": "node scripts/build-story.mjs"
+    "story": "node scripts/build-story.mjs",
+    "balance": "node scripts/balance-report.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
