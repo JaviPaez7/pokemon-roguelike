@@ -342,7 +342,7 @@ test('al completar el tercer pico llega un sobre sin remite y se abre el jardín
   expect((await speaker(page)).name).toBe('???');
   await skipDialogs(page);
   await toBossFloor(page);
-  expect(await bossInfo(page)).toMatchObject({ speciesId: 151, level: 62 });
+  expect(await bossInfo(page)).toMatchObject({ speciesId: 151, level: 66 });
   await advanceTo(page, '¡Me habéis encontrado!');
   expect(await speaker(page)).toEqual({ name: 'Mew', portrait: expect.stringMatching(/portraits\/0151\/Joyous\.png$/) });
   await skipDialogs(page);

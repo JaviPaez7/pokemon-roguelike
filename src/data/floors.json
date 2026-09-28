@@ -723,8 +723,8 @@
         }
       ],
       "levelRange": [
-        50,
-        58
+        56,
+        64
       ],
       "enemiesPerFloor": [
         5,
@@ -743,7 +743,7 @@
       },
       "boss": {
         "id": 151,
-        "level": 62,
+        "level": 66,
         "name": "Mew",
         "hpMultiplier": 2.2,
         "moves": [
