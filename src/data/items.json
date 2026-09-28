@@ -101,6 +101,7 @@
     "type": "revive",
     "value": 100,
     "rarity": 0.02,
+    "price": 500,
     "description": "Revive con PS máximos",
     "sprite": "🌟",
     "spriteUrl": "/sprites/items/max_revive.png"
