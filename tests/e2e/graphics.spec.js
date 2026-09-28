@@ -155,3 +155,30 @@ test('cada mazmorra tiene su aspecto y unas escaleras nuevas se ven en el mapa',
   expect(r).toBeGreaterThan(g);
   expect(g).toBeGreaterThan(b);
 });
+
+test('los objetos del suelo se dibujan con su imagen y ninguna imagen de objeto da error', async ({ page }) => {
+  // Un 404 que se repite en cada fotograma hace que fail2ban banee al jugador en producción
+  const failed = [];
+  page.on('response', (r) => { if (r.status() >= 400) failed.push(`${r.status()} ${r.url()}`); });
+  await startInDungeon(page);
+  const step = await findFreeStep(page);
+  await page.evaluate(({ dx, dy }) => {
+    const game = window.game;
+    const { x, y } = game.entityManager.getComponent(game.getPlayerId(), 'position');
+    game.entityManager.createItemEntity('reviver_seed', 1, x + dx, y + dy, '/sprites/items/reviver_seed.png');
+    game.needsRender = true;
+  }, step);
+  // La Semilla Revivir, al lado del líder, se dibuja con su imagen
+  await expect
+    .poll(() => page.evaluate(() => !!window.game.renderer.spriteManager.getSprite('/sprites/items/reviver_seed.png')))
+    .toBe(true);
+  // Y la imagen de cada objeto del juego existe en el build
+  const missing = await page.evaluate(async () => {
+    const sprites = window.game.renderer.spriteManager;
+    const urls = [...new Set(window.game.itemsData.map((i) => i.spriteUrl).filter(Boolean))];
+    const loaded = await Promise.all(urls.map((u) => sprites.loadSprite(u)));
+    return urls.filter((u, i) => !loaded[i]);
+  });
+  expect(missing).toEqual([]);
+  expect(failed).toEqual([]);
+});
