@@ -19,6 +19,7 @@ import {
 } from '../../core/Profile.js';
 import { townShopStock } from '../../core/Shop.js';
 import { startExpedition } from '../../core/Expedition.js';
+import { escortsToJoin } from '../../core/Missions.js';
 import { enterTown, leaveExitTile, BASE_FRONT } from '../../core/TownSession.js';
 import { playStory } from '../../core/StorySession.js';
 import { openDiary } from './DiaryMenu.js';
@@ -298,6 +299,8 @@ export function openDungeonSelect(ui) {
 function confirmDungeon(ui, dungeon) {
   const game = ui.game;
   const team = game.profile.teamUids.map((uid) => getMember(game.profile, uid).name).join(', ');
+  // Clientes de escolta de esta mazmorra: los que irán y los que no caben
+  const escorts = escortsToJoin(game.profile, dungeon, MAX_PARTY_SIZE - game.profile.teamUids.length);
   simpleMenu(ui, {
     type: 'town_dungeon_confirm',
     title: dungeon.name.toUpperCase(),
@@ -307,15 +310,56 @@ function confirmDungeon(ui, dungeon) {
     options: [
       {
         label: '¡En marcha!',
-        action: () => {
-          ui.closeMenu();
-          // Algunas mazmorras tienen escena antes de salir (el sobre, la víspera del laboratorio)
-          playStory(game, 'dungeon_select', { dungeonId: dungeon.id }, () => startExpedition(game, dungeon.id));
-        },
+        action: () => (escorts.waiting.length ? warnEscortsLeftBehind(ui, dungeon, escorts) : depart(ui, dungeon)),
       },
       { label: 'Mejor no', action: () => openDungeonSelect(ui) },
     ],
   });
+}
+
+/**
+ * Antes de salir: hay clientes de escolta esperando en esta mazmorra, pero el
+ * equipo está completo y no caben. Se avisa aquí, con tiempo de cambiar la
+ * formación, y se pregunta si salir igualmente. En la entrada ya no se repite:
+ * solo queda una línea en el registro (`greetEscortGuests`).
+ * @param {UIManager} ui
+ * @param {import('../../core/Dungeons.js').Dungeon} dungeon
+ * @param {{ joining: import('../../core/Missions.js').Mission[], waiting: import('../../core/Missions.js').Mission[] }} escorts - De `escortsToJoin`
+ */
+function warnEscortsLeftBehind(ui, dungeon, { joining, waiting }) {
+  /** @param {import('../../core/Missions.js').Mission[]} missions */
+  const names = (missions) => {
+    const list = missions.map((m) => m.clientName);
+    return list.length > 1 ? `${list.slice(0, -1).join(', ')} y ${list[list.length - 1]}` : list[0];
+  };
+  const one = waiting.length === 1;
+  const full = joining.length ? `con ${names(joining)} el equipo ya va completo` : 'el equipo ya está completo';
+  simpleMenu(ui, {
+    type: 'town_escort_warning',
+    title: 'ESCOLTA',
+    text:
+      `${names(waiting)} ${one ? 'os espera' : 'os esperan'} en la entrada de ${dungeon.name}, ` +
+      `pero ${full} y no ${one ? 'cabe' : 'caben'}.<br>` +
+      `Para ${one ? 'llevarlo, dejad un hueco' : 'llevarlos, dejad huecos'} en la formación de la base. ¿Salís igualmente?`,
+    width: 360,
+    onCancel: () => openDungeonSelect(ui),
+    options: [
+      { label: 'Salir igualmente', hint: one ? 'sin el cliente' : 'sin los clientes', action: () => depart(ui, dungeon) },
+      { label: 'Mejor no', action: () => openDungeonSelect(ui) },
+    ],
+  });
+}
+
+/**
+ * Sale del pueblo hacia la mazmorra. Algunas tienen escena antes de salir (el
+ * sobre, la víspera del laboratorio).
+ * @param {UIManager} ui
+ * @param {import('../../core/Dungeons.js').Dungeon} dungeon
+ */
+function depart(ui, dungeon) {
+  const game = ui.game;
+  ui.closeMenu();
+  playStory(game, 'dungeon_select', { dungeonId: dungeon.id }, () => startExpedition(game, dungeon.id));
 }
 
 // ─── Tablón de misiones ────────────────────────────────────────────────────

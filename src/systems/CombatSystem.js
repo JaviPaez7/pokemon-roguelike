@@ -8,6 +8,7 @@ import { getAbility, applyPostAttackAbilities, tryTraceAbility } from './Ability
 import { random } from '../core/Random.js';
 import { heldStatMultiplier, heldPreventsStatus, heldName } from '../core/HeldItems.js';
 import { hasIqSkill } from '../core/IQ.js';
+import { aiCanUse } from '../core/MoveSlots.js';
 
 /**
  * Calcula el daño de un movimiento
@@ -1793,8 +1794,8 @@ export function selectBestMove(attackerInfo, defenderInfo, movesData, typeChart,
   let bestScore = -1;
 
   for (const moveSlot of attackerInfo.currentMoves) {
-    if (moveSlot.currentPP <= 0) continue;
-    if (moveSlot.enabled === false) continue;
+    // Sin PP, anulado o reservado por el jugador (un aliado; los salvajes no reservan)
+    if (!aiCanUse(moveSlot)) continue;
 
     const moveData = movesData.find(m => m.id === moveSlot.moveId);
     if (!moveData) continue;
@@ -1877,10 +1878,11 @@ export function selectBestMove(attackerInfo, defenderInfo, movesData, typeChart,
     }
   }
 
-  // Si no hay movimiento ofensivo, usar el primero disponible
+  // Si no hay movimiento ofensivo, usar el primero disponible (tampoco uno
+  // anulado ni reservado)
   if (!bestMove) {
     for (const moveSlot of attackerInfo.currentMoves) {
-      if (moveSlot.currentPP > 0) {
+      if (aiCanUse(moveSlot)) {
         bestMove = movesData.find(m => m.id === moveSlot.moveId);
         if (bestMove) break;
       }

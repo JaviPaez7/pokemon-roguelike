@@ -18,6 +18,18 @@ const PROJECTILE_COLORS = {
 };
 
 /**
+ * Lo que se lee al examinar unas escaleras. El piso es el que ve el jugador
+ * (`game.getCurrentFloor()`), no el global: en la Cumbre Escarcha, del piso 1
+ * se baja al 2, no al 52. En el último piso, las escaleras sacan de la mazmorra.
+ * @param {{ floor: number, last: boolean, hostiles: number }} stairs - Piso actual, si es el último y salvajes que quedan
+ * @returns {string}
+ */
+export function stairsLookText({ floor, last, hostiles }) {
+  const where = last ? 'Escaleras de salida de la mazmorra.' : `Escaleras al piso ${floor + 1}.`;
+  return `${where}${hostiles ? ` Quedan ${hostiles} salvajes.` : ' Zona despejada.'}`;
+}
+
+/**
  * Combate, movimiento de entidades y acciones de IA enemiga.
  */
 export class CombatHandler {
@@ -801,9 +813,8 @@ export class CombatHandler {
         const f = game.entityManager.getComponent(id, 'fighter');
         return f && f.hp > 0;
       }).length;
-      const fl = game._currentFloor || 1;
       game.eventBus.emit('message', {
-        text: `Escaleras al piso ${fl + 1}.${hostiles ? ` Quedan ${hostiles} salvajes.` : ' Zona despejada.'}`,
+        text: stairsLookText({ floor: game.getCurrentFloor(), last: game.isLastFloor(), hostiles }),
         color: '#88ffaa'
       });
       return { success: false, type: 'examine' };

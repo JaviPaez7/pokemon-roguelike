@@ -39,10 +39,12 @@
  *   name: string,       // Nombre localizado del Pokémon
  *   level: number,      // Nivel actual
  *   xp: number,         // Experiencia acumulada en el nivel actual
- *   currentMoves: [{    // Movimientos actuales (máx. 4)
+ *   currentMoves: [{    // Movimientos actuales (máx. 4; ver core/MoveSlots.js)
  *     moveId: number,   // ID del movimiento
  *     currentPP: number,// PP restantes
- *     maxPP: number     // PP máximos del movimiento
+ *     maxPP: number,    // PP máximos del movimiento
+ *     enabled: boolean, // false = anulado (Anulación), con _disableTurns
+ *     reserved?: true   // Reservado por el jugador: la IA aliada no lo usa
  *   }],
  *   types: string[]     // Tipos del Pokémon (ej. ['fuego', 'volador'])
  * }
