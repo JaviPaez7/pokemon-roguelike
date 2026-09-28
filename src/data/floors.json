@@ -123,7 +123,14 @@
       "boss": {
         "id": 95,
         "level": 9,
-        "name": "Onix"
+        "name": "Onix",
+        "hpMultiplier": 2,
+        "moves": [
+          88,
+          33,
+          20,
+          103
+        ]
       }
     },
     {
@@ -183,7 +190,13 @@
       "boss": {
         "id": 26,
         "level": 15,
-        "name": "Raichu"
+        "name": "Raichu",
+        "hpMultiplier": 2.2,
+        "moves": [
+          84,
+          98,
+          45
+        ]
       }
     },
     {
@@ -243,7 +256,8 @@
       "boss": {
         "id": 36,
         "level": 20,
-        "name": "Clefable"
+        "name": "Clefable",
+        "hpMultiplier": 2.2
       }
     },
     {
@@ -307,7 +321,14 @@
       "boss": {
         "id": 94,
         "level": 28,
-        "name": "Gengar"
+        "name": "Gengar",
+        "hpMultiplier": 2.1,
+        "moves": [
+          101,
+          121,
+          95,
+          122
+        ]
       }
     },
     {
@@ -370,8 +391,9 @@
       ],
       "boss": {
         "id": 59,
-        "level": 36,
-        "name": "Arcanine"
+        "level": 37,
+        "name": "Arcanine",
+        "hpMultiplier": 2.2
       }
     },
     {
@@ -443,7 +465,8 @@
       "boss": {
         "id": 150,
         "level": 48,
-        "name": "Mewtwo"
+        "name": "Mewtwo",
+        "hpMultiplier": 1.85
       }
     },
     {
