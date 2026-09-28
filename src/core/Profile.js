@@ -15,6 +15,7 @@
 
 import { MAX_PARTY_SIZE } from '../constants.js';
 import { DUNGEONS, isUnlocked, unlockedDungeons } from './Dungeons.js';
+import { setReserved } from './MoveSlots.js';
 
 /** Rangos del equipo y puntos necesarios para alcanzarlos. */
 export const RANKS = [
@@ -135,6 +136,22 @@ export function setLeader(profile, uid) {
 export function setTactic(profile, uid, tactic) {
   const member = getMember(profile, uid);
   if (member) member.tactic = tactic;
+}
+
+/**
+ * Apunta en la ficha si un movimiento está reservado para que la IA no lo use
+ * (Equipo → Ver movimientos; ver core/MoveSlots.js).
+ * @param {Object} profile
+ * @param {number} uid
+ * @param {number} moveId
+ * @param {boolean} reserved
+ * @returns {boolean} Si lo ha apuntado (el Pokémon está en la plantilla y conoce el movimiento)
+ */
+export function setMoveReserved(profile, uid, moveId, reserved) {
+  const slot = getMember(profile, uid)?.currentMoves?.find((m) => m && m.moveId === moveId);
+  if (!slot) return false;
+  setReserved(slot, reserved);
+  return true;
 }
 
 /**

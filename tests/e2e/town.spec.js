@@ -381,3 +381,196 @@ test('una evolución hecha desde el equipo en el pueblo se guarda y vale para la
   await enterDungeon(page);
   expect((await town(page)).team.map((p) => p.name)).toContain(target.toName);
 });
+
+/**
+ * El compañero y el primer movimiento suyo que golpea al de al lado (para
+ * poder usarlo a mano cuando lidere).
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<{ uid: number, name: string, index: number, moveId: number, moveName: string }>}
+ */
+const partnerMove = (page) =>
+  page.evaluate(() => {
+    const game = window.game;
+    const { roster, partnerUid } = game.profile;
+    const partner = roster.find((m) => m.uid === partnerUid);
+    const moveOf = (slot) => game.movesData.find((m) => m.id === slot?.moveId);
+    const index = partner.currentMoves.findIndex((s) => moveOf(s)?.power > 0 && (moveOf(s).range ?? 'front') === 'front');
+    const slot = partner.currentMoves[index];
+    return { uid: partnerUid, name: partner.name, index, moveId: slot?.moveId, moveName: moveOf(slot)?.name };
+  });
+
+/**
+ * Si el movimiento está reservado en la plantilla y en el Pokémon en juego.
+ * @param {import('@playwright/test').Page} page
+ * @param {{ uid: number, moveId: number }} target
+ */
+const reservedIn = (page, { uid, moveId }) =>
+  page.evaluate(({ uid, moveId }) => {
+    const game = window.game;
+    const slotIn = (member) => member?.currentMoves.find((s) => s && s.moveId === moveId);
+    return {
+      roster: !!slotIn(game.profile.roster.find((m) => m.uid === uid))?.reserved,
+      inPlay: !!slotIn(game.party.find((p) => p.uid === uid))?.reserved,
+    };
+  }, { uid, moveId });
+
+/**
+ * Equipo → el Pokémon → Ver movimientos → Z en el movimiento (lo reserva o lo
+ * deja libre) y cierra los menús.
+ * @param {import('@playwright/test').Page} page
+ * @param {{ name: string, moveName: string }} target
+ * @param {'USAR' | 'RESERVAR'} expected - Lo que debe poner después
+ */
+async function toggleReserve(page, target, expected) {
+  await page.keyboard.press('c');
+  await expect(panelTitle(page)).toHaveText('EQUIPO POKÉMON');
+  await option(page, target.name).first().click();
+  await option(page, 'Ver movimientos').click();
+  await expect(panelTitle(page)).toHaveText(`MOVIMIENTOS DE ${target.name.toUpperCase()}`);
+  await option(page, target.moveName).click();
+  await expect(option(page, target.moveName)).toContainText(expected);
+  await page.evaluate(() => window.game.uiManager.closeMenu());
+  await page.mouse.move(0, 0);
+}
+
+/**
+ * Deja en el piso un solo salvaje, al lado de un Pokémon del equipo, con
+ * muchos PS y sin fuerza, y apunta desde ahora los movimientos que usa ese
+ * Pokémon (en `window.__movesUsed`; -1 es el ataque básico).
+ * @param {import('@playwright/test').Page} page
+ * @param {number} uid
+ */
+async function wildNextTo(page, uid) {
+  const placed = await page.evaluate((uid) => {
+    const game = window.game;
+    const em = game.entityManager;
+    for (const id of em.getEntitiesWithComponents('aiControlled', 'fighter')) {
+      if (em.hasComponent(id, 'partyMember')) continue;
+      game.turnManager.removeEntity(id);
+      em.destroyEntity(id);
+    }
+    const allyId = game.party.find((p) => p.uid === uid).id;
+    const { x, y } = em.getComponent(allyId, 'position');
+    const spot = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]]
+      .map(([dx, dy]) => ({ x: x + dx, y: y + dy }))
+      .find((p) => game.tileMap.isWalkable(p.x, p.y) && !game.tileMap.isStairs(p.x, p.y)
+        && em.getEntityAt(p.x, p.y, true) === null && em.getTrapAt(p.x, p.y) === null);
+    if (!spot) return false;
+    const wild = em.createPokemon(19, 5, spot.x, spot.y, true);
+    Object.assign(em.getComponent(wild, 'fighter'), { hp: 999, maxHp: 999, attack: 1, spAtk: 1 });
+    game.turnManager.addEntity(wild, em.getComponent(wild, 'fighter').speed, false);
+    window.__movesUsed = [];
+    window.__watchedId = allyId;
+    if (!window.__watchingMoves) {
+      window.__watchingMoves = true;
+      game.eventBus.on('move_used', ({ attackerId, moveId }) => {
+        if (attackerId === window.__watchedId) window.__movesUsed.push(moveId);
+      });
+    }
+    return true;
+  }, uid);
+  expect(placed, 'hay una casilla libre junto al Pokémon').toBe(true);
+}
+
+/**
+ * Pasa `turns` turnos con Espacio, uno a uno.
+ * @param {import('@playwright/test').Page} page
+ * @param {number} turns
+ */
+async function waitTurns(page, turns) {
+  for (let i = 0; i < turns; i++) {
+    const before = await page.evaluate(() => window.game.stats.turnsPlayed);
+    await page.keyboard.press('Space');
+    await expect.poll(() => page.evaluate(() => window.game.stats.turnsPlayed)).toBeGreaterThan(before);
+  }
+}
+
+/**
+ * PP del movimiento en el Pokémon en juego.
+ * @param {import('@playwright/test').Page} page
+ * @param {{ uid: number, moveId: number }} target
+ */
+const ppOf = (page, { uid, moveId }) =>
+  page.evaluate(
+    ({ uid, moveId }) => window.game.party.find((p) => p.uid === uid).currentMoves.find((s) => s.moveId === moveId).currentPP,
+    { uid, moveId },
+  );
+
+test('un movimiento reservado en el pueblo dura: la IA no lo usa, el líder sí, y sigue al volver y al recargar', async ({ page }) => {
+  await startNewGame(page);
+  const target = await partnerMove(page);
+  expect(target.moveName, 'el compañero tiene un movimiento que golpea al de al lado').toBeTruthy();
+
+  await toggleReserve(page, target, 'RESERVAR');
+  await expectInTown(page);
+  expect(await reservedIn(page, target)).toEqual({ roster: true, inPlay: true });
+
+  // Sale de expedición reservado
+  await enterDungeon(page);
+  expect(await reservedIn(page, target)).toEqual({ roster: true, inPlay: true });
+
+  // La IA no lo usa aunque sea lo único con PP: ataca sin movimiento
+  await page.evaluate(({ uid, moveId }) => {
+    const member = window.game.party.find((p) => p.uid === uid);
+    for (const slot of member.currentMoves) if (slot.moveId !== moveId) slot.currentPP = 0;
+  }, target);
+  const fullPP = await ppOf(page, target);
+  await wildNextTo(page, target.uid);
+  await waitTurns(page, 6);
+  const used = await page.evaluate(() => window.__movesUsed);
+  expect(used.length, 'el compañero ha atacado').toBeGreaterThan(0);
+  expect(used.every((id) => id === -1)).toBe(true);
+  expect(await ppOf(page, target)).toBe(fullPP);
+
+  // Como líder sí lo puede usar a mano: no está anulado
+  await page.keyboard.press('Tab');
+  await expect.poll(() => page.evaluate(() => window.game.party.find((p) => p.isLeader).uid)).toBe(target.uid);
+  await wildNextTo(page, target.uid);
+  await page.keyboard.press(String(target.index + 1));
+  await expect.poll(() => ppOf(page, target)).toBe(fullPP - 1);
+  expect(await page.evaluate(() => window.__movesUsed)).toEqual([target.moveId]);
+
+  // Vuelve reservado a la plantilla y al pueblo, y así se guarda
+  await page.evaluate(() => window.game.endExpedition('escaped'));
+  await backInTown(page);
+  expect(await reservedIn(page, target)).toEqual({ roster: true, inPlay: true });
+  await page.reload();
+  await option(page, 'Continuar partida').click();
+  await dismissDialog(page);
+  await expectInTown(page);
+  expect(await reservedIn(page, target)).toEqual({ roster: true, inPlay: true });
+});
+
+test('un movimiento reservado en la mazmorra dura al guardar, al cambiar de piso y al volver', async ({ page }) => {
+  await startInDungeon(page);
+  const target = await partnerMove(page);
+  expect(target.moveName, 'el compañero tiene un movimiento que golpea al de al lado').toBeTruthy();
+
+  await toggleReserve(page, target, 'RESERVAR');
+  await expectExploring(page);
+  // En la mazmorra se apunta en el Pokémon; la plantilla se pone al día al volver
+  expect(await reservedIn(page, target)).toEqual({ roster: false, inPlay: true });
+
+  // Guardar y cargar
+  await page.evaluate(() => window.game.saveGameData());
+  await page.reload();
+  await option(page, 'Continuar partida').click();
+  await dismissDialog(page);
+  await expectExploring(page);
+  expect((await reservedIn(page, target)).inPlay).toBe(true);
+
+  // Otro piso
+  await page.evaluate(() => window.game.floorManager.changeFloor('down'));
+  await expect.poll(() => page.evaluate(() => window.game.getCurrentFloor())).toBe(2);
+  expect((await reservedIn(page, target)).inPlay).toBe(true);
+
+  // Al volver pasa a la plantilla
+  await page.evaluate(() => window.game.endExpedition('escaped'));
+  await backInTown(page);
+  expect(await reservedIn(page, target)).toEqual({ roster: true, inPlay: true });
+
+  // Y en el pueblo se puede dejar libre otra vez
+  await toggleReserve(page, target, 'USAR');
+  await expectInTown(page);
+  expect(await reservedIn(page, target)).toEqual({ roster: false, inPlay: false });
+});

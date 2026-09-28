@@ -130,6 +130,37 @@ test('una partida de la versión 2 (carrera de 50 pisos) se convierte en un perf
   expect(state.noticeSaved).toBe(true);
 });
 
+test('una partida v5 con un movimiento reservado para la IA lo conserva al cargar, sin confundirlo con Anulación', async ({ page }) => {
+  await startInDungeon(page);
+  await page.evaluate(() => window.game.saveGameData());
+  // La v5 apuntaba la reserva y Anulación igual: enabled: false (la Anulación, con sus turnos)
+  const partner = await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokerogue_save'));
+    const member = save.run.party.find((p) => p.uid === save.profile.partnerUid);
+    const [reserved, disabled] = member.currentMoves;
+    Object.assign(reserved, { enabled: false });
+    Object.assign(disabled, { enabled: false, _disableTurns: 3 });
+    localStorage.setItem('pokerogue_save', JSON.stringify({ ...save, version: 5 }));
+    return { uid: member.uid, moves: [reserved.moveId, disabled.moveId] };
+  });
+  expect(partner.moves).toHaveLength(2);
+
+  await reloadAndContinue(page, 'Bosque Verde P1');
+  await expectExploring(page);
+  const moves = await page.evaluate(
+    (uid) => window.game.party.find((p) => p.uid === uid).currentMoves.slice(0, 2),
+    partner.uid,
+  );
+  expect(moves[0]).toMatchObject({ moveId: partner.moves[0], enabled: true, reserved: true });
+  expect(moves[1]).toMatchObject({ moveId: partner.moves[1], enabled: false, _disableTurns: 3 });
+  expect(moves[1].reserved).toBeUndefined();
+  const saved = await page.evaluate(() => ({
+    version: JSON.parse(localStorage.getItem('pokerogue_save')).version,
+    backup: JSON.parse(localStorage.getItem('pokerogue_save_backup_v5'))?.version,
+  }));
+  expect(saved).toEqual({ version: 6, backup: 5 });
+});
+
 test('una partida ilegible se aparta a una copia y el título sigue funcionando', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.setItem('pokerogue_save', '{esto no es json'));

@@ -6,7 +6,8 @@
  * a la siguiente y sube SAVE_VERSION. Antes de sobrescribir una partida
  * migrada se guarda una copia de la original.
  *
- * Formato (v3 a v5; la v4 quitó las Poké Balls y la v5 añadió la historia):
+ * Formato (v3 a v6; la v4 quitó las Poké Balls, la v5 añadió la historia y la
+ * v6 separó la reserva de movimientos para la IA de Anulación):
  * - `profile`: el equipo de exploración (core/Profile.js), con la Pokédex,
  *   las estadísticas y las escenas de la historia ya vistas (`story`).
  * - `bag` y `wallet`: lo que lleva encima el equipo ahora mismo.
@@ -22,7 +23,7 @@ import { seenForCleared } from './Story.js';
 
 const SAVE_KEY = 'pokerogue_save';
 const BACKUP_PREFIX = 'pokerogue_save_backup_';
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 /** Nombre que reciben los equipos de partidas anteriores a los perfiles. */
 export const MIGRATED_TEAM_NAME = 'Equipo Pionero';
@@ -123,7 +124,43 @@ const MIGRATIONS = {
       story: { seen: seenForCleared(data.profile.clearedDungeons ?? []) },
     },
   }),
+
+  // v5 → v6: la reserva de movimientos para la IA (Equipo → Ver movimientos)
+  // compartía `enabled: false` con Anulación, y pasa a su propio campo,
+  // `reserved` (core/MoveSlots.js). Anulación siempre lleva `_disableTurns`:
+  // un `enabled: false` sin turnos era una reserva. Se revisan la plantilla y
+  // el equipo y los invitados de la expedición en curso.
+  5: (data) => ({
+    ...data,
+    version: 6,
+    profile: data.profile && { ...data.profile, roster: splitReserves(data.profile.roster) },
+    run: data.run && {
+      ...data.run,
+      party: splitReserves(data.run.party),
+      guests: splitReserves(data.run.guests),
+    },
+  }),
 };
+
+/**
+ * Fichas con la reserva separada de Anulación (migración v5 → v6): un
+ * movimiento con `enabled: false` y sin `_disableTurns` pasa a
+ * `{ enabled: true, reserved: true }`; los anulados siguen igual.
+ * @param {Object[] | undefined} members
+ * @returns {Object[] | undefined}
+ */
+function splitReserves(members) {
+  if (!Array.isArray(members)) return members;
+  return members.map((member) => {
+    if (!Array.isArray(member?.currentMoves)) return member;
+    const currentMoves = member.currentMoves.map((slot) =>
+      slot && slot.enabled === false && slot._disableTurns == null
+        ? { ...slot, enabled: true, reserved: true }
+        : slot,
+    );
+    return { ...member, currentMoves };
+  });
+}
 
 /** Lo que pagaba Kecleon por cada Poké Ball (migración v3 → v4). */
 const BALL_REFUND = { pokeball: 48, great_ball: 120, ultra_ball: 120 };

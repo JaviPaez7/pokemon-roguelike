@@ -62,8 +62,9 @@ export function toSnapshot(p) {
 
 /**
  * La ficha tras descansar en la base: PS, PP y tripa al máximo, sin estados ni
- * efectos de combate. Si estaba transformado o había copiado un movimiento con
- * Mimético, recupera lo suyo.
+ * efectos de combate (Anulación incluida). Si estaba transformado o había
+ * copiado un movimiento con Mimético, recupera lo suyo. La reserva de
+ * movimientos para la IA la decide el jugador: se queda (ver core/MoveSlots.js).
  * @param {Object} p
  * @param {{ id: number, pp?: number }[]} movesData - Para los PP del movimiento original de Mimético
  * @returns {Object} Ficha nueva
@@ -77,7 +78,10 @@ export function restedSnapshot(p, movesData) {
     currentMoves: (base.currentMoves || []).map((m) => {
       const moveId = m._mimicOriginal ?? m.moveId;
       const maxPP = m._mimicOriginal != null ? (movesData.find((d) => d.id === moveId)?.pp ?? m.maxPP) : m.maxPP;
-      return { moveId, currentPP: maxPP, maxPP, enabled: true };
+      /** @type {import('./MoveSlots.js').MoveSlot} */
+      const slot = { moveId, currentPP: maxPP, maxPP, enabled: true };
+      if (m.reserved) slot.reserved = true;
+      return slot;
     }),
     statusEffects: [],
     statModifiers: {},
@@ -127,6 +131,7 @@ export function spawnFromSnapshot(game, p, { slot, isLeader }) {
       const enabled = m.enabled !== undefined ? m.enabled : true;
       const disableTurns = m._disableTurns;
       const fixedEnabled = !enabled && (disableTurns == null || disableTurns <= 0) ? true : enabled;
+      /** @type {import('./MoveSlots.js').MoveSlot} */
       const slotData = {
         moveId: m.moveId,
         currentPP: m.currentPP,
@@ -137,6 +142,7 @@ export function spawnFromSnapshot(game, p, { slot, isLeader }) {
       if (!fixedEnabled && disableTurns != null && disableTurns > 0) {
         slotData._disableTurns = disableTurns;
       }
+      if (m.reserved) slotData.reserved = true;
       return slotData;
     }),
     pendingMovesToLearn: p.pendingMovesToLearn || [],
