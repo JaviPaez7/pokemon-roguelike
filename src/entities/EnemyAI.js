@@ -8,6 +8,7 @@ import { canWalkOnTile } from '../systems/MovementSystem.js';
 import { getAbility } from '../systems/AbilitySystem.js';
 import { random } from '../core/Random.js';
 import { moveRange, lineDirectionTo, inRoomReach } from '../systems/MoveTargeting.js';
+import { aiCanUse, aiHasMove } from '../core/MoveSlots.js';
 
 /** Probabilidad de que un salvaje use un movimiento a distancia cuando puede. */
 const RANGED_CHANCE = 0.5;
@@ -15,13 +16,16 @@ const RANGED_CHANCE = 0.5;
 /**
  * Un movimiento con el que alcanzar al objetivo sin estar al lado: en línea
  * (alineado y sin muros) o de sala.
+ * @param {number} entityId
+ * @param {number | null} targetId
+ * @param {Object} game
  * @returns {{ type: 'attack', targetId: number, moveId: number } | null}
  */
 function rangedAttack(entityId, targetId, game) {
   if (!game?.movesData || targetId == null) return null;
   const info = game.entityManager.getComponent(entityId, 'pokemonInfo');
   const usable = (info?.currentMoves || [])
-    .filter(s => s && s.currentPP > 0 && s.enabled !== false)
+    .filter(aiCanUse)
     .map(s => game.movesData.find(m => m.id === s.moveId))
     .filter(m => m && (m.power > 0 || m.effect));
   for (const move of usable) {
@@ -378,7 +382,15 @@ function findClosestSafeTile(entityId, centerPos, tileMap, entityManager) {
 }
 
 /**
- * Comportamiento de seguidor (miembros del equipo)
+ * Comportamiento de seguidor (miembros del equipo), según su táctica. No usa
+ * los movimientos que el jugador ha reservado (ver core/MoveSlots.js).
+ * @param {number} entityId
+ * @param {{ x: number, y: number }} pos
+ * @param {{ x: number, y: number }} playerPos
+ * @param {Object} tileMap
+ * @param {import('./EntityManager.js').EntityManager} entityManager
+ * @param {Object} game
+ * @returns {{ type: string, targetId?: number, regularAttack?: boolean, index?: number, dx?: number, dy?: number }}
  */
 function followerAction(entityId, pos, playerPos, tileMap, entityManager, game) {
   const partyMember = entityManager.getComponent(entityId, 'partyMember');
@@ -415,7 +427,9 @@ function followerAction(entityId, pos, playerPos, tileMap, entityManager, game) 
         if (!entityManager.hasComponent(targetId, 'partyMember') && entityManager.hasComponent(targetId, 'fighter')) {
           const tf = entityManager.getComponent(targetId, 'fighter');
           if (tf && tf.hp > 0) {
-            return { type: 'attack', targetId: targetId };
+            // Con todo reservado o sin PP, ataque básico (no Forcejeo)
+            const selfInfo = entityManager.getComponent(entityId, 'pokemonInfo');
+            return { type: 'attack', targetId: targetId, regularAttack: !aiHasMove(selfInfo) };
           }
         }
       }
@@ -509,7 +523,7 @@ function followerAction(entityId, pos, playerPos, tileMap, entityManager, game) 
       let restIdx = -1;
       for (let i = 0; i < selfInfo.currentMoves.length; i++) {
         const slot = selfInfo.currentMoves[i];
-        if (!slot || slot.currentPP <= 0 || slot.enabled === false) continue;
+        if (!aiCanUse(slot)) continue; // sin PP, anulado o reservado por el jugador
         const md = game.movesData.find(m => m.id === slot.moveId);
         if (!md) continue;
         if (md.effect === 'heal_self' && healIdx < 0) healIdx = i;
@@ -562,9 +576,8 @@ function followerAction(entityId, pos, playerPos, tileMap, entityManager, game) 
     // Si está adyacente, atacarle (ataque básico si PP bajos)
     if (minDistance === 1) {
       const info = entityManager.getComponent(entityId, 'pokemonInfo');
-      const fighter = entityManager.getComponent(entityId, 'fighter');
-      const noPp = info && info.currentMoves && info.currentMoves.every(m => !m || m.currentPP <= 0 || m.enabled === false);
-      if (!noPp && info && game?.movesData) {
+      // Sin movimientos que pueda elegir (sin PP, anulados o reservados): ataque básico
+      if (aiHasMove(info) && game?.movesData) {
         // Preferir movimiento (IA elige en handleCombat con selectBestMove)
         return { type: 'attack', targetId: targetHostileId, regularAttack: false };
       }

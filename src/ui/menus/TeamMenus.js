@@ -5,8 +5,9 @@ import { GAME_STATES, TYPE_NAMES_ES } from '../../constants.js';
 import { heldName } from '../../core/HeldItems.js';
 import { skillsForIq } from '../../core/IQ.js';
 import { takeHeldItem } from '../../systems/InventorySystem.js';
-import { setLeader, setTactic } from '../../core/Profile.js';
+import { setLeader, setTactic, setMoveReserved } from '../../core/Profile.js';
 import { keepInTown } from '../../core/TownSession.js';
+import { setReserved } from '../../core/MoveSlots.js';
 
 /** @param {import('../UIManager.js').UIManager} ui */
 export function openTeamMenu(ui) {
@@ -316,7 +317,12 @@ export function updateTacticDetails(ui) {
 }
 
 
-/** @param {import('../UIManager.js').UIManager} ui */
+/**
+ * Movimientos del Pokémon elegido. En uno que no es el líder, Z reserva o deja
+ * libre cada movimiento para la IA (`reserved`, ver core/MoveSlots.js). En el
+ * pueblo se apunta también en la plantilla, para que dure.
+ * @param {import('../UIManager.js').UIManager} ui
+ */
 export function openMovesViewMenu(ui) {
   const info = ui.game.entityManager.getComponent(ui.selectedPokemon, 'pokemonInfo');
   const moves = info.currentMoves || [];
@@ -346,7 +352,7 @@ export function openMovesViewMenu(ui) {
 
     let usageIndicator = '';
     if (!isLeader) {
-      const isEnabled = slot.enabled !== false;
+      const isEnabled = !slot.reserved;
       usageIndicator = `
         <span style="color: ${isEnabled ? 'var(--text-accent)' : 'var(--text-secondary)'}; font-size: 5px; font-weight: bold; background: rgba(${isEnabled ? '0,204,255' : '150,150,150'},0.15); padding: 1px 4px; border-radius: 2px; margin-right: 4px; vertical-align: middle;">
           ${isEnabled ? 'USAR' : 'RESERVAR'}
@@ -383,9 +389,12 @@ export function openMovesViewMenu(ui) {
   ui.showMenu('moves_view', html);
 
   if (!isLeader) {
-    ui.menuOptions = moves.map((slot, idx) => () => {
-      slot.enabled = (slot.enabled === false) ? true : false;
+    ui.menuOptions = moves.map((slot) => () => {
+      const reserved = !slot.reserved;
+      setReserved(slot, reserved);
       ui.game.entityManager.setComponent(ui.selectedPokemon, 'pokemonInfo', info);
+      const uid = ui.game.entityManager.getComponent(ui.selectedPokemon, 'partyMember')?.uid;
+      if (uid != null) keepInTown(ui.game, (profile) => setMoveReserved(profile, uid, slot.moveId, reserved));
       
       // Reproducir sonido y refrescar conservando la selección
       ui.sfx.playConfirmSound();
