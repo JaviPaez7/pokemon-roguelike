@@ -7,7 +7,7 @@ import { spawnTraps } from '../systems/TrapSystem.js';
 import { getBiomeForFloor } from './Biomes.js';
 import { getAbility } from '../systems/AbilitySystem.js';
 import { floorSeed } from '../core/Random.js';
-import { relativeFloor } from '../core/Dungeons.js';
+import { relativeFloor, levelBonus, scaledZone } from '../core/Dungeons.js';
 import { spawnMissionTargets } from '../systems/MissionSystem.js';
 import { onFloorEntered } from '../core/StorySession.js';
 import { tipFor, floorReminders } from '../core/Tips.js';
@@ -20,12 +20,29 @@ export class FloorManager {
   /** @param {import('../Game.js').Game} game */
   constructor(game) {
     this.game = game;
+    /** @type {{ base: Object, bonus: number, zone: Object } | null} Última zona con niveles subidos */
+    this._scaled = null;
   }
 
+  /**
+   * Zona de floors.json del piso actual, con los niveles de la mazmorra: los
+   * picos del posjuego suben según cuántos se han completado ya (`levelBonus`).
+   * Todo lo que pone Pokémon en el piso (salvajes, casas de monstruos, jefe y
+   * amistosos) lee los niveles de aquí, así que el ajuste es el mismo al
+   * entrar, al cambiar de piso y al cargar.
+   * @returns {Object | null | undefined}
+   */
   getZoneConfig() {
-    const { floorsData, _currentFloor } = this.game;
+    const { floorsData, _currentFloor, dungeonId, profile } = this.game;
     if (!floorsData || !floorsData.zones) return null;
-    return floorsData.zones.find(z => _currentFloor >= z.floors[0] && _currentFloor <= z.floors[1]);
+    const zone = floorsData.zones.find(z => _currentFloor >= z.floors[0] && _currentFloor <= z.floors[1]);
+    const bonus = levelBonus(dungeonId, profile?.clearedDungeons);
+    if (!zone || !bonus) return zone;
+    // Se pide en cada fotograma (nombre de la zona, FOV): una copia por zona y ajuste
+    if (this._scaled?.base !== zone || this._scaled.bonus !== bonus) {
+      this._scaled = { base: zone, bonus, zone: scaledZone(zone, bonus) };
+    }
+    return this._scaled.zone;
   }
 
   generateFloor() {

@@ -7,7 +7,11 @@ import {
   isLastFloor,
   isUnlocked,
   unlockedDungeons,
+  levelBonus,
+  scaledZone,
+  LEVEL_SCALING,
 } from '../../src/core/Dungeons.js';
+import { FloorManager } from '../../src/map/FloorManager.js';
 import { floorEventsAllowed } from '../../src/systems/FloorEvents.js';
 import { floorReminders } from '../../src/core/Tips.js';
 import { stairsLookText } from '../../src/systems/ActionSystem.js';
@@ -179,5 +183,75 @@ describe('desbloqueos', () => {
     const seen = ['F-3'];
     expect(isUnlocked(jardin, [...STORY_CLEARED, 'cumbre_escarcha', 'pico_tronador'], seen)).toBe(false);
     expect(isUnlocked(jardin, [...STORY_CLEARED, ...PEAKS], seen)).toBe(true);
+  });
+});
+
+describe('los picos suben de nivel según cuántos se han hecho', () => {
+  const [scaling] = LEVEL_SCALING;
+  const [, second, third] = scaling.levels;
+  const zoneOf = (id) => floorsData.zones.find((z) => z.floors[1] === getDungeon(id).floors[1]);
+
+  it('el grupo son los tres picos, que se abren a la vez, y cada pico hecho sube más', () => {
+    expect(LEVEL_SCALING).toHaveLength(1);
+    expect(scaling.dungeons).toEqual(PEAKS);
+    expect(new Set(PEAKS.map((id) => JSON.stringify(getDungeon(id).unlock))).size).toBe(1);
+    expect(scaling.levels).toHaveLength(PEAKS.length);
+    expect(scaling.levels[0]).toBe(0);
+    for (let i = 1; i < scaling.levels.length; i++) expect(scaling.levels[i]).toBeGreaterThan(scaling.levels[i - 1]);
+  });
+
+  it('escala desde el primer pico que se haga, sea cual sea', () => {
+    for (const id of PEAKS) {
+      const others = PEAKS.filter((p) => p !== id);
+      expect(levelBonus(id, STORY_CLEARED), id).toBe(0);
+      for (const other of others) expect(levelBonus(id, [...STORY_CLEARED, other]), `${id} tras ${other}`).toBe(second);
+      expect(levelBonus(id, [...STORY_CLEARED, ...others]), id).toBe(third);
+    }
+  });
+
+  it('el propio pico no cuenta: repetirlo no lo sube', () => {
+    expect(levelBonus('cumbre_escarcha', [...STORY_CLEARED, 'cumbre_escarcha'])).toBe(0);
+    expect(levelBonus('cumbre_escarcha', [...STORY_CLEARED, ...PEAKS])).toBe(third);
+  });
+
+  it('la historia, el jardín y la Torre no escalan', () => {
+    for (const d of DUNGEONS.filter((x) => !PEAKS.includes(x.id))) {
+      expect(levelBonus(d.id, [...STORY_CLEARED, ...PEAKS]), d.id).toBe(0);
+    }
+    expect(levelBonus(null, PEAKS)).toBe(0);
+    expect(levelBonus('pico_tronador')).toBe(0);
+  });
+
+  it('scaledZone sube los salvajes y el jefe sin tocar floors.json', () => {
+    const zone = zoneOf('pico_tronador');
+    const before = structuredClone(zone);
+    const scaled = scaledZone(zone, third);
+    expect(scaled.levelRange).toEqual([zone.levelRange[0] + third, zone.levelRange[1] + third]);
+    expect(scaled.boss).toEqual({ ...zone.boss, level: zone.boss.level + third });
+    expect(scaled).toMatchObject({ name: zone.name, floors: zone.floors, pokemon: zone.pokemon, weather: zone.weather, levelBonus: third });
+    expect(zone).toEqual(before);
+    // Sin ajuste, la misma zona; sin jefe, sigue sin jefe
+    expect(scaledZone(zone, 0)).toBe(zone);
+    expect(scaledZone(null, 4)).toBeNull();
+    expect(scaledZone({ levelRange: [10, 12] }, 4)).toEqual({ levelRange: [14, 16], boss: undefined, levelBonus: 4 });
+  });
+
+  it('FloorManager da la zona del piso con los niveles de la mazmorra, según el perfil', () => {
+    /** @param {string} dungeonId @param {number} globalFloor @param {string[]} cleared */
+    const manager = (dungeonId, globalFloor, cleared) =>
+      new FloorManager({ floorsData, _currentFloor: globalFloor, dungeonId, profile: { clearedDungeons: [...STORY_CLEARED, ...cleared] } });
+    const base = zoneOf('pico_tronador');
+    expect(manager('pico_tronador', 60, []).getZoneConfig()).toBe(base);
+    expect(manager('pico_tronador', 60, ['cumbre_escarcha']).getZoneConfig()).toMatchObject({
+      levelRange: [base.levelRange[0] + second, base.levelRange[1] + second],
+      boss: { level: base.boss.level + second },
+    });
+    expect(manager('pico_tronador', 66, ['cumbre_escarcha', 'caldera_ascua']).getZoneConfig().boss).toEqual({ ...base.boss, level: base.boss.level + third });
+    // Mientras no cambien el piso ni el perfil, la misma copia (se pide en cada fotograma)
+    const same = manager('pico_tronador', 60, ['cumbre_escarcha']);
+    expect(same.getZoneConfig()).toBe(same.getZoneConfig());
+    // La Torre recorre los pisos de la historia sin ajuste, y sin perfil no hay ajuste
+    expect(manager('torre_desafio', 45, PEAKS).getZoneConfig()).toBe(floorsData.zones.find((z) => z.floors[1] === 50));
+    expect(new FloorManager({ floorsData, _currentFloor: 60, dungeonId: 'pico_tronador', profile: null }).getZoneConfig()).toBe(base);
   });
 });

@@ -10,6 +10,7 @@ import {
   escortsToJoin,
   escortArrivals,
   missionGlobalFloor,
+  missionLevelBonus,
   markMissionDone,
   revertDoneMissions,
   claimRewards,
@@ -21,7 +22,7 @@ import {
 } from '../../src/core/Missions.js';
 import { guestRefusesItem } from '../../src/systems/MissionSystem.js';
 import { createProfile } from '../../src/core/Profile.js';
-import { getDungeon, floorCount, DUNGEONS } from '../../src/core/Dungeons.js';
+import { getDungeon, floorCount, DUNGEONS, LEVEL_SCALING } from '../../src/core/Dungeons.js';
 import floorsData from '../../src/data/floors.json';
 import pokemonData from '../../src/data/pokemon.json';
 import itemsData from '../../src/data/items.json';
@@ -160,6 +161,31 @@ describe('forajido', () => {
     expect(wildLevelAt(1)).toBe(2);
     expect(wildLevelAt(5)).toBe(4);
     expect(wildLevelAt(6)).toBe(5);
+  });
+});
+
+describe('misiones ★ en los picos que suben de nivel', () => {
+  const [, second, third] = LEVEL_SCALING[0].levels;
+  const STORY_ONLY = DUNGEONS.filter((d) => !d.challenge && !d.postgame).map((d) => d.id);
+  const outlaw = mission({ type: 'outlaw', dungeonId: 'pico_tronador', floor: 3 });
+  const escort = mission({ type: 'escort', dungeonId: 'caldera_ascua', floor: 4 });
+
+  it('forajidos y clientes de escolta suben lo mismo que los salvajes de su pico', () => {
+    for (const m of [outlaw, escort]) {
+      const f = missionGlobalFloor(m);
+      expect(wildLevelAt(f, third)).toBe(wildLevelAt(f) + third);
+      expect(outlawLevel(f, third)).toBe(outlawLevel(f) + third);
+      expect(escortGuestLevel(f, third)).toBe(escortGuestLevel(f) + third);
+    }
+  });
+
+  it('cuentan los picos completados cuando se va, no cuando se aceptó', () => {
+    expect(missionLevelBonus(outlaw, STORY_ONLY)).toBe(0);
+    expect(missionLevelBonus(outlaw, [...STORY_ONLY, 'caldera_ascua'])).toBe(second);
+    expect(missionLevelBonus(outlaw, [...STORY_ONLY, 'caldera_ascua', 'cumbre_escarcha'])).toBe(third);
+    // Fuera de los picos, nada
+    expect(missionLevelBonus(mission({ dungeonId: 'cueva_oscura' }), ['cumbre_escarcha', 'pico_tronador', 'caldera_ascua'])).toBe(0);
+    expect(missionLevelBonus(mission({ dungeonId: 'jardin_primer_sueno' }), ['cumbre_escarcha', 'pico_tronador', 'caldera_ascua'])).toBe(0);
   });
 });
 

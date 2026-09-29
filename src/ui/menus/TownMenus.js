@@ -5,7 +5,7 @@
  */
 
 import { GAME_STATES, MAX_PARTY_SIZE } from '../../constants.js';
-import { floorCount } from '../../core/Dungeons.js';
+import { floorCount, levelBonus } from '../../core/Dungeons.js';
 import {
   bankDeposit,
   bankWithdraw,
@@ -301,10 +301,13 @@ function confirmDungeon(ui, dungeon) {
   const team = game.profile.teamUids.map((uid) => getMember(game.profile, uid).name).join(', ');
   // Clientes de escolta de esta mazmorra: los que irán y los que no caben
   const escorts = escortsToJoin(game.profile, dungeon, MAX_PARTY_SIZE - game.profile.teamUids.length);
+  // Los picos del posjuego suben de nivel según cuántos se han hecho: se avisa
+  const bonus = levelBonus(dungeon.id, game.profile.clearedDungeons);
+  const stronger = bonus ? `<br>Tras vuestras victorias en los otros picos, aquí os esperan Pokémon más fuertes (+${bonus} niveles).` : '';
   simpleMenu(ui, {
     type: 'town_dungeon_confirm',
     title: dungeon.name.toUpperCase(),
-    text: `${dungeon.description}<br>${floorCount(dungeon)} pisos · Equipo: ${team}<br>Llevas ${game.coins} Poké y ${game.inventory.length} objetos en la mochila.`,
+    text: `${dungeon.description}${stronger}<br>${floorCount(dungeon)} pisos · Equipo: ${team}<br>Llevas ${game.coins} Poké y ${game.inventory.length} objetos en la mochila.`,
     width: 360,
     onCancel: () => openDungeonSelect(ui),
     options: [

@@ -17,6 +17,8 @@ import {
 const option = (page, text) => page.locator('#menu-container .menu-option', { hasText: text });
 
 const STORY = JSON.parse(readFileSync(new URL('../../src/data/story.json', import.meta.url), 'utf8'));
+const DUNGEONS = JSON.parse(readFileSync(new URL('../../src/data/dungeons.json', import.meta.url), 'utf8'));
+const FLOORS = JSON.parse(readFileSync(new URL('../../src/data/floors.json', import.meta.url), 'utf8'));
 /** Escenas que ha visto quien ha terminado la historia (todas menos las del posjuego). */
 const STORY_SCENES = STORY.scenes.filter((s) => !s.id.startsWith('L')).map((s) => s.id);
 
@@ -348,6 +350,129 @@ test('al completar el tercer pico llega un sobre sin remite y se abre el jardín
   expect(await speaker(page)).toEqual({ name: 'Mew', portrait: expect.stringMatching(/portraits\/0151\/Joyous\.png$/) });
   await skipDialogs(page);
   await expectExploring(page);
+});
+
+test('los picos suben de nivel según cuántos se han hecho: al entrar, al bajar, al cargar, en los encargos y en su legendario', async ({ page }) => {
+  const levels = DUNGEONS.levelScaling.find((g) => g.dungeons.includes('pico_tronador')).levels;
+  const bonus = levels.at(-1); // Con los otros dos picos completados
+  const zone = FLOORS.zones.find((z) => z.name === 'Pico Tronador');
+  const OUTLAW = {
+    id: 'e2e-forajido-pico',
+    type: 'outlaw',
+    dungeonId: 'pico_tronador',
+    floor: 2,
+    clientSpeciesId: 101,
+    clientName: 'Electrode',
+    itemId: null,
+    difficulty: '★',
+    reward: { money: 1500, itemId: null, rankPoints: 160 },
+    status: 'accepted',
+    crime: 'Hizo saltar los plomos de medio valle.',
+  };
+
+  await startNewGame(page);
+  // Sin las escenas de Pico Tronador por medio; el forajido, en el piso 2
+  const tronador = STORY.scenes.filter((s) => s.id.startsWith('L2-')).map((s) => s.id);
+  await setProgress(page, { seen: [...STORY_SCENES, 'L-0', ...tronador] });
+  await page.evaluate((m) => window.game.profile.missions.accepted.push(m), OUTLAW);
+
+  /** Sale hacia Pico Tronador y devuelve lo que dice el menú de confirmar. */
+  const enterTronador = async () => {
+    await page.evaluate(() => window.game.uiManager.openDungeonSelect());
+    await option(page, 'Pico Tronador').click();
+    await expect(panelTitle(page)).toHaveText('PICO TRONADOR');
+    const text = await page.locator('#menu-container .town-text').textContent();
+    await option(page, '¡En marcha!').click();
+    await expect.poll(() => page.evaluate(() => window.game.getState())).toBe('EXPLORING');
+    await skipDialogs(page);
+    await expectExploring(page);
+    return text;
+  };
+  /** Pasa los avisos que haya al llegar a un piso (un evento, una casa de monstruos…). */
+  const settle = async () => {
+    for (let i = 0; i < 50 && (await page.locator('.dialog-panel').isVisible()); i++) await page.keyboard.press('z');
+  };
+  /** Niveles de los salvajes del piso y del forajido. */
+  const floorLevels = () =>
+    page.evaluate(() => {
+      const em = window.game.entityManager;
+      const foes = em
+        .getEntitiesWithComponents('aiControlled', 'pokemonInfo')
+        .filter((id) => !['partyMember', 'npcFriendly', 'npcMerchant', 'isBoss'].some((c) => em.hasComponent(id, c)));
+      const level = (id) => em.getComponent(id, 'pokemonInfo').level;
+      return {
+        floor: window.game.getCurrentFloor(),
+        wild: foes.filter((id) => !em.hasComponent(id, 'outlaw')).map(level),
+        outlaw: foes.filter((id) => em.hasComponent(id, 'outlaw')).map(level)[0] ?? null,
+      };
+    });
+  const nextFloor = async () => {
+    await page.evaluate(() => window.game.floorManager.changeFloor('down'));
+    await settle();
+    await expectExploring(page);
+  };
+  const within = ([min, max]) => (level) => level >= min && level <= max;
+
+  // Sin ningún pico hecho, sus niveles de siempre
+  expect(await enterTronador()).not.toContain('más fuertes');
+  const before = [await floorLevels()];
+  await nextFloor();
+  before.push(await floorLevels());
+  await toBossFloor(page);
+  const bossBefore = (await bossInfo(page)).level;
+  expect(bossBefore).toBe(zone.boss.level);
+  for (const f of before) {
+    expect(f.wild.length, `piso ${f.floor}`).toBeGreaterThan(0);
+    expect(f.wild.every(within(zone.levelRange)), `piso ${f.floor}: ${f.wild}`).toBe(true);
+  }
+  expect(before[1].outlaw).toBeGreaterThan(Math.max(...before[1].wild));
+
+  await page.evaluate(() => window.game.endExpedition('escaped'));
+  await expect.poll(() => page.evaluate(() => window.game.getState())).toBe('TOWN');
+  await skipDialogs(page);
+  await expectInTown(page);
+
+  // Con los otros dos picos completados, todo sube lo mismo, y el menú lo avisa
+  await setProgress(page, { cleared: ['cumbre_escarcha', 'caldera_ascua'], seen: [...STORY_SCENES, 'L-0', ...tronador] });
+  expect(await enterTronador()).toContain(`aquí os esperan Pokémon más fuertes (+${bonus} niveles)`);
+  const scaled = [zone.levelRange[0] + bonus, zone.levelRange[1] + bonus];
+  const after = [await floorLevels()];
+  await nextFloor();
+  after.push(await floorLevels());
+  for (const [i, f] of after.entries()) {
+    expect(f.wild.length, `piso ${f.floor}`).toBeGreaterThan(0);
+    expect(f.wild.every(within(scaled)), `piso ${f.floor}: ${f.wild}`).toBe(true);
+    expect(Math.min(...f.wild), `piso ${f.floor}`).toBeGreaterThan(Math.max(...before[i].wild));
+  }
+  // El forajido del encargo ★ sube con su pico
+  expect(after[1].outlaw).toBe(before[1].outlaw + bonus);
+
+  // Guardar y cargar a mitad de expedición: el piso se regenera con los mismos niveles
+  await page.evaluate(() => window.game.saveGameData());
+  await page.reload();
+  await option(page, 'Continuar partida').click();
+  await dismissDialog(page);
+  await expectExploring(page);
+  const loaded = await floorLevels();
+  expect(loaded.floor).toBe(2);
+  expect(loaded.wild.length).toBeGreaterThan(0);
+  expect(loaded.wild.every(within(scaled)), `${loaded.wild}`).toBe(true);
+  expect(loaded.outlaw).toBe(after[1].outlaw);
+
+  // El jefe, también; y Zapdos se une al nivel al que se le ha ganado
+  await toBossFloor(page);
+  await settle();
+  expect(await bossInfo(page)).toMatchObject({ speciesId: 145, level: bossBefore + bonus });
+  await defeatBoss(page);
+  await advanceTo(page, 'Parece que quiere acompañaros');
+  await dismissDialog(page);
+  await option(page, 'Sí').click();
+  await advanceUntilTown(page);
+  expect(await dialogText(page)).toContain('¡Pico Tronador completada!');
+  await skipDialogs(page);
+  await expectInTown(page);
+  expect(await rosterMember(page, 145)).toMatchObject({ level: bossBefore + bonus, inTeam: true });
+  expect((await rosterMember(page, 145)).maxHp).toBe(await normalMaxHp(page, 145, bossBefore + bonus));
 });
 
 test('el Diario guarda el posjuego detrás del final, con una parte por mazmorra', async ({ page }) => {

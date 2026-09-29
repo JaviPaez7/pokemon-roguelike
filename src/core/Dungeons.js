@@ -42,6 +42,17 @@ export const DUNGEONS = dungeonsData.dungeons;
 export const WIND = dungeonsData.wind;
 
 /**
+ * Mazmorras que se hacen en cualquier orden (los tres picos del posjuego):
+ * cada una sube `levels[n]` niveles, donde n es cuántas de las otras del grupo
+ * se han completado ya. Así la dificultad crece desde el primer pico que se
+ * haga, sea cual sea, y no según cuál es.
+ * @typedef {{ dungeons: string[], levels: number[] }} LevelScaling
+ */
+
+/** @type {LevelScaling[]} */
+export const LEVEL_SCALING = dungeonsData.levelScaling ?? [];
+
+/**
  * @param {string} id
  * @returns {Dungeon}
  */
@@ -91,4 +102,44 @@ export function isUnlocked(dungeon, cleared, seen = []) {
  */
 export function unlockedDungeons(cleared, seen = []) {
   return DUNGEONS.filter((d) => isUnlocked(d, cleared, seen));
+}
+
+/**
+ * Niveles de más de los Pokémon de una mazmorra (salvajes, jefe, amistosos,
+ * forajidos y clientes de escolta) según cuántas de las otras de su grupo de
+ * `levelScaling` se han completado ya. La propia no cuenta: repetir un pico
+ * no lo sube. Fuera de un grupo, 0.
+ * @param {string | null | undefined} dungeonId
+ * @param {string[]} [cleared] - Ids de mazmorras completadas (`profile.clearedDungeons`)
+ * @returns {number}
+ */
+export function levelBonus(dungeonId, cleared = []) {
+  const group = LEVEL_SCALING.find((g) => g.dungeons.includes(dungeonId));
+  if (!group) return 0;
+  const done = group.dungeons.filter((id) => id !== dungeonId && cleared.includes(id)).length;
+  return group.levels[Math.min(done, group.levels.length - 1)] ?? 0;
+}
+
+/**
+ * @typedef {{ levelRange: [number, number], boss?: { level: number } | null, levelBonus?: number }} LeveledZone
+ */
+
+/**
+ * Una zona de floors.json con los niveles subidos: los de los salvajes
+ * (`levelRange`) y el del jefe (`boss.level`). Apunta el ajuste en
+ * `levelBonus`, que suben también los amistosos (`friendlyLevel`). Sin ajuste
+ * devuelve la misma zona; con él, una copia (floors.json no se toca).
+ * @template {LeveledZone} Z
+ * @param {Z} zone
+ * @param {number} bonus
+ * @returns {Z}
+ */
+export function scaledZone(zone, bonus) {
+  if (!zone || !bonus) return zone;
+  return {
+    ...zone,
+    levelRange: [zone.levelRange[0] + bonus, zone.levelRange[1] + bonus],
+    boss: zone.boss ? { ...zone.boss, level: zone.boss.level + bonus } : zone.boss,
+    levelBonus: bonus,
+  };
 }
