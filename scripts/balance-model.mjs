@@ -22,6 +22,9 @@
  * - Sin repetir mazmorras y sin contar misiones, casas de monstruos, caramelos
  *   ni amistosos: la única experiencia es la de los salvajes que aparecen al
  *   entrar en cada piso y la del jefe.
+ * - Los picos del posjuego suben de nivel según cuántos se han hecho antes
+ *   (`levelBonus`): cada simulación los sube según el orden en que los hace y
+ *   lo apunta en `bonus`; `postgameOrders` prueba todos los órdenes.
  * - Dos ritmos: `todo` (el equipo derrota a todos los salvajes de cada piso, el
  *   máximo sin repetir) y `tipico` (a `TYPICAL_KILL_RATE` de ellos).
  * - «Protagonista típico»: la mediana de los nueve protagonistas del test de
@@ -50,7 +53,7 @@ import personalityData from '../src/data/personality.json';
 import { MAP_WIDTH, MAP_HEIGHT } from '../src/constants.js';
 import { floorSeed, random, setSeed } from '../src/core/Random.js';
 import { TurnManager } from '../src/core/TurnManager.js';
-import { DUNGEONS, WIND } from '../src/core/Dungeons.js';
+import { DUNGEONS, WIND, LEVEL_SCALING, levelBonus, scaledZone } from '../src/core/Dungeons.js';
 import { DIFFICULTIES, MISSION_RULES, rewardMoney, rewardPoints } from '../src/core/Missions.js';
 import { buyPrice, townShopStock, SHOP_STAPLES } from '../src/core/Shop.js';
 import { recruitChance, RECRUITMENT } from '../src/core/Recruitment.js';
@@ -94,10 +97,12 @@ export const HERO_SPECIES = personalityData.natures.map((n) => n.speciesId);
 
 /**
  * @param {number} globalFloor
- * @returns {any} Zona de floors.json de ese piso global
+ * @param {number} [bonus] - Niveles de más de la mazmorra (`levelBonus`)
+ * @returns {any} Zona de floors.json de ese piso global, con los niveles subidos (`scaledZone`)
  */
-export function zoneAt(globalFloor) {
-  return floorsData.zones.find((z) => globalFloor >= z.floors[0] && globalFloor <= z.floors[1]) ?? null;
+export function zoneAt(globalFloor, bonus = 0) {
+  const zone = floorsData.zones.find((z) => globalFloor >= z.floors[0] && globalFloor <= z.floors[1]) ?? null;
+  return scaledZone(zone, bonus);
 }
 
 /** @param {number} globalFloor @returns {boolean} Si es el piso del jefe de su zona */
@@ -112,10 +117,11 @@ export function isBossFloor(globalFloor) {
  * `levelRange` de la zona, donde `base` va del mínimo al máximo a lo largo de
  * la zona.
  * @param {number} globalFloor
+ * @param {number} [bonus] - Niveles de más de la mazmorra (`levelBonus`)
  * @returns {{ level: number, p: number }[]}
  */
-export function wildLevelDistribution(globalFloor) {
-  const zone = zoneAt(globalFloor);
+export function wildLevelDistribution(globalFloor, bonus = 0) {
+  const zone = zoneAt(globalFloor, bonus);
   const [minL, maxL] = zone.levelRange;
   const span = Math.max(1, zone.floors[1] - zone.floors[0]);
   const base = minL + (maxL - minL) * ((globalFloor - zone.floors[0]) / span);
@@ -132,9 +138,13 @@ export function wildLevelDistribution(globalFloor) {
   return [...dist].map(([level, p]) => ({ level, p }));
 }
 
-/** @param {number} globalFloor @returns {number} Nivel medio de los salvajes del piso */
-export function meanWildLevel(globalFloor) {
-  return wildLevelDistribution(globalFloor).reduce((s, d) => s + d.level * d.p, 0);
+/**
+ * @param {number} globalFloor
+ * @param {number} [bonus] - Niveles de más de la mazmorra (`levelBonus`)
+ * @returns {number} Nivel medio de los salvajes del piso
+ */
+export function meanWildLevel(globalFloor, bonus = 0) {
+  return wildLevelDistribution(globalFloor, bonus).reduce((s, d) => s + d.level * d.p, 0);
 }
 
 /**
@@ -171,9 +181,13 @@ function baseExpOf(speciesId) {
   return SPECIES.get(speciesId)?.baseExp || 50;
 }
 
-/** @param {number} globalFloor @returns {number} Experiencia media de un salvaje del piso */
-export function expPerEnemy(globalFloor) {
-  const levels = wildLevelDistribution(globalFloor);
+/**
+ * @param {number} globalFloor
+ * @param {number} [bonus] - Niveles de más de la mazmorra (`levelBonus`)
+ * @returns {number} Experiencia media de un salvaje del piso
+ */
+export function expPerEnemy(globalFloor, bonus = 0) {
+  const levels = wildLevelDistribution(globalFloor, bonus);
   let total = 0;
   for (const s of speciesMix(zoneAt(globalFloor))) {
     for (const l of levels) total += s.p * l.p * calculateExpGained(baseExpOf(s.id), l.level);
@@ -181,9 +195,13 @@ export function expPerEnemy(globalFloor) {
   return total;
 }
 
-/** @param {number} globalFloor @returns {number} Experiencia media de los salvajes de un piso */
-export function expPerFloor(globalFloor) {
-  return expectedEnemies(globalFloor) * expPerEnemy(globalFloor);
+/**
+ * @param {number} globalFloor
+ * @param {number} [bonus] - Niveles de más de la mazmorra (`levelBonus`)
+ * @returns {number} Experiencia media de los salvajes de un piso
+ */
+export function expPerFloor(globalFloor, bonus = 0) {
+  return expectedEnemies(globalFloor) * expPerEnemy(globalFloor, bonus);
 }
 
 /**
@@ -224,7 +242,7 @@ export function zoneSummary(zone) {
 
 /**
  * @typedef {{
- *   dungeonId: string, name: string, floors: [number, number],
+ *   dungeonId: string, name: string, floors: [number, number], bonus: number,
  *   entry: number, atBoss: number | null, exit: number,
  *   wild: [number, number], boss: { name: string, level: number } | null,
  *   byFloor: { floor: number, level: number }[]
@@ -233,17 +251,21 @@ export function zoneSummary(zone) {
 
 /**
  * Nivel del equipo al hacer unas mazmorras en orden, una vez cada una. Sube de
- * nivel con `grantExperience`, como en el juego.
+ * nivel con `grantExperience`, como en el juego. Los niveles de cada mazmorra
+ * suben con `levelBonus` según las completadas antes (`cleared` y las que van
+ * delante en la lista).
  * @param {{ id: string, name: string, floors: [number, number] }[]} dungeons
- * @param {{ level?: number, xp?: number, killRate?: number }} [start]
+ * @param {{ level?: number, xp?: number, killRate?: number, cleared?: string[] }} [start]
  * @returns {{ dungeons: DungeonProgress[], level: number, xp: number }}
  */
-export function simulateProgress(dungeons, { level = STARTING_LEVEL, xp = 0, killRate = 1 } = {}) {
+export function simulateProgress(dungeons, { level = STARTING_LEVEL, xp = 0, killRate = 1, cleared = [] } = {}) {
   const info = { speciesId: 133, name: 'Equipo', level, xp, currentMoves: [] };
   const fighter = { hp: 1, maxHp: 1, bonusStats: null };
   const gain = (amount) => grantExperience(info, fighter, amount, pokemonData, movesData);
+  const done = [...cleared];
   const out = [];
   for (const dungeon of dungeons) {
+    const bonus = levelBonus(dungeon.id, done);
     const entry = info.level;
     let atBoss = null;
     const byFloor = [];
@@ -252,17 +274,19 @@ export function simulateProgress(dungeons, { level = STARTING_LEVEL, xp = 0, kil
       byFloor.push({ floor: f, level: info.level });
       if (isBossFloor(f)) {
         atBoss = info.level;
-        gain(bossExp(zoneAt(f)));
+        gain(bossExp(zoneAt(f, bonus)));
       } else {
-        levels.push(...wildLevelDistribution(f).map((d) => d.level));
-        gain(killRate * expPerFloor(f));
+        levels.push(...wildLevelDistribution(f, bonus).map((d) => d.level));
+        gain(killRate * expPerFloor(f, bonus));
       }
     }
-    const lastZone = zoneAt(dungeon.floors[1]);
+    const lastZone = zoneAt(dungeon.floors[1], bonus);
+    done.push(dungeon.id);
     out.push({
       dungeonId: dungeon.id,
       name: dungeon.name,
       floors: dungeon.floors,
+      bonus,
       entry,
       atBoss,
       exit: info.level,
@@ -280,8 +304,90 @@ export function simulateProgress(dungeons, { level = STARTING_LEVEL, xp = 0, kil
  */
 export function storyAndPostgame(killRate) {
   const story = simulateProgress(STORY_DUNGEONS, { killRate });
-  const postgame = simulateProgress(POSTGAME_DUNGEONS, { level: story.level, xp: story.xp, killRate });
+  const postgame = simulateProgress(POSTGAME_DUNGEONS, afterStory(story, killRate));
   return { story, postgame };
+}
+
+/**
+ * Cómo sale el equipo de la historia, para seguir con el posjuego.
+ * @param {{ dungeons: DungeonProgress[], level: number, xp: number }} story
+ * @param {number} killRate
+ */
+function afterStory(story, killRate) {
+  return { level: story.level, xp: story.xp, killRate, cleared: story.dungeons.map((d) => d.dungeonId) };
+}
+
+/**
+ * @template T
+ * @param {T[]} list
+ * @returns {T[][]} Todas las ordenaciones de la lista
+ */
+function permutations(list) {
+  if (list.length <= 1) return [list];
+  return list.flatMap((x, i) => permutations([...list.slice(0, i), ...list.slice(i + 1)]).map((rest) => [x, ...rest]));
+}
+
+/**
+ * El posjuego tras la historia en cada orden posible de las mazmorras que se
+ * hacen en cualquier orden (los tres picos), y después las demás (el jardín).
+ * @param {number} killRate
+ * @returns {{ order: string[], dungeons: DungeonProgress[] }[]}
+ */
+export function postgameOrders(killRate) {
+  const story = simulateProgress(STORY_DUNGEONS, { killRate });
+  const free = anyOrderDungeons();
+  const loose = POSTGAME_DUNGEONS.filter((d) => free.has(d.id));
+  const after = POSTGAME_DUNGEONS.filter((d) => !free.has(d.id));
+  return permutations(loose).map((order) => ({
+    order: order.map((d) => d.id),
+    dungeons: simulateProgress([...order, ...after], afterStory(story, killRate)).dungeons,
+  }));
+}
+
+/**
+ * @typedef {{
+ *   dungeonId: string, name: string, position: number, bonus: number,
+ *   wild: [number, number], boss: { name: string, level: number } | null,
+ *   entry: [number, number], atBoss: [number, number] | null, gap: [number, number] | null
+ * }} OrderSummary
+ * Una mazmorra del posjuego en un puesto (0 = la primera que se hace), con el
+ * rango de lo que sale en los órdenes que la ponen ahí.
+ */
+
+/**
+ * Resume `postgameOrders` por mazmorra y puesto.
+ * @param {{ order: string[], dungeons: DungeonProgress[] }[]} orders
+ * @returns {OrderSummary[]}
+ */
+export function orderSummary(orders) {
+  /** @type {Map<string, { position: number, runs: DungeonProgress[] }>} */
+  const groups = new Map();
+  for (const { dungeons } of orders) {
+    dungeons.forEach((d, position) => {
+      const key = `${d.dungeonId}#${position}`;
+      if (!groups.has(key)) groups.set(key, { position, runs: [] });
+      groups.get(key).runs.push(d);
+    });
+  }
+  /** @param {number[]} values @returns {[number, number]} */
+  const range = (values) => [Math.min(...values), Math.max(...values)];
+  const menu = POSTGAME_DUNGEONS.map((d) => d.id);
+  return [...groups.values()]
+    .map(({ position, runs }) => {
+      const [first] = runs;
+      return {
+        dungeonId: first.dungeonId,
+        name: first.name,
+        position,
+        bonus: first.bonus,
+        wild: first.wild,
+        boss: first.boss,
+        entry: range(runs.map((d) => d.entry)),
+        atBoss: first.boss ? range(runs.map((d) => d.atBoss)) : null,
+        gap: first.boss ? range(runs.map((d) => d.atBoss - d.boss.level)) : null,
+      };
+    })
+    .sort((a, b) => menu.indexOf(a.dungeonId) - menu.indexOf(b.dungeonId) || a.position - b.position);
 }
 
 /**
@@ -599,18 +705,31 @@ function levelAtFloor(progress, globalFloor) {
 }
 
 /**
+ * Niveles de más (`levelBonus`) de la mazmorra con la que una simulación pasa
+ * por un piso global.
+ * @param {DungeonProgress[]} progress
+ * @param {number} globalFloor
+ * @returns {number}
+ */
+export function bonusAtFloor(progress, globalFloor) {
+  return progress.find((d) => d.byFloor.some((f) => f.floor === globalFloor))?.bonus ?? 0;
+}
+
+/**
  * Combate contra los salvajes de cada zona (en su piso de en medio) y contra
- * cada jefe, con el nivel del equipo que da la simulación. Cada enfrentamiento
- * siembra el RNG por su cuenta: los jefes salen igual se calculen o no los
- * salvajes.
+ * cada jefe, con el nivel del equipo que da la simulación y los niveles de más
+ * que la mazmorra tenga en ella (`bonus`). Cada enfrentamiento siembra el RNG
+ * por su cuenta: los jefes salen igual se calculen o no los salvajes.
  * @param {DungeonProgress[]} progress - Historia y posjuego seguidos
  * @param {{ wilds?: boolean }} [options] - `wilds: false` calcula solo los jefes
  */
 export function combatTable(progress, { wilds = true } = {}) {
-  return floorsData.zones.map((zone, i) => {
-    const floor = midFloor(zone);
+  return floorsData.zones.map((baseZone, i) => {
+    const floor = midFloor(baseZone);
+    const bonus = bonusAtFloor(progress, floor);
+    const zone = scaledZone(baseZone, bonus);
     const heroLevel = levelAtFloor(progress, floor);
-    const wildLevel = Math.round(meanWildLevel(floor));
+    const wildLevel = Math.round(meanWildLevel(floor, bonus));
     let wild = null;
     if (wilds) {
       setSeed(MODEL_SEED + i);
@@ -623,7 +742,7 @@ export function combatTable(progress, { wilds = true } = {}) {
       const foe = makeBoss(zone);
       boss = { name: zone.boss.name, level: zone.boss.level, hp: foe.fighter.maxHp, hpMultiplier: bossHpMultiplier(zone.boss), heroLevel: bossHeroLevel, ...matchup(bossHeroLevel, [{ foe, p: 1 }]) };
     }
-    return { zone: zone.name, floor, heroLevel, wildLevel, wild, boss };
+    return { zone: zone.name, floor, bonus, heroLevel, wildLevel, wild, boss };
   });
 }
 
@@ -759,14 +878,15 @@ export function bellyDrain(globalFloor) {
  * @param {{ id: string, floors: [number, number] }} dungeon
  * @param {number} killRate
  * @param {number} turnsPerFloor - Turnos medios por piso
+ * @param {number} [bonus] - Niveles de más de la mazmorra (`levelBonus`)
  */
-export function expeditionMoney(dungeon, killRate, turnsPerFloor) {
+export function expeditionMoney(dungeon, killRate, turnsPerFloor, bonus = 0) {
   let ground = 0;
   let items = 0;
   let itemValue = 0;
   let belly = 0;
   for (let f = dungeon.floors[0]; f <= dungeon.floors[1]; f++) {
-    const coins = wildLevelDistribution(f).reduce((s, d) => s + d.p * coinsPerKill(d.level), 0);
+    const coins = wildLevelDistribution(f, bonus).reduce((s, d) => s + d.p * coinsPerKill(d.level), 0);
     ground += killRate * expectedEnemies(f) * coins + treasureCoins(f);
     if (isBossFloor(f)) ground += bossCoins(f);
     items += expectedFloorItems(f);
@@ -956,6 +1076,7 @@ export function windTable(runs = 6, fightTurns = new Map()) {
  */
 export function recruitTable(progress, killRate) {
   return DUNGEONS.filter((d) => !d.challenge).map((dungeon) => {
+    const bonus = progress.find((d) => d.dungeonId === dungeon.id)?.bonus ?? 0;
     let offers = 0;
     let chanceSum = 0;
     let n = 0;
@@ -965,7 +1086,7 @@ export function recruitTable(progress, killRate) {
       const leader = levelAtFloor(progress, f);
       let floorChance = 0;
       for (const s of speciesMix(zoneAt(f))) {
-        for (const l of wildLevelDistribution(f)) {
+        for (const l of wildLevelDistribution(f, bonus)) {
           const c = recruitChance({ speciesId: s.id, captureRate: SPECIES.get(s.id).captureRate, targetLevel: l.level, leaderLevel: leader });
           floorChance += s.p * l.p * c;
           perSpecies.set(s.id, Math.max(perSpecies.get(s.id) ?? 0, c));
@@ -979,8 +1100,8 @@ export function recruitTable(progress, killRate) {
     // Un recluta llega con el nivel del salvaje y 0 de experiencia (createPokemon):
     // para subir uno necesita (nivel + 1)³, no la diferencia con su nivel
     const mid = Math.floor((dungeon.floors[0] + dungeon.floors[1] - 1) / 2);
-    const recruitLevel = Math.round(meanWildLevel(mid));
-    const kills = (amount) => amount / expPerEnemy(mid);
+    const recruitLevel = Math.round(meanWildLevel(mid, bonus));
+    const kills = (amount) => amount / expPerEnemy(mid, bonus);
     return {
       dungeonId: dungeon.id,
       name: dungeon.name,
@@ -1029,10 +1150,11 @@ export function buildReport({ windRuns = 6 } = {}) {
   const fightTurns = new Map(combat.map((c) => [c.zone, c.wild.heroHits]));
   const wind = windTable(windRuns, fightTurns);
   const turnsPerFloor = new Map(wind.map((w) => [w.dungeonId, w.full]));
+  const bonusOf = new Map(typicalAll.map((d) => [d.dungeonId, d.bonus]));
   const economy = DUNGEONS.filter((d) => !d.challenge).map((d) => ({
     dungeonId: d.id,
     name: d.name,
-    ...expeditionMoney(d, KILL_RATES.tipico, turnsPerFloor.get(d.id)),
+    ...expeditionMoney(d, KILL_RATES.tipico, turnsPerFloor.get(d.id), bonusOf.get(d.id)),
   }));
   const towerTypical = challengeTower(KILL_RATES.tipico);
   const towerFull = challengeTower(KILL_RATES.todo);
@@ -1047,7 +1169,9 @@ export function buildReport({ windRuns = 6 } = {}) {
       seed: MODEL_SEED,
     },
     zones,
+    levelScaling: LEVEL_SCALING,
     progress: { full, typical },
+    orders: { full: orderSummary(postgameOrders(KILL_RATES.todo)), typical: orderSummary(postgameOrders(KILL_RATES.tipico)) },
     tower: { full: towerFull.dungeons, typical: towerTypical.dungeons, prize: CHALLENGE_PRIZE },
     combat,
     missions: missionTable(),
@@ -1098,6 +1222,8 @@ export const LIMITS = {
   bossLevelGap: [-4, 4],
   /** Los salvajes del posjuego empiezan a esta distancia (como mucho) del nivel de Mewtwo. */
   postgameStartGap: 6,
+  /** En cualquier orden, el equipo típico entra en un pico como mucho estos niveles por encima de su salvaje más fuerte. */
+  peakEntryOverWild: 0,
   /** El viento da este margen sobre el peor recorrido completo de un piso. */
   windMargin: 1.5,
   /** Un recluta tarda en subir su primer nivel como mucho estas veces lo que un miembro del equipo. */
@@ -1133,21 +1259,31 @@ export function findIssues(report) {
   }
 
   // Equipo frente a los jefes. Las mazmorras que se abren a la vez (los tres
-  // picos) se hacen en cualquier orden: la simulación va en el del menú, así
-  // que lo que pase en la segunda o la tercera es una nota, no un aviso
+  // picos) se hacen en cualquier orden y suben de nivel según cuántas se han
+  // hecho (`levelBonus`): con el ritmo típico se miran en todos los órdenes
+  // (`report.orders`), no solo en el del menú
   const parallel = anyOrderDungeons();
   const [lo, hi] = LIMITS.bossLevelGap;
+  /** @param {string} label @param {{ name: string, level: number }} boss @param {number} atBoss @param {string} [when] */
+  const arrival = (label, boss, atBoss, when = '') => {
+    const gap = atBoss - boss.level;
+    return `Equipo ${label} llega a ${boss.name} (${boss.level}) con nivel ${atBoss} (${gap > 0 ? '+' : ''}${gap})${when}.`;
+  };
+  /** @param {OrderSummary} o */
+  const place = (o) => ` si ${o.name} va en ${o.position + 1}.º lugar`;
   for (const [key, label] of [['typical', 'típico'], ['full', 'que lo derrota todo']]) {
     const { story, postgame } = report.progress[key];
     for (const d of [...story.dungeons, ...postgame.dungeons]) {
       if (!d.boss) continue;
       const gap = d.atBoss - d.boss.level;
-      const late = parallel.has(d.dungeonId) && parallel.get(d.dungeonId) > 0;
-      if (key === 'typical' && (gap < lo || gap > hi)) {
-        add('Experiencia', late ? 'nota' : 'aviso', `Equipo ${label} llega a ${d.boss.name} (${d.boss.level}) con nivel ${d.atBoss} (${gap > 0 ? '+' : ''}${gap})${late ? ' si hace su mazmorra después de las otras que se abren con ella' : ''}.`);
-      }
-      if (key === 'full' && gap > hi + 2) add('Experiencia', 'nota', `Equipo ${label} llega a ${d.boss.name} (${d.boss.level}) con nivel ${d.atBoss} (+${gap}).`);
+      if (key === 'typical' && !parallel.has(d.dungeonId) && (gap < lo || gap > hi)) add('Experiencia', 'aviso', arrival(label, d.boss, d.atBoss));
+      if (key === 'full' && gap > hi + 2) add('Experiencia', 'nota', arrival(label, d.boss, d.atBoss));
     }
+  }
+  for (const o of report.orders.typical) {
+    if (!o.boss || !parallel.has(o.dungeonId)) continue;
+    if (o.gap[0] < lo) add('Experiencia', 'aviso', arrival('típico', o.boss, o.atBoss[0], place(o)));
+    if (o.gap[1] > hi) add('Experiencia', 'aviso', arrival('típico', o.boss, o.atBoss[1], place(o)));
   }
 
   // Posjuego
@@ -1156,13 +1292,10 @@ export function findIssues(report) {
   if (mewtwo && Math.abs(firstPost.levelRange[0] - mewtwo.level) > LIMITS.postgameStartGap) {
     add('Posjuego', 'aviso', `El posjuego empieza con salvajes de nivel ${firstPost.levelRange[0]}, lejos de Mewtwo (${mewtwo.level}).`);
   }
-  for (const d of report.progress.typical.postgame.dungeons) {
-    if (d.entry <= d.wild[1]) continue;
-    if (parallel.get(d.dungeonId) > 0) {
-      add('Posjuego', 'nota', `${d.name} se hace en cualquier orden: si va después de las otras, el equipo típico entra con nivel ${d.entry}, por encima de todos sus salvajes (${d.wild.join('-')}).`);
-    } else {
-      add('Posjuego', 'aviso', `En ${d.name} el equipo típico entra con nivel ${d.entry}, por encima de todos sus salvajes (${d.wild.join('-')}).`);
-    }
+  for (const o of report.orders.typical) {
+    const free = parallel.has(o.dungeonId);
+    if (o.entry[1] <= o.wild[1] + (free ? LIMITS.peakEntryOverWild : 0)) continue;
+    add('Posjuego', 'aviso', `En ${o.name} el equipo típico entra con nivel ${o.entry[1]}, por encima de todos sus salvajes (${o.wild.join('-')})${free ? place(o) : ''}.`);
   }
 
   // Combate
