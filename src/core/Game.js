@@ -36,6 +36,7 @@ import { saveGame } from './SaveManager.js';
 import { revertTransform } from '../systems/CombatSystem.js';
 import { FloorManager } from '../map/FloorManager.js';
 import { CombatHandler } from '../systems/ActionSystem.js';
+import { expForLevel } from '../systems/ExperienceSystem.js';
 import { setupGameEventListeners } from './GameEvents.js';
 import { loadSavedGame as loadSavedGameSession } from './GameSession.js';
 import { updateTown } from './TownSession.js';
@@ -1158,8 +1159,8 @@ export class Game {
       level: info.level,
       xp: info.xp,
       ability: info.ability || null,
-      currentLevelXp: Math.floor(Math.pow(info.level, 3)),
-      nextLevelXp: Math.floor(Math.pow(info.level + 1, 3)),
+      currentLevelXp: expForLevel(info.level),
+      nextLevelXp: expForLevel(info.level + 1),
       currentMoves: info.currentMoves,
       pendingMovesToLearn: info.pendingMovesToLearn || [],
       pendingEvolution: info.pendingEvolution || null,
