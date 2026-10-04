@@ -6,8 +6,9 @@
  * a la siguiente y sube SAVE_VERSION. Antes de sobrescribir una partida
  * migrada se guarda una copia de la original.
  *
- * Formato (v3 a v6; la v4 quitó las Poké Balls, la v5 añadió la historia y la
- * v6 separó la reserva de movimientos para la IA de Anulación):
+ * Formato (v3 a v7; la v4 quitó las Poké Balls, la v5 añadió la historia, la
+ * v6 separó la reserva de movimientos para la IA de Anulación y la v7 subió la
+ * experiencia de cada ficha al mínimo de su nivel):
  * - `profile`: el equipo de exploración (core/Profile.js), con la Pokédex,
  *   las estadísticas y las escenas de la historia ya vistas (`story`).
  * - `bag` y `wallet`: lo que lleva encima el equipo ahora mismo.
@@ -20,10 +21,11 @@
 import { toSnapshot } from './PokemonSnapshot.js';
 import { DUNGEONS } from './Dungeons.js';
 import { seenForCleared } from './Story.js';
+import { expForLevel } from '../systems/ExperienceSystem.js';
 
 const SAVE_KEY = 'pokerogue_save';
 const BACKUP_PREFIX = 'pokerogue_save_backup_';
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 /** Nombre que reciben los equipos de partidas anteriores a los perfiles. */
 export const MIGRATED_TEAM_NAME = 'Equipo Pionero';
@@ -140,7 +142,39 @@ const MIGRATIONS = {
       guests: splitReserves(data.run.guests),
     },
   }),
+
+  // v6 → v7: los Pokémon se creaban con 0 de experiencia fuera cual fuera su
+  // nivel (reclutas, legendarios, protagonista y compañero…), y un recluta de
+  // nivel alto necesitaba decenas de salvajes para subir uno. Ahora se crean
+  // con la experiencia mínima de su nivel: las fichas que tengan menos suben
+  // a ese mínimo (nunca se baja). Se revisan la plantilla y el equipo y los
+  // invitados de la expedición en curso.
+  6: (data) => ({
+    ...data,
+    version: 7,
+    profile: data.profile && { ...data.profile, roster: raiseExpToLevel(data.profile.roster) },
+    run: data.run && {
+      ...data.run,
+      party: raiseExpToLevel(data.run.party),
+      guests: raiseExpToLevel(data.run.guests),
+    },
+  }),
 };
+
+/**
+ * Fichas con al menos la experiencia mínima de su nivel (migración v6 → v7).
+ * Las que ya la tienen, o no tienen nivel, quedan igual.
+ * @param {Object[] | undefined} members
+ * @returns {Object[] | undefined}
+ */
+function raiseExpToLevel(members) {
+  if (!Array.isArray(members)) return members;
+  return members.map((member) => {
+    if (!Number.isFinite(member?.level)) return member;
+    const min = expForLevel(member.level);
+    return Number.isFinite(member.xp) && member.xp >= min ? member : { ...member, xp: min };
+  });
+}
 
 /**
  * Fichas con la reserva separada de Anulación (migración v5 → v6): un
