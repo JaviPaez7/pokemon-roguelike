@@ -1,0 +1,7 @@
+{
+  "divisor": 5,
+  "levelBonuses": [
+    { "upToLevel": 12, "bonus": 0.35 },
+    { "upToLevel": 22, "bonus": 0.15 }
+  ]
+}
