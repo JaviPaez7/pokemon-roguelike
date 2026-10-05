@@ -158,7 +158,7 @@ test('una partida v5 con un movimiento reservado para la IA lo conserva al carga
     version: JSON.parse(localStorage.getItem('pokerogue_save')).version,
     backup: JSON.parse(localStorage.getItem('pokerogue_save_backup_v5'))?.version,
   }));
-  expect(saved).toEqual({ version: 6, backup: 5 });
+  expect(saved).toEqual({ version: 7, backup: 5 });
 });
 
 test('una partida ilegible se aparta a una copia y el título sigue funcionando', async ({ page }) => {

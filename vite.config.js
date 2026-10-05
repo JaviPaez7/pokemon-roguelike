@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => ({
             { name: 'sprites', test: new RegExp(`${DATA}pmd-sprites\\.json$`) },
             {
               name: 'datos',
-              test: new RegExp(`${DATA}(pokemon|moves|items|types|evolutions|floors|dungeons|tilesets|town|personality|recruitment|iq|tips|missions|music)\\.json$`),
+              test: new RegExp(`${DATA}(pokemon|moves|items|types|evolutions|floors|dungeons|tilesets|town|personality|recruitment|iq|experience|tips|missions|music)\\.json$`),
             },
             // Reglas del combate (ataque básico y pesos de la IA), con los demás datos
             { name: 'datos', test: new RegExp(`${DATA}combat\\.json$`) },

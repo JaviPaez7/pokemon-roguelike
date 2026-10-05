@@ -19,6 +19,7 @@ import {
   meanWildLevel,
   missionTable,
   priceInversions,
+  recruitTable,
   shopTable,
   simulateProgress,
   storyAndPostgame,
@@ -188,6 +189,15 @@ describe('viento', () => {
     for (const w of windTable(1)) {
       expect(WIND.limit, w.name).toBeGreaterThanOrEqual(LIMITS.windMargin * w.fullMax);
       expect(WIND.warnings[0], w.name).toBeGreaterThan(w.fullMax);
+    }
+  });
+});
+
+describe('reclutamiento', () => {
+  it('un recluta sube su primer nivel al ritmo de un miembro del equipo: llega con la experiencia de su nivel', () => {
+    const { story, postgame } = storyAndPostgame(KILL_RATES.tipico);
+    for (const r of recruitTable([...story.dungeons, ...postgame.dungeons], KILL_RATES.tipico)) {
+      expect(r.killsToLevelUp.recruit, r.name).toBeLessThanOrEqual(LIMITS.recruitSlowdown * r.killsToLevelUp.member);
     }
   });
 });

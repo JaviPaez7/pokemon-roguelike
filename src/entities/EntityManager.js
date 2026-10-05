@@ -17,6 +17,7 @@
 import { createComponentStore } from './Components.js';
 import { ENEMY_DETECT_RANGE } from '../constants.js';
 import { calculateAllStats } from '../systems/StatCalculator.js';
+import { expForLevel } from '../systems/ExperienceSystem.js';
 
 export class EntityManager {
   /**
@@ -311,7 +312,9 @@ export class EntityManager {
   }
 
   /**
-   * Crear una entidad Pokémon completamente configurada.
+   * Crear una entidad Pokémon completamente configurada. Llega con la
+   * experiencia mínima de su nivel (`expForLevel`): un recluta o un
+   * legendario de nivel alto sube al mismo ritmo que el resto del equipo.
    *
    * @param {string} speciesId - ID de la especie (ej. 'pikachu', 'charmander')
    * @param {number} level - Nivel del Pokémon
@@ -361,7 +364,7 @@ export class EntityManager {
       speciesId: speciesId,
       name: species?.name ?? speciesId,
       level: level,
-      xp: 0,
+      xp: expForLevel(level),
       currentMoves: moves,
       types: species?.types ?? ['normal'],
       ability: species?.ability ?? 'none'
