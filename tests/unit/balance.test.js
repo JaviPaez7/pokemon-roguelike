@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, beforeAll } from 'vitest';
 import floorsData from '../../src/data/floors.json';
-import { WIND } from '../../src/core/Dungeons.js';
+import { WIND, LEVEL_SCALING, scaledZone } from '../../src/core/Dungeons.js';
 import { wildLevelAt } from '../../src/core/Missions.js';
 import {
   LIMITS,
@@ -18,10 +18,11 @@ import {
   combatTable,
   meanWildLevel,
   missionTable,
+  orderSummary,
+  postgameOrders,
   priceInversions,
   recruitTable,
   shopTable,
-  simulateProgress,
   storyAndPostgame,
   windTable,
   zoneAt,
@@ -48,21 +49,31 @@ describe('niveles de los salvajes y de los jefes', () => {
     }
   });
 
-  it('el posjuego empieza cerca de Mewtwo y el jardín va por encima de los tres picos', () => {
+  it('el posjuego empieza cerca de Mewtwo y el jardín va por encima de los tres picos, aun del último que se haga', () => {
     const [first, ...rest] = POSTGAME_DUNGEONS.map(zoneOf);
     expect(Math.abs(first.levelRange[0] - mewtwo.level)).toBeLessThanOrEqual(LIMITS.postgameStartGap);
-    const peaks = [first, ...rest.slice(0, -1)];
+    const top = Math.max(...LEVEL_SCALING.flatMap((g) => g.levels));
+    const peaks = [first, ...rest.slice(0, -1)].map((z) => scaledZone(z, top));
     const garden = rest.at(-1);
     for (const peak of peaks) {
-      expect(peak.boss.level, peak.name).toBeGreaterThan(mewtwo.level);
+      expect(peak.boss.level - top, peak.name).toBeGreaterThan(mewtwo.level);
       expect(garden.levelRange[0], peak.name).toBeGreaterThan(peak.levelRange[0]);
       expect(garden.levelRange[1], peak.name).toBeGreaterThan(peak.levelRange[1]);
       expect(garden.boss.level, peak.name).toBeGreaterThan(peak.boss.level);
     }
   });
 
-  it('el modelo usa el mismo nivel medio que las misiones (wildLevelAt)', () => {
+  it('el modelo usa el mismo nivel medio que las misiones (wildLevelAt), también en los picos que suben', () => {
     for (let f = 1; f <= 84; f++) expect(Math.abs(meanWildLevel(f) - wildLevelAt(f)), `piso ${f}`).toBeLessThanOrEqual(0.5);
+    for (const g of LEVEL_SCALING) {
+      for (const d of g.dungeons.map((id) => POSTGAME_DUNGEONS.find((x) => x.id === id))) {
+        for (const bonus of g.levels) {
+          for (let f = d.floors[0]; f <= d.floors[1]; f++) {
+            expect(Math.abs(meanWildLevel(f, bonus) - wildLevelAt(f, bonus)), `${d.id} piso ${f} +${bonus}`).toBeLessThanOrEqual(0.5);
+          }
+        }
+      }
+    }
   });
 });
 
@@ -86,21 +97,31 @@ describe('curva de experiencia', () => {
     for (const d of typical.story.dungeons.slice(1)) expect(d.entry, d.name).toBeLessThanOrEqual(d.wild[1]);
   });
 
-  it('tras Mewtwo, el primer pico y el jardín están a la altura del equipo', () => {
-    const order = anyOrderDungeons();
-    const post = typical.postgame.dungeons;
-    // Cualquier pico puede ser el primero: todos con el nivel de salir de la historia
-    for (const d of post.filter((x) => order.has(x.dungeonId))) {
-      const alone = simulateProgress([POSTGAME_DUNGEONS.find((x) => x.id === d.dungeonId)], { level: typical.story.level, xp: typical.story.xp, killRate: KILL_RATES.tipico }).dungeons[0];
-      expect(alone.entry, d.name).toBeLessThanOrEqual(alone.wild[1]);
-      expect(alone.atBoss - alone.boss.level, d.name).toBeGreaterThanOrEqual(lo);
-      expect(alone.atBoss - alone.boss.level, d.name).toBeLessThanOrEqual(hi);
+  it('ningún pico, hecho en cualquier orden, se entra por encima de sus salvajes, y su jefe está a la altura', () => {
+    const free = anyOrderDungeons();
+    const orders = postgameOrders(KILL_RATES.tipico);
+    expect(orders).toHaveLength(6); // Los tres picos, en los seis órdenes posibles
+    const summary = orderSummary(orders);
+    const peaks = summary.filter((o) => free.has(o.dungeonId));
+    expect(peaks).toHaveLength(9); // Cada pico en cada puesto
+    for (const o of peaks) {
+      const where = `${o.name} en ${o.position + 1}.º lugar (+${o.bonus})`;
+      expect(o.entry[1], where).toBeLessThanOrEqual(o.wild[1] + LIMITS.peakEntryOverWild);
+      expect(o.gap[0], where).toBeGreaterThanOrEqual(lo);
+      expect(o.gap[1], where).toBeLessThanOrEqual(hi);
     }
-    const garden = post.at(-1);
-    expect(order.has(garden.dungeonId)).toBe(false);
-    expect(garden.entry).toBeLessThanOrEqual(garden.wild[1]);
-    expect(garden.atBoss - garden.boss.level).toBeGreaterThanOrEqual(lo);
-    expect(garden.atBoss - garden.boss.level).toBeLessThanOrEqual(hi);
+    // Y después, el jardín, sin subir
+    const [garden] = summary.filter((o) => !free.has(o.dungeonId));
+    expect(garden).toMatchObject({ dungeonId: POSTGAME_DUNGEONS.at(-1).id, position: 3, bonus: 0 });
+    expect(garden.entry[1]).toBeLessThanOrEqual(garden.wild[1]);
+    expect(garden.gap[0]).toBeGreaterThanOrEqual(lo);
+    expect(garden.gap[1]).toBeLessThanOrEqual(hi);
+  });
+
+  it('en el orden del menú, la simulación sube los picos como el juego', () => {
+    const peaks = typical.postgame.dungeons.filter((d) => anyOrderDungeons().has(d.dungeonId));
+    expect(peaks.map((d) => d.bonus)).toEqual(LEVEL_SCALING[0].levels);
+    for (const d of peaks) expect(d.boss.level, d.name).toBe(zoneOf(d).boss.level + d.bonus);
   });
 });
 
@@ -108,9 +129,23 @@ describe('jefes', () => {
   let bosses;
   beforeAll(() => {
     const { story, postgame } = storyAndPostgame(KILL_RATES.tipico);
+    const lastStory = STORY_DUNGEONS.at(-1).floors[1];
     bosses = combatTable([...story.dungeons, ...postgame.dungeons], { wilds: false })
       .filter((c) => c.boss)
-      .map((c) => ({ ...c.boss, story: c.floor <= STORY_DUNGEONS.at(-1).floors[1] }));
+      .map((c) => ({ ...c.boss, story: c.floor <= lastStory }));
+    // Los jefes de los picos, también en los otros órdenes (suben con cada pico hecho)
+    const free = anyOrderDungeons();
+    for (const { order, dungeons } of postgameOrders(KILL_RATES.tipico)) {
+      for (const c of combatTable([...story.dungeons, ...dungeons], { wilds: false })) {
+        const d = dungeons.find((x) => c.floor >= x.floors[0] && c.floor <= x.floors[1]);
+        if (!c.boss || !d || !free.has(d.dungeonId)) continue;
+        bosses.push({ ...c.boss, name: `${c.boss.name} (${order.indexOf(d.dungeonId) + 1}.º, +${c.bonus})`, story: false });
+      }
+    }
+  });
+
+  it('los de los picos se miran en cada uno de los seis órdenes', () => {
+    expect(bosses.filter((b) => b.name.includes('.º'))).toHaveLength(3 * 6);
   });
 
   it('ninguno cae en menos de 3 golpes del protagonista típico', () => {

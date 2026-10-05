@@ -22,7 +22,7 @@
 
 import floorsData from '../data/floors.json';
 import missionsData from '../data/missions.json';
-import { DUNGEONS, floorCount, isUnlocked } from './Dungeons.js';
+import { DUNGEONS, floorCount, isUnlocked, levelBonus } from './Dungeons.js';
 import { floorSeed } from './Random.js';
 
 export const MAX_ACCEPTED = 8;
@@ -405,14 +405,15 @@ export function acceptedText(mission, dungeonName) {
  * Nivel medio de los salvajes de un piso global (el que usa FloorManager, sin
  * la variación de ±1).
  * @param {number} globalFloor
+ * @param {number} [bonus] - Niveles de más de la mazmorra (`levelBonus`: los picos del posjuego)
  * @returns {number}
  */
-export function wildLevelAt(globalFloor) {
+export function wildLevelAt(globalFloor, bonus = 0) {
   const zone = floorsData.zones.find((z) => globalFloor >= z.floors[0] && globalFloor <= z.floors[1]) ?? floorsData.zones.at(-1);
   const [minLvl, maxLvl] = zone.levelRange;
   const span = Math.max(1, zone.floors[1] - zone.floors[0]);
   const t = Math.max(0, Math.min(1, (globalFloor - zone.floors[0]) / span));
-  return Math.round(minLvl + (maxLvl - minLvl) * t);
+  return Math.round(minLvl + (maxLvl - minLvl) * t) + bonus;
 }
 
 /**
@@ -428,19 +429,33 @@ export function missionGlobalFloor(mission) {
 /**
  * Nivel del forajido: unos cuantos más que los salvajes de su piso.
  * @param {number} globalFloor
+ * @param {number} [bonus] - Niveles de más de la mazmorra (`missionLevelBonus`)
  * @returns {number}
  */
-export function outlawLevel(globalFloor) {
-  return wildLevelAt(globalFloor) + MISSION_RULES.outlaw.levelBonus;
+export function outlawLevel(globalFloor, bonus = 0) {
+  return wildLevelAt(globalFloor, bonus) + MISSION_RULES.outlaw.levelBonus;
 }
 
 /**
  * Nivel del cliente de una escolta: el de los salvajes del piso al que va.
  * @param {number} globalFloor
+ * @param {number} [bonus] - Niveles de más de la mazmorra (`missionLevelBonus`)
  * @returns {number}
  */
-export function escortGuestLevel(globalFloor) {
-  return Math.max(1, wildLevelAt(globalFloor) + MISSION_RULES.escort.levelOffset);
+export function escortGuestLevel(globalFloor, bonus = 0) {
+  return Math.max(1, wildLevelAt(globalFloor, bonus) + MISSION_RULES.escort.levelOffset);
+}
+
+/**
+ * Niveles de más de la mazmorra de una misión, los mismos que sus salvajes:
+ * en los picos del posjuego, según cuántos otros se han completado cuando se
+ * va (no cuando se acepta).
+ * @param {Mission} mission
+ * @param {string[]} [cleared] - `profile.clearedDungeons`
+ * @returns {number}
+ */
+export function missionLevelBonus(mission, cleared = []) {
+  return levelBonus(mission.dungeonId, cleared);
 }
 
 /**
