@@ -152,7 +152,7 @@ title('2. Combate (fórmulas reales: calculateDamage, selectBestMove y TurnManag
 sub('2.1 Salvajes del piso de en medio de cada zona');
 out.push(
   table(
-    ['Zona', 'Piso', 'Nv. equipo', 'Nv. salvaje', 'Golpes para derrotarlo (mejor)', 'Daño del prota', 'Golpes que aguanta (peor)', 'Daño del salvaje', 'Acciones del salvaje/turno'],
+    ['Zona', 'Piso', 'Nv. equipo', 'Nv. salvaje', 'Golpes para derrotarlo (mejor)', 'Daño del prota', 'Golpes que aguanta (peor)', 'Daño del salvaje', 'Turnos en estados', 'Acciones del salvaje/turno'],
     report.combat.map((c) => [
       c.zone,
       c.floor,
@@ -162,6 +162,7 @@ out.push(
       pct(c.wild.heroDamagePct),
       `${hits(c.wild.foeHits)} (${hits(c.wild.foeHitsWorst)}, ${c.wild.worstHero})`,
       pct(c.wild.foeDamagePct),
+      pct(c.wild.foeStatusShare),
       n(c.wild.foeActions, 2),
     ]),
   ),
@@ -170,7 +171,7 @@ sub('2.2 Jefes (con su hpMultiplier y su kit)');
 const bosses = report.combat.filter((c) => c.boss);
 out.push(
   table(
-    ['Jefe', 'Nv.', 'PS', 'Nv. equipo', 'Golpes para derrotarlo (mejor)', 'Daño del prota', 'Golpes que aguanta el prota (peor)', 'Daño del jefe', 'Acciones del jefe/turno'],
+    ['Jefe', 'Nv.', 'PS', 'Nv. equipo', 'Golpes para derrotarlo (mejor)', 'Daño del prota', 'Golpes que aguanta el prota (peor)', 'Daño del jefe', 'Turnos en estados', 'Acciones del jefe/turno'],
     bosses.map(({ boss: b }) => [
       b.name,
       b.level,
@@ -180,6 +181,7 @@ out.push(
       pct(b.heroDamagePct),
       `${hits(b.foeHits)} (${hits(b.foeHitsWorst)}, ${b.worstHero})`,
       pct(b.foeDamagePct),
+      pct(b.foeStatusShare),
       n(b.foeActions, 2),
     ]),
   ),
