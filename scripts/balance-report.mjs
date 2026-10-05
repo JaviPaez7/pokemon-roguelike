@@ -63,6 +63,35 @@ function signed(value) {
 }
 
 /**
+ * Un rango de niveles `[a, b]` («58-59»), o uno solo si coinciden.
+ * @param {[number, number]} range
+ */
+function span([a, b]) {
+  return a === b ? String(a) : `${a}-${b}`;
+}
+
+/**
+ * Un rango de diferencias de nivel `[a, b]` («-1 a 0»), o una sola si coinciden.
+ * @param {[number, number]} range
+ */
+function signedSpan([a, b]) {
+  return a === b ? signed(a) : `${signed(a)} a ${signed(b)}`;
+}
+
+/**
+ * «a, b y c».
+ * @param {string[]} items
+ */
+function list(items) {
+  return items.length > 1 ? `${items.slice(0, -1).join(', ')} y ${items.at(-1)}` : items.join('');
+}
+
+/** @param {number} bonus - Niveles de más de la mazmorra (`levelBonus`) */
+function extra(bonus) {
+  return bonus ? ` (+${bonus})` : '';
+}
+
+/**
  * @param {string[]} headers
  * @param {(string | number)[][]} rows
  */
@@ -91,7 +120,7 @@ const a = report.assumptions;
 out.push(MD ? '## Informe de equilibrio' : 'INFORME DE EQUILIBRIO — PokéRogue');
 para('');
 para(`Modelo: scripts/balance-model.mjs (semilla ${a.seed}; ${a.damageSamples} muestras de daño por pareja; ${a.windRuns} partidas por mazmorra para el viento).`);
-para(`Equipo: sale a nivel ${a.startLevel} con 0 de experiencia y ${a.startMoney} Poké. Toda la experiencia va entera a cada miembro en pie.`);
+para(`Equipo: sale a nivel ${a.startLevel} con ${n(a.startExp)} de experiencia (la mínima de su nivel) y ${a.startMoney} Poké. Toda la experiencia va entera a cada miembro en pie.`);
 para(`Ritmos: «todo» derrota a todos los salvajes de cada piso (el máximo sin repetir); «típico», al ${pct(a.typicalKillRate)}. Combate, economía y reclutamiento, con el típico.`);
 para('Protagonista típico: los nueve del test de personalidad, evolucionados por nivel y con su mejor movimiento o el ataque básico. Golpes: mediana de los nueve («peor»: el que menos aguanta).');
 
@@ -99,6 +128,10 @@ para('Protagonista típico: los nueve del test de personalidad, evolucionados po
 
 title('1. Curva de experiencia');
 sub('1.1 Experiencia por zona (pisos normales)');
+const xc = report.expConfig;
+const bonuses = xc.levelBonuses.map((b) => `+${n(b.bonus * 100)} % hasta el nivel ${b.upToLevel}`);
+para(`experience.json: EXP de un salvaje = EXP base × nivel / ${xc.divisor}, ${bonuses.join(' y ')}. Para subir al nivel N hacen falta N³ en total.`);
+para('');
 out.push(
   table(
     ['Zona', 'Pisos', 'Salvajes', 'Enemigos/piso', 'EXP/salvaje', 'EXP/piso', 'Jefe', 'EXP jefe'],
@@ -114,6 +147,11 @@ out.push(
     ]),
   ),
 );
+for (const g of report.levelScaling) {
+  const names = g.dungeons.map((id) => report.progress.typical.postgame.dungeons.find((d) => d.dungeonId === id)?.name ?? id);
+  para('');
+  para(`${list(names)} se hacen en cualquier orden: sus niveles (salvajes, jefe, amistosos, forajidos y escoltas) suben ${list(g.levels.map((v) => `+${v}`))} según cuántos de los otros se han completado ya (levelScaling en dungeons.json). En esta tabla, sin subir.`);
+}
 
 /**
  * @param {any[]} typical
@@ -126,7 +164,7 @@ function progressTable(typical, full) {
       const f = full[i];
       return [
         t.name,
-        t.wild.join('-'),
+        `${t.wild.join('-')}${extra(t.bonus)}`,
         t.boss ? `${t.boss.name} ${t.boss.level}` : '—',
         `${t.entry} / ${f.entry}`,
         t.boss ? `${t.atBoss} / ${f.atBoss}` : '—',
@@ -141,6 +179,26 @@ sub('1.2 Historia en orden, sin repetir');
 out.push(progressTable(report.progress.typical.story.dungeons, report.progress.full.story.dungeons));
 sub('1.3 Posjuego, justo después de Mewtwo (en el orden del menú)');
 out.push(progressTable(report.progress.typical.postgame.dungeons, report.progress.full.postgame.dungeons));
+para('');
+para('En cualquier orden: cada mazmorra en cada puesto (1.º = la primera que se hace tras Mewtwo), con lo que sale en todos los órdenes que la ponen ahí.');
+para('');
+out.push(
+  table(
+    ['Mazmorra', 'Puesto', 'Salvajes', 'Jefe', 'Entrada (típ./todo)', 'Ante el jefe (típ./todo)', 'Equipo − jefe (típ./todo)'],
+    report.orders.typical.map((t, i) => {
+      const f = report.orders.full[i];
+      return [
+        t.name,
+        `${t.position + 1}.º`,
+        `${t.wild.join('-')}${extra(t.bonus)}`,
+        t.boss ? `${t.boss.name} ${t.boss.level}` : '—',
+        `${span(t.entry)} / ${span(f.entry)}`,
+        t.boss ? `${span(t.atBoss)} / ${span(f.atBoss)}` : '—',
+        t.boss ? `${signedSpan(t.gap)} / ${signedSpan(f.gap)}` : '—',
+      ];
+    }),
+  ),
+);
 sub('1.4 Torre del Desafío (copias de nivel 5, los 50 pisos seguidos)');
 out.push(progressTable(report.tower.typical, report.tower.full));
 para('');
@@ -157,7 +215,7 @@ out.push(
       c.zone,
       c.floor,
       c.heroLevel,
-      c.wildLevel,
+      `${c.wildLevel}${extra(c.bonus)}`,
       `${hits(c.wild.heroHits)} (${hits(c.wild.heroHitsBest)})`,
       pct(c.wild.heroDamagePct),
       `${hits(c.wild.foeHits)} (${hits(c.wild.foeHitsWorst)}, ${c.wild.worstHero})`,
@@ -171,9 +229,9 @@ const bosses = report.combat.filter((c) => c.boss);
 out.push(
   table(
     ['Jefe', 'Nv.', 'PS', 'Nv. equipo', 'Golpes para derrotarlo (mejor)', 'Daño del prota', 'Golpes que aguanta el prota (peor)', 'Daño del jefe', 'Acciones del jefe/turno'],
-    bosses.map(({ boss: b }) => [
+    bosses.map(({ boss: b, bonus }) => [
       b.name,
-      b.level,
+      `${b.level}${extra(bonus)}`,
       `${b.hp} (×${n(b.hpMultiplier, 2)})`,
       b.heroLevel,
       `${hits(b.heroHits)} (${hits(b.heroHitsBest)})`,

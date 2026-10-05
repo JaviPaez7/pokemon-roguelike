@@ -25,6 +25,7 @@ import {
   escortGuestLevel,
   outlawLevel,
   missionGlobalFloor,
+  missionLevelBonus,
   MISSION_RULES,
 } from '../core/Missions.js';
 import { spawnFromSnapshot } from '../core/PokemonSnapshot.js';
@@ -192,7 +193,13 @@ function afterMissionDone(game) {
 function spawnOutlaw(game, mission, spot) {
   const em = game.entityManager;
   const rules = MISSION_RULES.outlaw;
-  const id = em.createPokemon(mission.clientSpeciesId, outlawLevel(missionGlobalFloor(mission)), spot.x, spot.y, true);
+  const id = em.createPokemon(
+    mission.clientSpeciesId,
+    outlawLevel(missionGlobalFloor(mission), missionLevelBonus(mission, game.profile.clearedDungeons)),
+    spot.x,
+    spot.y,
+    true,
+  );
   const fighter = em.getComponent(id, 'fighter');
   fighter.maxHp = Math.floor(fighter.maxHp * rules.hpMultiplier);
   fighter.hp = fighter.maxHp;
@@ -243,7 +250,13 @@ export function joinEscortGuests(game) {
   const partySize = em.getEntitiesWithComponents('partyMember').length;
   const result = escortsToJoin(game.profile, dungeon, MAX_PARTY_SIZE - partySize);
   result.joining.forEach((mission, i) => {
-    const id = em.createPokemon(mission.clientSpeciesId, escortGuestLevel(missionGlobalFloor(mission)), 0, 0, false);
+    const id = em.createPokemon(
+      mission.clientSpeciesId,
+      escortGuestLevel(missionGlobalFloor(mission), missionLevelBonus(mission, game.profile.clearedDungeons)),
+      0,
+      0,
+      false,
+    );
     em.getComponent(id, 'pokemonInfo').name = mission.clientName;
     em.setComponent(id, 'partyMember', { slot: partySize + i, isLeader: false, tactic: 'follow', uid: null });
     em.setComponent(id, 'aiControlled', { behavior: 'follower', detectRange: 5, alertedTo: null });

@@ -263,14 +263,17 @@ export function restoreMerchantNPC(game, x, y, items) {
  * 44), pero sin pasar de `margin` niveles por encima del salvaje más fuerte de
  * la zona. En el posjuego el piso global (51 a 84) ya no dice nada del nivel:
  * sin tope, en el jardín de Mew habría amistosos de nivel 84.
+ *
+ * En una zona con los niveles subidos (`levelBonus`, de `scaledZone`: los
+ * picos según cuántos se han hecho), el amistoso sube lo mismo que los salvajes.
  * @param {number} globalFloor
- * @param {{ levelRange?: [number, number] } | null | undefined} zone
+ * @param {{ levelRange?: [number, number], levelBonus?: number } | null | undefined} zone
  * @param {number} [margin] - `friendlyLevelMargin` en floors.json
  * @returns {number}
  */
 export function friendlyLevel(globalFloor, zone, margin = Infinity) {
   const cap = zone?.levelRange ? zone.levelRange[1] + margin : Infinity;
-  return Math.max(1, Math.min(globalFloor || 1, cap));
+  return Math.max(1, Math.min((globalFloor || 1) + (zone?.levelBonus ?? 0), cap));
 }
 
 /**

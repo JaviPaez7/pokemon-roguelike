@@ -828,7 +828,7 @@ Aplicadas con los valores recomendados. Cualquiera se puede cambiar.
     - **Arcanine y Raichu** como vecinos desde el epílogo.
     - Las variantes por especie de la sección 7.
 12. **Créditos:** «Guion y desarrollo: JaviStudio» (`STORY_AUTHOR` en `src/ui/menus/CreditsMenu.js`). Cámbialo si prefieres otro nombre.
-13. **Posjuego (H5):** los tres picos se abren con el final (al ver F-3, la escena que lleva a los créditos) y se pueden hacer en cualquier orden; el Jardín del Primer Sueño, al completar los tres. Los niveles van por encima del Laboratorio Final (salvajes 44-52 en los picos y 56-64 en el jardín; jefes a nivel 55 y Mew a 66, tras el ajuste de equilibrio de `npm run balance`). Cada legendario se ofrece a unirse siempre que se le derrota como jefe, hasta que se une (como mucho uno de cada). Mewtwo sigue sin unirse: está en lo alto de la Torre.
+13. **Posjuego (H5):** los tres picos se abren con el final (al ver F-3, la escena que lleva a los créditos) y se pueden hacer en cualquier orden; el Jardín del Primer Sueño, al completar los tres. Los niveles van por encima del Laboratorio Final (salvajes 44-52 en los picos y 56-64 en el jardín; jefes a nivel 55 y Mew a 66, tras el ajuste de equilibrio de `npm run balance`). Cada pico sube 4 niveles por cada uno de los otros ya completado: el segundo que se haga tiene salvajes de 48-56 y jefe a 59, y el tercero, de 52-60 y jefe a 63. Cada legendario se ofrece a unirse siempre que se le derrota como jefe, hasta que se une (como mucho uno de cada). Mewtwo sigue sin unirse: está en lo alto de la Torre.
 
 ---
 

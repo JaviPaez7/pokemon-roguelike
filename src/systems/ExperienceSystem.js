@@ -1,6 +1,35 @@
 /**
  * ExperienceSystem.js — Sistema de experiencia y subida de nivel
+ *
+ * `pokemonInfo.xp` es la experiencia total acumulada: un Pokémon de nivel N
+ * tiene al menos `expForLevel(N)` y sube al llegar a `expForLevel(N + 1)`.
+ * Los números de la experiencia ganada están en experience.json.
  */
+
+import experienceData from '../data/experience.json';
+
+/**
+ * @typedef {{ upToLevel: number, bonus: number }} ExpLevelBonus
+ *   Bonus sobre la experiencia de los enemigos de hasta `upToLevel`
+ */
+
+/**
+ * Reglas de la experiencia ganada (experience.json): `divisor` de la fórmula
+ * base y bonus para los enemigos de nivel bajo, de menor a mayor `upToLevel`.
+ * @type {{ divisor: number, levelBonuses: ExpLevelBonus[] }}
+ */
+export const EXPERIENCE = experienceData;
+
+/**
+ * Bonus sobre la experiencia de un enemigo de ese nivel (0 si no tiene): el
+ * del primer tramo de `levelBonuses` que lo incluye.
+ * @param {number} enemyLevel
+ * @returns {number} Fracción extra (0,35 = +35 %)
+ */
+export function expLevelBonus(enemyLevel) {
+  const tier = EXPERIENCE.levelBonuses.find((b) => enemyLevel <= b.upToLevel);
+  return tier ? tier.bonus : 0;
+}
 
 /**
  * Calcula XP ganada al derrotar un enemigo
@@ -9,10 +38,10 @@
  * @returns {number} XP ganada
  */
 export function calculateExpGained(baseExp, enemyLevel) {
-  // Fórmula simplificada: (baseExp * enemyLevel) / 5, con un pequeño bonus
-  // para que el early game no se sienta tan lento
-  const raw = Math.floor((baseExp * enemyLevel) / 5);
-  const bonus = enemyLevel <= 12 ? Math.ceil(raw * 0.35) : (enemyLevel <= 22 ? Math.ceil(raw * 0.15) : 0);
+  // Fórmula simplificada: (baseExp * enemyLevel) / divisor, con un bonus en
+  // los niveles bajos para que el principio no se haga tan lento
+  const raw = Math.floor((baseExp * enemyLevel) / EXPERIENCE.divisor);
+  const bonus = Math.ceil(raw * expLevelBonus(enemyLevel));
   return Math.max(1, raw + bonus);
 }
 
