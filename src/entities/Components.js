@@ -38,7 +38,7 @@
  *   speciesId: number,  // ID de la especie en el Pokédex
  *   name: string,       // Nombre localizado del Pokémon
  *   level: number,      // Nivel actual
- *   xp: number,         // Experiencia acumulada en el nivel actual
+ *   xp: number,         // Experiencia total (al menos expForLevel(level))
  *   currentMoves: [{    // Movimientos actuales (máx. 4; ver core/MoveSlots.js)
  *     moveId: number,   // ID del movimiento
  *     currentPP: number,// PP restantes
