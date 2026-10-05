@@ -141,6 +141,7 @@
     "type": "evolution_stone",
     "element": "fire",
     "rarity": 0.03,
+    "price": 1000,
     "description": "Evoluciona ciertos Pokémon de fuego",
     "sprite": "🔥",
     "spriteUrl": "/sprites/items/fire_stone.png"
@@ -151,6 +152,7 @@
     "type": "evolution_stone",
     "element": "water",
     "rarity": 0.03,
+    "price": 1000,
     "description": "Evoluciona ciertos Pokémon de agua",
     "sprite": "💧",
     "spriteUrl": "/sprites/items/water_stone.png"
@@ -161,6 +163,7 @@
     "type": "evolution_stone",
     "element": "electric",
     "rarity": 0.03,
+    "price": 1000,
     "description": "Evoluciona ciertos Pokémon eléctricos",
     "sprite": "⚡",
     "spriteUrl": "/sprites/items/thunder_stone.png"
@@ -171,6 +174,7 @@
     "type": "evolution_stone",
     "element": "grass",
     "rarity": 0.03,
+    "price": 1000,
     "description": "Evoluciona ciertos Pokémon de planta",
     "sprite": "🍃",
     "spriteUrl": "/sprites/items/leaf_stone.png"
@@ -181,6 +185,7 @@
     "type": "evolution_stone",
     "element": "moon",
     "rarity": 0.03,
+    "price": 1000,
     "description": "Evoluciona ciertos Pokémon",
     "sprite": "🌙",
     "spriteUrl": "/sprites/items/moon_stone.png"
@@ -234,6 +239,7 @@
     "name": "Restaurar Todo",
     "type": "full_restore",
     "rarity": 0.02,
+    "price": 800,
     "description": "Restaura PS y cura estados",
     "sprite": "✨",
     "spriteUrl": "/sprites/items/full_restore.png"
@@ -294,6 +300,7 @@
     "type": "level_up",
     "value": 1,
     "rarity": 0.01,
+    "price": 3000,
     "description": "Sube 1 nivel al Pokémon",
     "sprite": "🍬",
     "spriteUrl": "/sprites/items/rare_candy.png"
@@ -485,6 +492,28 @@
     "price": 450,
     "description": "Si la lleva el líder, la tripa baja la mitad de rápido.",
     "sprite": "🟨",
+    "spriteUrl": ""
+  },
+  {
+    "id": "munch_belt",
+    "name": "Cinturón Tragón",
+    "type": "held",
+    "held": { "stats": { "attack": 1.2, "spAtk": 1.2 }, "bellyDrain": 1.5 },
+    "rarity": 0.01,
+    "price": 2000,
+    "description": "Sube el Ataque y el Ataque Especial un 20 %. Si lo lleva el líder, la tripa baja más rápido.",
+    "sprite": "🥋",
+    "spriteUrl": ""
+  },
+  {
+    "id": "guard_scarf",
+    "name": "Pañuelo Coraza",
+    "type": "held",
+    "held": { "stats": { "defense": 1.2, "spDef": 1.2 } },
+    "rarity": 0.01,
+    "price": 2400,
+    "description": "Sube la Defensa y la Defensa Especial un 20 %.",
+    "sprite": "🛡️",
     "spriteUrl": ""
   },
   {

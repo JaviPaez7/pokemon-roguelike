@@ -275,13 +275,32 @@ sub('3.3 Tienda del pueblo');
 out.push(
   table(
     ['Objeto', 'Tipo', 'Sale', 'Compra', 'Venta'],
-    report.shop.map((s) => [s.name, s.type, s.staple ? 'siempre' : `${pct(s.days)} de los días`, `${s.buy}${s.fixed ? ' (fijo)' : ''}`, s.sell]),
+    report.shop.map((s) => [s.name, s.type, s.staple ? 'siempre' : s.tier ? `siempre desde ${s.tier}` : `${pct(s.days)} de los días`, `${s.buy}${s.fixed ? ' (fijo)' : ''}`, s.sell]),
   ),
 );
 para('');
-para('Compra: `price` de items.json o `floor(18 / rareza)` entre 8 y 250 (core/Shop.js). Venta: `floor(12 / rareza)` entre 8 y 120 (MerchantMenu).');
+para('Compra: `price` de items.json o `floor(18 / rareza)` entre 8 y 250 (core/Shop.js, shop.json). Venta: una parte de `price` o, si no tiene, `floor(12 / rareza)` entre 8 y 120. El Kecleon Mercader de las mazmorras cobra lo mismo con su recargo por piso.');
+para(`Surtidos de rango (shop.json): se abren con el rango o con la historia, lo que llegue antes. Los objetos de un surtido no salen entre las novedades del día. Mochila más grande: ${report.bagUpgrades.map((u) => `+${u.slots} huecos por ${n(u.price)} (${u.tier})`).join(', ')}; se compran una vez y en orden.`);
 sub('3.4 Al caer');
 para('Se pierden todo el dinero de la cartera y toda la mochila salvo los objetos únicos; el banco, el almacén y la plantilla no se tocan (Profile.defeatLosses). Las misiones cumplidas sin cobrar vuelven a quedar pendientes.');
+sub(`3.5 En qué gastar, por tramo (ritmo típico, ${report.missionsPerExpedition} misión por expedición)`);
+out.push(
+  table(
+    ['Mazmorra', 'Rango al entrar', 'Se abre', 'Mochila al entrar', 'Se gana por expedición', 'Lo más caro que se paga con una'],
+    report.spending.map((s) => [
+      s.name,
+      `${s.rank} (${n(s.rankPoints)})`,
+      s.newTiers.length
+        ? s.newTiers.map((t) => `${t.name}${t.byRank ? ' (por rango)' : ''}: ${n(Math.min(...t.items.map((i) => i.price)))}-${n(Math.max(...t.items.map((i) => i.price)))}`).join('; ')
+        : '—',
+      `${s.bagSlots}${s.bought.length ? ` (compra ${s.bought.map((b) => n(b.price)).join(' y ')})` : ''}`,
+      n(s.income),
+      s.best ? `${s.best.name} ${n(s.best.price)} (${pct(s.best.price / s.income)})` : '—',
+    ]),
+  ),
+);
+para('');
+para('Se gana: Poké del suelo y las misiones, sin vender objetos. Mochila: se compra al entrar si el equipo ha ahorrado todo lo demás. «Lo más caro»: de lo que Kecleon vende siempre (lo básico, los surtidos abiertos y la siguiente mochila), sin las novedades del día.');
 
 // ─── 4. Otros ────────────────────────────────────────────────────────────────
 

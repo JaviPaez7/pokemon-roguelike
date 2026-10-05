@@ -23,6 +23,8 @@ import {
   priceInversions,
   recruitTable,
   shopTable,
+  spendingTable,
+  simulateProgress,
   storyAndPostgame,
   windTable,
   zoneAt,
@@ -183,6 +185,46 @@ describe('economía', () => {
     const shop = shopTable();
     for (const s of shop) expect(s.sell, s.name).toBeLessThan(s.buy);
     expect(priceInversions(shop).map(({ better, worse }) => `${better.name} ≤ ${worse.name}`)).toEqual([]);
+  });
+
+  describe('en qué gastar el dinero', () => {
+    let spending;
+    beforeAll(() => {
+      spending = spendingTable(KILL_RATES.tipico);
+    });
+
+    it('en cada tramo hay algo útil que comprar a un precio alcanzable con lo que se gana', () => {
+      expect(spending.map((s) => s.name)).toEqual([...STORY_DUNGEONS, ...POSTGAME_DUNGEONS].map((d) => d.name));
+      for (const s of spending) {
+        const label = `${s.name}: se ganan ${Math.round(s.income)}, lo más caro es ${s.best?.name} (${s.best?.price})`;
+        expect(s.best, s.name).not.toBeNull();
+        expect(s.best.price, label).toBeLessThanOrEqual(s.income);
+        expect(s.best.price, label).toBeGreaterThanOrEqual(LIMITS.shopSinkShare * s.income);
+      }
+    });
+
+    it('lo que trae cada surtido de rango se paga con pocas expediciones del tramo en que se abre', () => {
+      const opened = spending.flatMap((s) => s.newTiers.map((t) => ({ ...t, where: s.name, income: s.income })));
+      // Todos menos el último (tras el jardín, el final del posjuego) se abren durante la partida
+      expect(opened.map((t) => t.id)).toEqual(['bronce', 'plata', 'oro']);
+      for (const t of opened) {
+        expect(t.items.length, t.name).toBeGreaterThan(0);
+        for (const item of t.items) expect(item.price, `${t.name} en ${t.where}: ${item.name}`).toBeLessThanOrEqual(LIMITS.shopMaxExpeditions * t.income);
+      }
+    });
+
+    it('desde la mitad de la historia hay compras de más de 600 Poké, el tope de antes', () => {
+      // La mazmorra del piso de en medio de la historia (el 25 de 50)
+      const half = STORY_DUNGEONS.at(-1).floors[1] / 2;
+      const mid = spending.findIndex((s) => s.dungeonId === STORY_DUNGEONS.find((d) => d.floors[1] >= half).id);
+      for (const s of spending.slice(mid)) expect(Math.max(...s.offers.map((o) => o.price)), s.name).toBeGreaterThan(600);
+    });
+
+    it('las mochilas se pueden pagar ahorrando antes del final de la historia', () => {
+      const last = spending.findIndex((s) => s.dungeonId === STORY_DUNGEONS.at(-1).id);
+      expect(spending[last].bagSlots).toBeGreaterThan(spending[0].bagSlots);
+      expect(spending.slice(0, last + 1).flatMap((s) => s.bought)).toHaveLength(2);
+    });
   });
 });
 

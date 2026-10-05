@@ -17,7 +17,7 @@ import {
   STORAGE_STACK_MAX,
   profileDungeons,
 } from '../../core/Profile.js';
-import { townShopStock } from '../../core/Shop.js';
+import { townShopStock, shopNote } from '../../core/Shop.js';
 import { startExpedition } from '../../core/Expedition.js';
 import { escortsToJoin } from '../../core/Missions.js';
 import { enterTown, leaveExitTile, BASE_FRONT } from '../../core/TownSession.js';
@@ -65,12 +65,19 @@ function itemName(ui, itemId) {
 
 // ─── Tienda de Kecleon ─────────────────────────────────────────────────────
 
-/** @param {UIManager} ui */
+/**
+ * La tienda del pueblo: lo básico, los surtidos de rango abiertos, las
+ * novedades del día y la siguiente mochila (core/Shop.js).
+ * @param {UIManager} ui
+ */
 export function openTownShop(ui) {
   const game = ui.game;
   const em = game.entityManager;
   const kecleon = em.getEntitiesWithComponents('npcTown').find((id) => em.getComponent(id, 'npcTown').role === 'shop');
-  em.setComponent(kecleon, 'npcMerchant', { items: townShopStock(game.profile.day, game.itemsData) });
+  em.setComponent(kecleon, 'npcMerchant', {
+    items: townShopStock(game.profile.day, game.itemsData, game.profile),
+    note: shopNote(game.profile),
+  });
   openMerchantMenu(ui, kecleon);
 }
 

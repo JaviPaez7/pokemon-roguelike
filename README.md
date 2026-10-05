@@ -9,6 +9,7 @@ Un Pokémon Mundo Misterioso hecho por fans, con los 151 Pokémon de la primera 
 - **Empezar.** Un test de personalidad decide qué Pokémon eres. Eliges compañero (de otro tipo) y el nombre del equipo, y empieza el prólogo.
 - **Pueblo Raíz.** Es la base, sin turnos ni enemigos:
   - Kecleon vende provisiones, Kangaskhan guarda objetos y Persian guarda el dinero.
+  - Al subir de rango (o al avanzar en la historia), Kecleon amplía su tienda con gominolas, piedras evolutivas, equipables caros y mochilas más grandes.
   - En la base se forma el equipo, se duerme hasta el día siguiente, se guarda la partida y está el Diario para volver a ver escenas.
   - El tablón tiene encargos nuevos cada día: rescates, objetos perdidos, entregas, escoltas (el cliente va con el equipo hasta su piso) y forajidos buscados.
 - **Mazmorras.** Hay siete en la historia, del Bosque Verde al Laboratorio Final, cada una con su jefe, y cuatro más tras el final.
