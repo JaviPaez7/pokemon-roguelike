@@ -36,7 +36,8 @@
  * niveles y número de salvajes y PS del jefe (FloorManager), ataque básico y
  * experiencia repartida (ActionSystem), golpes de los movimientos múltiples y
  * Metrónomo (executeMove), Poké al derrotar y botín del jefe (GameEvents),
- * tesoros (FloorEvents), precio de venta (MerchantMenu) y tripa (Game).
+ * tesoros (FloorEvents) y tripa (Game). Los precios de compra y de venta y el
+ * surtido de la tienda salen de core/Shop.js.
  */
 
 import pokemonData from '../src/data/pokemon.json';
@@ -51,11 +52,22 @@ import { MAP_WIDTH, MAP_HEIGHT } from '../src/constants.js';
 import { floorSeed, random, setSeed } from '../src/core/Random.js';
 import { TurnManager } from '../src/core/TurnManager.js';
 import { DUNGEONS, WIND } from '../src/core/Dungeons.js';
-import { DIFFICULTIES, MISSION_RULES, rewardMoney, rewardPoints } from '../src/core/Missions.js';
-import { buyPrice, townShopStock, SHOP_STAPLES } from '../src/core/Shop.js';
+import { DIFFICULTIES, MISSION_RULES, difficultyFor, rewardMoney, rewardPoints } from '../src/core/Missions.js';
+import {
+  buyPrice,
+  sellPrice,
+  townShopStock,
+  SHOP_STAPLES,
+  SHOP_TIERS,
+  BAG_UPGRADES,
+  openTiers,
+  nextBagUpgrade,
+  buyBagUpgrade,
+  bagCapacity,
+} from '../src/core/Shop.js';
 import { recruitChance, RECRUITMENT } from '../src/core/Recruitment.js';
 import { gummiIq, IQ_SKILLS } from '../src/core/IQ.js';
-import { RANKS } from '../src/core/Profile.js';
+import { RANKS, rankFor } from '../src/core/Profile.js';
 import { STARTING_LEVEL, STARTING_MONEY } from '../src/core/TownSession.js';
 import { CHALLENGE_LEVEL, CHALLENGE_PRIZE, clearRankPoints } from '../src/core/Expedition.js';
 import { EntityManager } from '../src/entities/EntityManager.js';
@@ -629,13 +641,8 @@ export function combatTable(progress, { wilds = true } = {}) {
 
 // ─── Economía ────────────────────────────────────────────────────────────────
 
-/**
- * Precio de venta en la tienda. Réplica de `MerchantMenu.openSellMenu`.
- * @param {{ rarity?: number }} item
- */
-export function sellPrice(item) {
-  return Math.max(8, Math.min(120, Math.floor(12 / Math.max(0.05, item.rarity || 0.2))));
-}
+/** Lo que paga Kecleon por un objeto (core/Shop.js). */
+export { sellPrice };
 
 /**
  * Poké medios por salvaje derrotado. Réplica de GameEvents (`pokemon_fainted`):
@@ -754,6 +761,23 @@ export function bellyDrain(globalFloor) {
 }
 
 /**
+ * Poké que se recogen en una expedición completa a una mazmorra: salvajes
+ * derrotados, botín del jefe y tesoros de los eventos de piso.
+ * @param {{ floors: [number, number] }} dungeon
+ * @param {number} killRate
+ * @returns {number}
+ */
+export function groundMoney(dungeon, killRate) {
+  let ground = 0;
+  for (let f = dungeon.floors[0]; f <= dungeon.floors[1]; f++) {
+    const coins = wildLevelDistribution(f).reduce((s, d) => s + d.p * coinsPerKill(d.level), 0);
+    ground += killRate * expectedEnemies(f) * coins + treasureCoins(f);
+    if (isBossFloor(f)) ground += bossCoins(f);
+  }
+  return ground;
+}
+
+/**
  * Dinero de una expedición completa a una mazmorra (primera vez) y lo que se
  * gasta en comida, con los turnos por piso de `windTable`.
  * @param {{ id: string, floors: [number, number] }} dungeon
@@ -761,14 +785,11 @@ export function bellyDrain(globalFloor) {
  * @param {number} turnsPerFloor - Turnos medios por piso
  */
 export function expeditionMoney(dungeon, killRate, turnsPerFloor) {
-  let ground = 0;
+  const ground = groundMoney(dungeon, killRate);
   let items = 0;
   let itemValue = 0;
   let belly = 0;
   for (let f = dungeon.floors[0]; f <= dungeon.floors[1]; f++) {
-    const coins = wildLevelDistribution(f).reduce((s, d) => s + d.p * coinsPerKill(d.level), 0);
-    ground += killRate * expectedEnemies(f) * coins + treasureCoins(f);
-    if (isBossFloor(f)) ground += bossCoins(f);
     items += expectedFloorItems(f);
     itemValue += expectedFloorItems(f) * floorItemValue(f);
     belly += (isBossFloor(f) ? 40 : turnsPerFloor) * bellyDrain(f);
@@ -787,8 +808,9 @@ export function expeditionMoney(dungeon, killRate, turnsPerFloor) {
 }
 
 /**
- * Precios de la tienda del pueblo: lo básico y lo que puede salir como novedad
- * (con la frecuencia en 120 días), con su precio de compra y de venta.
+ * Precios de la tienda del pueblo: lo básico, lo que puede salir como novedad
+ * (con la frecuencia en 120 días) y lo de los surtidos de rango (`tier`: su
+ * nombre), con su precio de compra y de venta.
  */
 export function shopTable() {
   const days = 120;
@@ -796,10 +818,15 @@ export function shopTable() {
   for (let day = 1; day <= days; day++) {
     for (const entry of townShopStock(day, itemsData)) seen.set(entry.id, (seen.get(entry.id) ?? 0) + 1);
   }
-  return [...seen].map(([id, n]) => {
+  const row = (id, days, tier = null) => {
     const item = ITEMS.get(id);
-    return { id, name: item.name, type: item.type, staple: SHOP_STAPLES.includes(id), days: n / days, buy: buyPrice(item), sell: sellPrice(item), fixed: item.price != null };
-  }).sort((a, b) => Number(b.staple) - Number(a.staple) || a.buy - b.buy || a.id.localeCompare(b.id));
+    return { id, name: item.name, type: item.type, staple: SHOP_STAPLES.includes(id), tier, days, buy: buyPrice(item), sell: sellPrice(item), fixed: item.price != null };
+  };
+  const tierOrder = (r) => (r.tier ? SHOP_TIERS.findIndex((t) => t.name === r.tier) : r.staple ? -1 : SHOP_TIERS.length);
+  return [
+    ...[...seen].map(([id, n]) => row(id, n / days)),
+    ...SHOP_TIERS.flatMap((tier) => tier.items.map((id) => row(id, 1, tier.name))),
+  ].sort((a, b) => tierOrder(a) - tierOrder(b) || a.buy - b.buy || a.id.localeCompare(b.id));
 }
 
 /**
@@ -820,6 +847,115 @@ export function priceInversions(shop) {
     if (worse) out.push({ better, worse });
   }
   return out;
+}
+
+/** Misiones que cumple el equipo en cada expedición, en el modelo de gasto y de rango. */
+export const MISSIONS_PER_EXPEDITION = 1;
+
+/** @param {{ floors: [number, number] }} dungeon @returns {number} Piso global de en medio */
+function midDungeonFloor(dungeon) {
+  return Math.floor((dungeon.floors[0] + dungeon.floors[1]) / 2);
+}
+
+/**
+ * Lo que se gana en una expedición a una mazmorra, la primera vez: los Poké del
+ * suelo y `MISSIONS_PER_EXPEDITION` misiones medias. Sin vender objetos.
+ * @param {{ floors: [number, number] }} dungeon
+ * @param {number} killRate
+ * @returns {number}
+ */
+export function expeditionIncome(dungeon, killRate) {
+  return groundMoney(dungeon, killRate) + MISSIONS_PER_EXPEDITION * meanMissionMoney(midDungeonFloor(dungeon));
+}
+
+/**
+ * Puntos de rango de una expedición a una mazmorra, la primera vez: los de
+ * completarla y los de `MISSIONS_PER_EXPEDITION` misiones de su dificultad,
+ * con la mezcla de tipos del tablón.
+ * @param {import('../src/core/Dungeons.js').Dungeon} dungeon
+ * @returns {number}
+ */
+export function expeditionRankPoints(dungeon) {
+  const difficulty = difficultyFor(midDungeonFloor(dungeon));
+  const types = Object.entries(MISSION_RULES.types);
+  const total = types.reduce((s, [, t]) => s + t.weight, 0);
+  const mission = types.reduce((s, [type, t]) => s + (t.weight / total) * rewardPoints(type, difficulty), 0);
+  return clearRankPoints(dungeon, true) + MISSIONS_PER_EXPEDITION * mission;
+}
+
+/**
+ * @typedef {{ id: string, name: string, price: number, tier: string | null, upgrade: boolean }} Offer
+ */
+
+/**
+ * Lo que el Kecleon del pueblo vende siempre a un perfil: lo básico, los
+ * surtidos de rango abiertos y la siguiente mochila si ya la vende. Sin las
+ * novedades del día, que van al azar.
+ * @param {import('../src/core/Shop.js').ShopProfile} profile
+ * @returns {Offer[]}
+ */
+export function shopOffers(profile) {
+  return townShopStock(1, itemsData, profile)
+    .filter((entry) => SHOP_STAPLES.includes(entry.id) || entry.tier)
+    .map((entry) => ({ id: entry.id, name: entry.name, price: entry.price, tier: entry.tier ?? null, upgrade: !!entry.upgrade }));
+}
+
+/**
+ * En qué se puede gastar el dinero en cada tramo del juego: la historia y el
+ * posjuego en orden, una expedición a cada mazmorra (la primera vez, al ritmo
+ * dado) con `MISSIONS_PER_EXPEDITION` misiones. Por tramo:
+ * - el rango al entrar y los surtidos abiertos (por el rango o por la historia),
+ *   con lo que traen los que se acaban de abrir;
+ * - las mochilas que se compran al entrar si el equipo ahorra todo lo demás;
+ * - lo que se gana en la expedición (`expeditionIncome`) y lo más caro de lo que
+ *   se vende siempre que se paga con eso (`best`).
+ * @param {number} [killRate]
+ */
+export function spendingTable(killRate = KILL_RATES.tipico) {
+  const profile = { rankPoints: 0, clearedDungeons: [], story: { seen: [] }, upgrades: { bag: 0 } };
+  let savings = STARTING_MONEY;
+  /** @type {string[]} */
+  let opened = [];
+  return [...STORY_DUNGEONS, ...POSTGAME_DUNGEONS].map((dungeon) => {
+    const tiers = openTiers(profile);
+    const fresh = tiers.filter((t) => !opened.includes(t.id));
+    opened = tiers.map((t) => t.id);
+    const byStory = openTiers({ ...profile, rankPoints: 0 }).map((t) => t.id);
+    const freshOffers = shopOffers(profile).filter((o) => fresh.some((t) => t.id === o.tier));
+    const newTiers = fresh.map((t) => ({
+      id: t.id,
+      name: t.name,
+      byRank: !byStory.includes(t.id),
+      items: freshOffers.filter((o) => o.tier === t.id),
+    }));
+    const savingsAtEntry = savings;
+    const bought = [];
+    for (let next = nextBagUpgrade(profile); next?.open && savings >= next.price; next = nextBagUpgrade(profile)) {
+      savings = buyBagUpgrade(profile, savings).wallet;
+      bought.push({ price: next.price, capacity: next.capacity });
+    }
+    const income = expeditionIncome(dungeon, killRate);
+    const offers = shopOffers(profile);
+    const best = offers.filter((o) => o.price <= income).reduce((a, b) => (!a || b.price > a.price ? b : a), null);
+    const row = {
+      dungeonId: dungeon.id,
+      name: dungeon.name,
+      rank: rankFor(profile.rankPoints).name,
+      rankPoints: profile.rankPoints,
+      tiers: tiers.map((t) => t.name),
+      newTiers,
+      savingsAtEntry,
+      bought,
+      bagSlots: bagCapacity(profile),
+      income,
+      best,
+      offers,
+    };
+    savings += income;
+    profile.clearedDungeons.push(dungeon.id);
+    profile.rankPoints += expeditionRankPoints(dungeon);
+    return row;
+  });
 }
 
 // ─── Viento ──────────────────────────────────────────────────────────────────
@@ -1055,6 +1191,9 @@ export function buildReport({ windRuns = 6 } = {}) {
     storyClearPoints: STORY_DUNGEONS.reduce((s, d) => s + clearRankPoints(d, true), 0),
     economy,
     shop: shopTable(),
+    spending: spendingTable(KILL_RATES.tipico),
+    bagUpgrades: BAG_UPGRADES.map((u) => ({ ...u, tier: SHOP_TIERS.find((t) => t.id === u.tier)?.name ?? u.tier })),
+    missionsPerExpedition: MISSIONS_PER_EXPEDITION,
     outlaw: { levelBonus: MISSION_RULES.outlaw.levelBonus, hpMultiplier: MISSION_RULES.outlaw.hpMultiplier },
     wind,
     recruit: recruitTable(typicalAll, KILL_RATES.tipico),
@@ -1102,6 +1241,14 @@ export const LIMITS = {
   windMargin: 1.5,
   /** Un recluta tarda en subir su primer nivel como mucho estas veces lo que un miembro del equipo. */
   recruitSlowdown: 5,
+  /**
+   * En cada tramo, lo más caro que Kecleon vende siempre y se paga con una
+   * expedición cuesta al menos esta parte de lo que se gana en ella: si no,
+   * el dinero se acumula sin nada en qué gastarlo.
+   */
+  shopSinkShare: 0.15,
+  /** Lo que trae un surtido de rango se paga con, como mucho, estas expediciones del tramo en que se abre. */
+  shopMaxExpeditions: 2,
 };
 
 /**
@@ -1196,6 +1343,16 @@ export function findIssues(report) {
   }
   for (const { better, worse } of priceInversions(report.shop)) {
     add('Economía', 'aviso', `${better.name} (rareza ${ITEMS.get(better.id).rarity}) cuesta ${better.buy}, lo mismo o menos que ${worse.name} (rareza ${ITEMS.get(worse.id).rarity}), y hace más.`);
+  }
+  for (const s of report.spending) {
+    if (!s.best || s.best.price < LIMITS.shopSinkShare * s.income) {
+      add('Economía', 'aviso', `En ${s.name} se ganan ${fmt(s.income)} Poké por expedición y lo más caro que Kecleon vende siempre y se paga con eso es ${s.best ? `${s.best.name} (${s.best.price})` : 'nada'}: menos del ${Math.round(LIMITS.shopSinkShare * 100)} %.`);
+    }
+    for (const tier of s.newTiers) {
+      for (const o of tier.items.filter((i) => i.price > LIMITS.shopMaxExpeditions * s.income)) {
+        add('Economía', 'aviso', `${tier.name} se abre en ${s.name} con ${o.name} a ${o.price} Poké: más de ${LIMITS.shopMaxExpeditions} expediciones de ese tramo (${fmt(s.income)} cada una).`);
+      }
+    }
   }
 
   // Viento

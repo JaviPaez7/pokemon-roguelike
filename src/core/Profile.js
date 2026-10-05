@@ -3,7 +3,8 @@
  *
  * Lo que persiste entre mazmorras: nombre y rango del equipo, plantilla de
  * Pokémon reclutados (fichas de core/PokemonSnapshot.js), formación, banco,
- * almacén, mazmorras completadas y misiones.
+ * almacén, mazmorras completadas, misiones y mejoras compradas (`upgrades`,
+ * core/Shop.js).
  *
  * La mochila y la cartera no viven aquí mientras se juega: son
  * `game.inventory` y `game.coins`, y se copian al perfil al guardar. Las
@@ -57,6 +58,9 @@ export function createProfile({ teamName, hero, partner }) {
     missions: { day: 0, board: [], accepted: [], completed: 0 },
     flags: {},
     story: { seen: [] },
+    // Mejoras compradas a Kecleon (core/Shop.js). Los perfiles de antes no
+    // tienen el campo y se leen como sin mejoras: no hizo falta migración
+    upgrades: { bag: 0 },
   };
   profile.heroUid = addToRoster(profile, hero);
   profile.partnerUid = addToRoster(profile, partner);

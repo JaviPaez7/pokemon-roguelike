@@ -420,7 +420,7 @@ function townLine(npcId) {
     pidgey: {
       text:
         '¡Hola! El tablón tiene encargos nuevos cada día.\n\n' +
-        'Cuantos más completéis, más subirá el rango de vuestro equipo… ¡y más lejos os dejarán ir!',
+        'Cuantos más completéis, más subirá el rango de vuestro equipo… ¡y mejores cosas os guardará Kecleon!',
       emotion: 'Happy',
     },
   };

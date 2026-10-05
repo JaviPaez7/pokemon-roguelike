@@ -20,7 +20,7 @@
  * - TileMap:         Datos del mapa actual
  */
 
-import { ACTIONS, MAX_INVENTORY, GAME_STATES, TILE_SIZE, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, MAP_WIDTH, MAP_HEIGHT, FOV_RADIUS } from '../constants.js';
+import { ACTIONS, GAME_STATES, TILE_SIZE, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, MAP_WIDTH, MAP_HEIGHT, FOV_RADIUS } from '../constants.js';
 import { EventBus } from './EventBus.js';
 import { TurnManager } from './TurnManager.js';
 import { WeatherSystem } from '../systems/WeatherSystem.js';
@@ -45,6 +45,7 @@ import { useInventoryItem as useInventoryItemHandler, throwInventoryItem } from 
 import { MessageLog } from '../ui/MessageLog.js';
 import { getDungeon, relativeFloor, isLastFloor, WIND } from './Dungeons.js';
 import { heldBellyDrain } from './HeldItems.js';
+import { bagCapacity } from './Shop.js';
 import { hasIqSkill } from './IQ.js';
 import { setSeed, newRunSeed } from './Random.js';
 import { roomAt } from '../systems/MoveTargeting.js';
@@ -155,7 +156,7 @@ export class Game {
       { itemId: 'escape_rope', quantity: 1 },
       { itemId: 'slumber_orb', quantity: 1 }
     ];
-    this.maxInventorySize = MAX_INVENTORY;
+    // Los huecos de la mochila (`maxInventorySize`) salen del perfil: ver el getter
     this.coins = 180;
     this.autoPickup = true;
     this._autoHealUsedThisFloor = false;
@@ -1204,6 +1205,15 @@ export class Game {
   /** @returns {import('./Dungeons.js').Dungeon|null} */
   get dungeon() {
     return this.dungeonId ? getDungeon(this.dungeonId) : null;
+  }
+
+  /**
+   * Huecos de la mochila: los de siempre más las mochilas compradas a Kecleon
+   * (`profile.upgrades`); en la Torre del Desafío, los de siempre.
+   * @returns {number}
+   */
+  get maxInventorySize() {
+    return bagCapacity(this.profile, this.dungeon);
   }
 
   /** @returns {number} Piso que ve el jugador, relativo a la mazmorra */
