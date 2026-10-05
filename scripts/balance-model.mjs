@@ -31,17 +31,19 @@
  * - «Protagonista típico»: la mediana de los nueve protagonistas del test de
  *   personalidad, evolucionados por nivel (sin piedras), con los cuatro últimos
  *   movimientos de su lista (lo que da `createPokemon`) y usando lo que más daño
- *   hace (o el ataque básico). Los salvajes y los jefes eligen con
- *   `selectBestMove`, como en el juego. Sin clima, habilidades que se activan en
- *   combate, cambios de características ni estados: el daño es el de
+ *   hace (o el ataque básico, sin tipo: `basicAttackMove`). Los salvajes y los
+ *   jefes eligen con `selectBestMove`, como en el juego: entre sus movimientos y
+ *   el ataque básico, en combates de `FIGHT_ACTIONS` acciones en los que la IA
+ *   ve los estados y los cambios de características que ya ha puesto (así no
+ *   los repite). Sin clima ni habilidades que se activan en combate, y el daño
+ *   no cuenta los estados ni los cambios de características: es el de
  *   `calculateDamage` con los PS y las características de cada uno.
  *
  * Réplicas (la fórmula está en una función que no se exporta o en la interfaz):
- * niveles y número de salvajes y PS del jefe (FloorManager), ataque básico y
- * experiencia repartida (ActionSystem), golpes de los movimientos múltiples y
- * Metrónomo (executeMove), Poké al derrotar y botín del jefe (GameEvents),
- * tesoros (FloorEvents) y tripa (Game). Los precios de compra y de venta y el
- * surtido de la tienda salen de core/Shop.js.
+ * niveles y número de salvajes y PS del jefe (FloorManager), experiencia
+ * repartida (ActionSystem), Metrónomo (executeMove), Poké al derrotar y botín
+ * del jefe (GameEvents), tesoros (FloorEvents) y tripa (Game). Los precios de
+ * compra y de venta y el surtido de la tienda salen de core/Shop.js.
  */
 
 import pokemonData from '../src/data/pokemon.json';
@@ -80,6 +82,9 @@ import { calculateDamage, selectBestMove } from '../src/systems/CombatSystem.js'
 import { checkEvolution } from '../src/systems/EvolutionSystem.js';
 import { spawnItems } from '../src/systems/ItemSystem.js';
 import { DungeonGenerator } from '../src/map/DungeonGenerator.js';
+import { aiMoveKind, hitsPerTurn, tryApplyEffect } from '../src/systems/CombatSystem.js';
+import { moveRange } from '../src/systems/MoveTargeting.js';
+import { AI_WEIGHTS, basicAttackMove } from '../src/core/CombatRules.js';
 
 /** Semilla de las muestras del modelo. */
 export const MODEL_SEED = 20260927;
@@ -95,6 +100,13 @@ export const LEADER_KO_SHARE = 0.5;
 
 /** Muestras por pareja atacante-defensor al promediar el daño. */
 const DAMAGE_SAMPLES = 48;
+
+/**
+ * Acciones de cada combate simulado de un salvaje o un jefe: durante un
+ * combate, la IA ve los estados y los cambios de características que ya ha
+ * puesto. Las `DAMAGE_SAMPLES` acciones son 8 combates de 6.
+ */
+export const FIGHT_ACTIONS = 6;
 
 const SPECIES = new Map(pokemonData.map((p) => [p.id, p]));
 const ITEMS = new Map(itemsData.map((i) => [i.id, i]));
@@ -492,34 +504,38 @@ export function heroesAt(level) {
   return HERO_SPECIES.map((id) => makePokemon(heroSpeciesAt(id, level), level));
 }
 
-/**
- * Golpes de un uso del movimiento. Réplica de `executeMove`: Doble Patada y
- * compañía golpean 2 veces, los de 2-5 golpes 3,1 de media; los que cargan o
- * recargan ocupan dos turnos.
- * @param {any} move
- */
-function hitsPerTurn(move) {
-  if (move.effect === 'multi_hit_2') return 2;
-  if (move.effect === 'multi_hit') return 0.35 * 2 + 0.35 * 3 + 0.15 * 4 + 0.15 * 5;
-  if (move.effect === 'charge' || move.effect === 'recharge') return 0.5;
-  return 1;
-}
-
 /** Movimientos que puede sacar Metrónomo. Réplica de `executeMove` (`random_move`). */
 const METRONOME_POOL = movesData.filter((m) => m && m.power && m.power > 0 && m.effect !== 'random_move' && m.effect !== 'self_destruct');
 
 /**
- * Daño de un uso de un movimiento, con `calculateDamage` (fallos, críticos y la
- * variación del 85-100 %), sin clima. Metrónomo tira un movimiento al azar.
+ * Un uso de un movimiento con `calculateDamage` (fallos, críticos y la
+ * variación del 85-100 %), sin clima, sin estados y sin cambios de
+ * características. Metrónomo tira un movimiento al azar. Los golpes por turno,
+ * con `hitsPerTurn` (los de 2 a 5 golpes, 3,1 de media; los que cargan, medio).
+ * @param {Combatant} att
+ * @param {Combatant} def
+ * @param {any} move
+ * @param {boolean} [asleep] - Si el objetivo duerme (para Come Sueños)
+ * @returns {{ used: any, damage: number, hit: boolean }} El movimiento usado,
+ *   su daño medio por turno y si ha acertado
+ */
+function oneUse(att, def, move, asleep = false) {
+  const used = move.effect === 'random_move' ? METRONOME_POOL[Math.floor(random() * METRONOME_POOL.length)] : move;
+  const a = { ...att.fighter, statusEffects: [], statModifiers: {} };
+  // Dormido solo cuenta para Come Sueños, que falla si el objetivo está despierto
+  const d = { ...def.fighter, statusEffects: asleep ? [{ type: 'sleep', turnsLeft: 1 }] : [], statModifiers: {} };
+  const res = calculateDamage(a, d, used, att.info, def.info, typesData, 'normal');
+  return { used, damage: (res.damage || 0) * hitsPerTurn(used), hit: !!res.hit || (res.damage || 0) > 0 };
+}
+
+/**
+ * Daño de un uso de un movimiento (`oneUse`).
  * @param {Combatant} att
  * @param {Combatant} def
  * @param {any} move
  */
 function oneUseDamage(att, def, move) {
-  const used = move.effect === 'random_move' ? METRONOME_POOL[Math.floor(random() * METRONOME_POOL.length)] : move;
-  const a = { ...att.fighter, statusEffects: [] };
-  const d = { ...def.fighter, statusEffects: [] };
-  return (calculateDamage(a, d, used, att.info, def.info, typesData, 'normal').damage || 0) * hitsPerTurn(used);
+  return oneUse(att, def, move).damage;
 }
 
 /**
@@ -537,23 +553,13 @@ function meanMoveDamage(att, def, move, samples = DAMAGE_SAMPLES) {
 }
 
 /**
- * Ataque básico sin PP. Réplica de `ActionSystem.handleCombat` (`regularAttack`):
- * físico, del primer tipo del atacante y con potencia 12 + 2 × nivel (15 a 45).
- * @param {any} info - pokemonInfo del atacante
- */
-export function basicAttack(info) {
-  const power = Math.max(15, Math.min(45, 12 + (info.level || 1) * 2));
-  return { id: -1, name: 'Ataque', type: info.types?.[0] ?? 'normal', power, pp: 99, accuracy: 95, damageClass: 'physical', effect: null };
-}
-
-/**
  * Daño medio por turno del protagonista: lo que más daño hace de sus
- * movimientos y el ataque básico.
+ * movimientos y el ataque básico (`basicAttackMove`, sin tipo).
  * @param {Combatant} hero
  * @param {Combatant} foe
  */
 export function heroDamage(hero, foe) {
-  let best = meanMoveDamage(hero, foe, basicAttack(hero.info));
+  let best = meanMoveDamage(hero, foe, basicAttackMove(hero.info));
   for (const slot of hero.info.currentMoves) {
     const move = movesData.find((m) => m.id === slot.moveId);
     if (move && move.power !== 0) best = Math.max(best, meanMoveDamage(hero, foe, move));
@@ -562,19 +568,75 @@ export function heroDamage(hero, foe) {
 }
 
 /**
- * Daño medio por acción de un salvaje o un jefe, que elige con `selectBestMove`
- * (a veces un movimiento de estado, que no hace daño).
+ * Copia de un combatiente para un combate simulado: sin estados ni cambios de
+ * características, y con sus casillas de movimiento propias (Anulación las toca).
+ * @param {Combatant} c
+ * @returns {Combatant}
+ */
+function fightCopy(c) {
+  return {
+    fighter: { ...c.fighter, statusEffects: [], statModifiers: {} },
+    info: { ...c.info, types: [...(c.info.types || [])], currentMoves: (c.info.currentMoves || []).map((s) => ({ ...s })) },
+  };
+}
+
+/**
+ * Lo que hace un salvaje o un jefe: elige con `selectBestMove` entre sus
+ * movimientos y el ataque básico, como en el juego, en combates de
+ * `FIGHT_ACTIONS` acciones. Lo que pone (estados, bajadas y subidas de
+ * características) queda en el combate con `tryApplyEffect`, así que la IA no
+ * repite un estado ni baja una característica más allá de su tope; el daño,
+ * en cambio, no cuenta esos cambios.
+ * @param {Combatant} foe
+ * @param {Combatant} hero
+ * @param {number} [samples]
+ * @returns {{ damage: number, statusShare: number }} Daño medio por acción y
+ *   parte de las acciones que gasta en movimientos de estado
+ */
+export function foeActions(foe, hero, samples = DAMAGE_SAMPLES) {
+  let total = 0;
+  let statusTurns = 0;
+  let fight = null;
+  for (let i = 0; i < samples; i++) {
+    if (i % FIGHT_ACTIONS === 0) fight = { foe: fightCopy(foe), hero: fightCopy(hero) };
+    const move = selectBestMove(fight.foe.info, fight.hero.info, movesData, typesData, fight.foe.fighter, fight.hero.fighter, {
+      basicAttack: AI_WEIGHTS.useBasicAttack ? basicAttackMove(foe.info) : null,
+    });
+    if (!move) continue;
+    const asleep = fight.hero.fighter.statusEffects.some((s) => s.type === 'sleep');
+    const { used, damage, hit } = oneUse(foe, hero, move, asleep);
+    total += damage;
+    // Un turno del protagonista por cada acción del rival: sus estados se gastan
+    tickStatuses(fight.hero.fighter);
+    if (aiMoveKind(used) !== 'status') continue;
+    statusTurns++;
+    if (!hit) continue;
+    const self = ['self', 'team'].includes(moveRange(used));
+    const target = self ? fight.foe : fight.hero;
+    tryApplyEffect(used, target.fighter, target.info, [], fight.foe.fighter, fight.foe.info, 0, false);
+  }
+  return { damage: total / samples, statusShare: statusTurns / samples };
+}
+
+/**
+ * Pasa un turno para los estados de un combatiente (como `processStatusEffects`,
+ * sin su daño): cada uno dura un turno menos.
+ * @param {{ statusEffects: { turnsLeft?: number }[] }} fighter
+ */
+function tickStatuses(fighter) {
+  fighter.statusEffects = fighter.statusEffects
+    .map((s) => ({ ...s, turnsLeft: (s.turnsLeft ?? 1) - 1 }))
+    .filter((s) => s.turnsLeft > 0);
+}
+
+/**
+ * Daño medio por acción de un salvaje o un jefe (`foeActions`).
  * @param {Combatant} foe
  * @param {Combatant} hero
  * @param {number} [samples]
  */
 export function foeDamage(foe, hero, samples = DAMAGE_SAMPLES) {
-  let total = 0;
-  for (let i = 0; i < samples; i++) {
-    const move = selectBestMove(foe.info, hero.info, movesData, typesData, foe.fighter, hero.fighter);
-    if (move) total += oneUseDamage(foe, hero, move);
-  }
-  return total / samples;
+  return foeActions(foe, hero, samples).damage;
 }
 
 /**
@@ -636,7 +698,7 @@ function weightedMedian(values) {
 /**
  * @typedef {{
  *   heroHits: number, heroHitsBest: number, heroDamagePct: number,
- *   foeHits: number, foeHitsWorst: number, foeDamagePct: number,
+ *   foeHits: number, foeHitsWorst: number, foeDamagePct: number, foeStatusShare: number,
  *   foeActions: number, foeTurns: number, foeTurnsWorst: number,
  *   worstHero: string,
  *   perHero: { name: string, heroHits: number, foeHits: number, foeTurns: number }[]
@@ -646,7 +708,8 @@ function weightedMedian(values) {
  * derrotar al protagonista (mediana; `Worst`, el protagonista que menos aguanta,
  * que es `worstHero`). `foeTurns`: turnos del jugador que aguanta el
  * protagonista (golpes ÷ acciones del rival por turno). Los porcentajes son la
- * media del daño de un golpe sobre los PS máximos. Los golpes se cuentan hasta
+ * media del daño de un golpe sobre los PS máximos. `foeStatusShare`: parte de
+ * las acciones del rival que son movimientos de estado. Los golpes se cuentan hasta
  * `MAX_HITS` (un rival inmune cuenta como `MAX_HITS`).
  */
 
@@ -663,7 +726,7 @@ export function matchup(heroLevel, foes) {
   for (const { foe, p } of foes) {
     for (const hero of heroes) {
       const dealt = heroDamage(hero, foe);
-      const taken = foeDamage(foe, hero);
+      const { damage: taken, statusShare } = foeActions(foe, hero);
       const heroHits = dealt > 0 ? Math.min(MAX_HITS, Math.ceil(foe.fighter.maxHp / dealt)) : MAX_HITS;
       const foeHits = taken > 0 ? Math.min(MAX_HITS, Math.ceil(hero.fighter.maxHp / taken)) : MAX_HITS;
       const actions = actionsPerTurn(hero.fighter.speed, foe.fighter.speed);
@@ -675,6 +738,7 @@ export function matchup(heroLevel, foes) {
         foeTurns: Math.min(MAX_HITS, foeHits / actions),
         dealtPct: Math.min(1, dealt / foe.fighter.maxHp),
         takenPct: Math.min(1, taken / hero.fighter.maxHp),
+        statusShare,
         actions,
       });
     }
@@ -690,6 +754,7 @@ export function matchup(heroLevel, foes) {
     foeHitsWorst: worst.foeHits,
     worstHero: worst.name,
     foeDamagePct: mean('takenPct'),
+    foeStatusShare: mean('statusShare'),
     foeActions: mean('actions'),
     foeTurns: median('foeTurns'),
     foeTurnsWorst: Math.min(...rows.map((r) => r.foeTurns)),

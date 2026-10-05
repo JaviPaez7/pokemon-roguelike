@@ -9,6 +9,7 @@ import { random } from '../core/Random.js';
 import { talkToMissionClient } from './MissionSystem.js';
 import { canTakeRecruit } from './RecruitSystem.js';
 import { moveRange, getMoveTargets, facingVector } from './MoveTargeting.js';
+import { AI_WEIGHTS, basicAttackMove } from '../core/CombatRules.js';
 
 /** Color del proyectil de un movimiento en línea, según su tipo. */
 const PROJECTILE_COLORS = {
@@ -842,7 +843,10 @@ export class CombatHandler {
    * @param {number} attackerId
    * @param {number} defenderId - Objetivo principal
    * @param {{ regularAttack?: boolean, moveIndex?: number|null, moveId?: number|null }} [options]
-   *   `moveId`: movimiento elegido por la IA (si no, lo elige selectBestMove)
+   *   `regularAttack`: el ataque básico (sin PP ni tipo). `moveId`: movimiento
+   *   elegido por la IA; si no, lo elige selectBestMove entre sus movimientos y
+   *   el ataque básico.
+   * @returns {{ success: boolean, type?: string }}
    */
   handleCombat(attackerId, defenderId, options = {}) {
     const { regularAttack = false, moveIndex = null, moveId = null } = options;
@@ -898,20 +902,8 @@ export class CombatHandler {
     let moveSelected = null;
 
     if (regularAttack) {
-      // Ataque básico: no consume PP (Mystery Dungeon); escala con nivel
-      const atkType = (attackerInfo.types && attackerInfo.types[0]) || 'normal';
-      const lvl = attackerInfo.level || 1;
-      moveSelected = {
-        id: -1,
-        name: 'Ataque',
-        type: atkType,
-        power: Math.max(15, Math.min(45, 12 + lvl * 2)),
-        pp: 99,
-        accuracy: 95,
-        damageClass: 'physical',
-        effect: null,
-        description: 'Ataque básico sin PP'
-      };
+      // Ataque básico: sin PP y sin tipo, como en Mundo Misterioso (combat.json)
+      moveSelected = basicAttackMove(attackerInfo);
     } else if (attackerId === game._playerId) {
       const idx = moveIndex !== null ? moveIndex : game._selectedMoveIndex;
       const moveSlot = attackerInfo.currentMoves[idx] || attackerInfo.currentMoves[0];
@@ -927,8 +919,12 @@ export class CombatHandler {
     } else if (moveId != null) {
       moveSelected = game.movesData.find(m => m.id === moveId) || null;
     } else {
-      const defenderFighter = game.entityManager.getComponent(defenderId, 'fighter');
-      moveSelected = selectBestMove(attackerInfo, defenderInfo, game.movesData, game.typeChart, attackerFighter, defenderFighter);
+      // IA junto a su objetivo: un movimiento o el ataque básico (lo que más valga)
+      const em = game.entityManager;
+      moveSelected = selectBestMove(attackerInfo, defenderInfo, game.movesData, game.typeChart, attackerFighter, em.getComponent(defenderId, 'fighter'), {
+        basicAttack: AI_WEIGHTS.useBasicAttack ? basicAttackMove(attackerInfo) : null,
+        targetIsBoss: em.hasComponent(defenderId, 'boss') || em.hasComponent(defenderId, 'isBoss'),
+      });
     }
 
     if (!moveSelected) {

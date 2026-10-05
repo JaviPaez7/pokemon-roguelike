@@ -1,0 +1,24 @@
+{
+  "basicAttack": {
+    "name": "Ataque",
+    "type": null,
+    "stab": false,
+    "accuracy": 95,
+    "damageClass": "physical",
+    "power": { "base": 12, "perLevel": 2, "min": 15, "max": 45 }
+  },
+  "ai": {
+    "useBasicAttack": true,
+    "stab": 1.5,
+    "superEffective": 1.25,
+    "randomFactor": [0.8, 1.2],
+    "statStageCap": 2,
+    "status": { "chance": 0.25, "setupMinHp": 0.6, "setupLowHp": 0.25, "escapeBelowHp": 0.5 },
+    "heal": [
+      { "below": 0.35, "score": 140 },
+      { "below": 0.55, "score": 90 }
+    ],
+    "bide": { "release": 200, "start": 40, "startMinHp": 0.5, "startLowHp": 10 },
+    "effects": { "transform": 20, "conversion": 20, "mimic": 45, "random_move": 55, "ohko": 70 }
+  }
+}

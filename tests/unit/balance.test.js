@@ -169,6 +169,33 @@ describe('jefes', () => {
   });
 });
 
+describe('combate: ataque básico sin tipo e IA', () => {
+  /** Parte de sus turnos que la IA gasta en estados, como mucho (combat.json: `status.chance`). */
+  const MAX_STATUS_SHARE = 0.35;
+  let combat;
+  beforeAll(() => {
+    const { story, postgame } = storyAndPostgame(KILL_RATES.tipico);
+    combat = combatTable([...story.dungeons, ...postgame.dungeons]);
+  });
+
+  it('cada protagonista puede dañar a cada jefe: el ataque básico no tiene tipo', () => {
+    for (const { boss } of combat.filter((c) => c.boss)) {
+      for (const h of boss.perHero) expect(h.heroHits, `${h.name} contra ${boss.name}`).toBeLessThan(MAX_HITS);
+    }
+  });
+
+  it('los salvajes de todas las zonas hacen daño al protagonista típico', () => {
+    for (const c of combat) expect(c.wild.foeHits, c.zone).toBeLessThan(MAX_HITS);
+  });
+
+  it('salvajes y jefes atacan más que usan estados', () => {
+    for (const c of combat) {
+      expect(c.wild.foeStatusShare, c.zone).toBeLessThanOrEqual(MAX_STATUS_SHARE);
+      if (c.boss) expect(c.boss.foeStatusShare, c.boss.name).toBeLessThanOrEqual(MAX_STATUS_SHARE);
+    }
+  });
+});
+
 describe('economía', () => {
   it('las misiones pagan y puntúan más cuanto más alto es su rango', () => {
     const ranks = missionTable();
