@@ -5,7 +5,7 @@
  */
 
 import { GAME_STATES, MAX_PARTY_SIZE } from '../../constants.js';
-import { floorCount } from '../../core/Dungeons.js';
+import { floorCount, levelBonus } from '../../core/Dungeons.js';
 import {
   bankDeposit,
   bankWithdraw,
@@ -17,7 +17,7 @@ import {
   STORAGE_STACK_MAX,
   profileDungeons,
 } from '../../core/Profile.js';
-import { townShopStock } from '../../core/Shop.js';
+import { townShopStock, shopNote } from '../../core/Shop.js';
 import { startExpedition } from '../../core/Expedition.js';
 import { escortsToJoin } from '../../core/Missions.js';
 import { enterTown, leaveExitTile, BASE_FRONT } from '../../core/TownSession.js';
@@ -65,12 +65,19 @@ function itemName(ui, itemId) {
 
 // ─── Tienda de Kecleon ─────────────────────────────────────────────────────
 
-/** @param {UIManager} ui */
+/**
+ * La tienda del pueblo: lo básico, los surtidos de rango abiertos, las
+ * novedades del día y la siguiente mochila (core/Shop.js).
+ * @param {UIManager} ui
+ */
 export function openTownShop(ui) {
   const game = ui.game;
   const em = game.entityManager;
   const kecleon = em.getEntitiesWithComponents('npcTown').find((id) => em.getComponent(id, 'npcTown').role === 'shop');
-  em.setComponent(kecleon, 'npcMerchant', { items: townShopStock(game.profile.day, game.itemsData) });
+  em.setComponent(kecleon, 'npcMerchant', {
+    items: townShopStock(game.profile.day, game.itemsData, game.profile),
+    note: shopNote(game.profile),
+  });
   openMerchantMenu(ui, kecleon);
 }
 
@@ -301,10 +308,13 @@ function confirmDungeon(ui, dungeon) {
   const team = game.profile.teamUids.map((uid) => getMember(game.profile, uid).name).join(', ');
   // Clientes de escolta de esta mazmorra: los que irán y los que no caben
   const escorts = escortsToJoin(game.profile, dungeon, MAX_PARTY_SIZE - game.profile.teamUids.length);
+  // Los picos del posjuego suben de nivel según cuántos se han hecho: se avisa
+  const bonus = levelBonus(dungeon.id, game.profile.clearedDungeons);
+  const stronger = bonus ? `<br>Tras vuestras victorias en los otros picos, aquí os esperan Pokémon más fuertes (+${bonus} niveles).` : '';
   simpleMenu(ui, {
     type: 'town_dungeon_confirm',
     title: dungeon.name.toUpperCase(),
-    text: `${dungeon.description}<br>${floorCount(dungeon)} pisos · Equipo: ${team}<br>Llevas ${game.coins} Poké y ${game.inventory.length} objetos en la mochila.`,
+    text: `${dungeon.description}${stronger}<br>${floorCount(dungeon)} pisos · Equipo: ${team}<br>Llevas ${game.coins} Poké y ${game.inventory.length} objetos en la mochila.`,
     width: 360,
     onCancel: () => openDungeonSelect(ui),
     options: [

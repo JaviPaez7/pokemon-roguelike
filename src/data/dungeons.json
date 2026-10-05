@@ -7,6 +7,20 @@
       760
     ]
   },
+  "levelScaling": [
+    {
+      "dungeons": [
+        "cumbre_escarcha",
+        "pico_tronador",
+        "caldera_ascua"
+      ],
+      "levels": [
+        0,
+        4,
+        8
+      ]
+    }
+  ],
   "dungeons": [
     {
       "id": "bosque_verde",

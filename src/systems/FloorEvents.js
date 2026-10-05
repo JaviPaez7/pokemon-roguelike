@@ -1,5 +1,6 @@
 import { RNG } from 'rot-js';
 import { MAX_PARTY_SIZE } from '../constants.js';
+import { merchantStock } from '../core/Shop.js';
 
 /**
  * Si puede salir un evento (mercader, tesoro, viento…) en un piso. En el
@@ -189,6 +190,7 @@ function findFreeTileInRoom(room, game) {
  * @param {import('../core/Game.js').Game} game
  * @param {number} x
  * @param {number} y
+ * @param {import('../core/Shop.js').ShopEntry[] | null} [presetItems] - Catálogo guardado (al cargar)
  */
 export function createMerchantNPC(game, x, y, presetItems = null) {
   const id = game.entityManager.createEntity();
@@ -226,65 +228,12 @@ export function createMerchantNPC(game, x, y, presetItems = null) {
     loaded: false
   });
 
-  // Catálogo útil: comida, curación, ether… (evitar basura)
-  const preferredTypes = new Set([
-    'heal', 'food', 'pp_restore', 'pp_restore_full',
-    'seed', 'evolution_stone', 'stat_boost', 'gummi', 'status_cure',
-    'escape', 'revive', 'full_heal'
-  ]);
-  const preferredIds = new Set([
-    'apple', 'big_apple', 'oran_berry', 'ether', 'max_elixir',
-    'potion', 'super_potion', 'reviver_seed',
-    'escape_rope', 'antidote', 'paralyze_heal', 'burn_heal', 'awakening', 'full_heal'
-  ]);
-  const pool = game.itemsData.filter(i =>
-    (preferredIds.has(i.id) || preferredTypes.has(i.type)) && !i.unique
-  );
-  const itemsDB = pool.length >= 3 ? pool : game.itemsData.filter((i) => !i.unique);
-
-  const numItems = 4 + Math.floor(RNG.getUniform() * 2); // 4 a 5
-  const selectedItems = [];
-  const used = new Set();
-  const floorMult = 1 + Math.min(1.5, (game._currentFloor || 1) * 0.04);
-
-  const pushItem = (item) => {
-    if (!item || used.has(item.id)) return;
-    used.add(item.id);
-    let base = Math.max(10, Math.floor(18 / (item.rarity || 0.1)));
-    if ((game._currentFloor || 1) <= 5 && (item.id === 'apple' || item.id === 'potion' || item.id === 'ether' || item.id === 'oran_berry')) {
-      base = Math.floor(base * 0.65);
-    }
-    const price = Math.min(250, Math.max(8, Math.floor(base * floorMult)));
-    selectedItems.push({
-      id: item.id,
-      name: item.name,
-      price,
-      description: item.description
-    });
-  };
-
-  // Siempre algo útil de supervivencia
-  const must = ['apple', 'potion', 'oran_berry'];
-  if ((game._currentFloor || 1) <= 8) must.push('ether');
-  if ((game._currentFloor || 1) >= 10) must.push('reviver_seed');
-  for (const mustId of must) {
-    pushItem(game.itemsData.find(i => i.id === mustId));
-  }
-
-  while (selectedItems.length < numItems) {
-    let item = itemsDB[Math.floor(RNG.getUniform() * itemsDB.length)];
-    let tries = 0;
-    while (used.has(item.id) && tries < 12) {
-      item = itemsDB[Math.floor(RNG.getUniform() * itemsDB.length)];
-      tries++;
-    }
-    if (used.has(item.id)) break;
-    pushItem(item);
-  }
-
-  game.entityManager.setComponent(id, 'npcMerchant', {
-    items: (presetItems && presetItems.length) ? presetItems : selectedItems
-  });
+  // Catálogo y precios (con `price` de items.json, el recargo del piso y sin
+  // objetos únicos): core/Shop.js y shop.json. Al cargar, el que se guardó
+  const items = presetItems && presetItems.length
+    ? presetItems
+    : merchantStock(game.itemsData, game._currentFloor || 1, () => RNG.getUniform());
+  game.entityManager.setComponent(id, 'npcMerchant', { items });
 
   game.renderer?.entityRenderer?.pmd?.preload([352]);
 }
@@ -314,14 +263,17 @@ export function restoreMerchantNPC(game, x, y, items) {
  * 44), pero sin pasar de `margin` niveles por encima del salvaje más fuerte de
  * la zona. En el posjuego el piso global (51 a 84) ya no dice nada del nivel:
  * sin tope, en el jardín de Mew habría amistosos de nivel 84.
+ *
+ * En una zona con los niveles subidos (`levelBonus`, de `scaledZone`: los
+ * picos según cuántos se han hecho), el amistoso sube lo mismo que los salvajes.
  * @param {number} globalFloor
- * @param {{ levelRange?: [number, number] } | null | undefined} zone
+ * @param {{ levelRange?: [number, number], levelBonus?: number } | null | undefined} zone
  * @param {number} [margin] - `friendlyLevelMargin` en floors.json
  * @returns {number}
  */
 export function friendlyLevel(globalFloor, zone, margin = Infinity) {
   const cap = zone?.levelRange ? zone.levelRange[1] + margin : Infinity;
-  return Math.max(1, Math.min(globalFloor || 1, cap));
+  return Math.max(1, Math.min((globalFloor || 1) + (zone?.levelBonus ?? 0), cap));
 }
 
 /**

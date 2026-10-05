@@ -23,6 +23,9 @@
  * - Sin repetir mazmorras y sin contar misiones, casas de monstruos, caramelos
  *   ni amistosos: la única experiencia es la de los salvajes que aparecen al
  *   entrar en cada piso y la del jefe.
+ * - Los picos del posjuego suben de nivel según cuántos se han hecho antes
+ *   (`levelBonus`): cada simulación los sube según el orden en que los hace y
+ *   lo apunta en `bonus`; `postgameOrders` prueba todos los órdenes.
  * - Dos ritmos: `todo` (el equipo derrota a todos los salvajes de cada piso, el
  *   máximo sin repetir) y `tipico` (a `TYPICAL_KILL_RATE` de ellos).
  * - «Protagonista típico»: la mediana de los nueve protagonistas del test de
@@ -39,8 +42,8 @@
  * Réplicas (la fórmula está en una función que no se exporta o en la interfaz):
  * niveles y número de salvajes y PS del jefe (FloorManager), experiencia
  * repartida (ActionSystem), Metrónomo (executeMove), Poké al derrotar y botín
- * del jefe (GameEvents), tesoros (FloorEvents), precio de venta (MerchantMenu)
- * y tripa (Game).
+ * del jefe (GameEvents), tesoros (FloorEvents) y tripa (Game). Los precios de
+ * compra y de venta y el surtido de la tienda salen de core/Shop.js.
  */
 
 import pokemonData from '../src/data/pokemon.json';
@@ -54,12 +57,23 @@ import personalityData from '../src/data/personality.json';
 import { MAP_WIDTH, MAP_HEIGHT } from '../src/constants.js';
 import { floorSeed, random, setSeed } from '../src/core/Random.js';
 import { TurnManager } from '../src/core/TurnManager.js';
-import { DUNGEONS, WIND } from '../src/core/Dungeons.js';
-import { DIFFICULTIES, MISSION_RULES, rewardMoney, rewardPoints } from '../src/core/Missions.js';
-import { buyPrice, townShopStock, SHOP_STAPLES } from '../src/core/Shop.js';
+import { DUNGEONS, WIND, LEVEL_SCALING, levelBonus, scaledZone } from '../src/core/Dungeons.js';
+import { DIFFICULTIES, MISSION_RULES, difficultyFor, rewardMoney, rewardPoints } from '../src/core/Missions.js';
+import {
+  buyPrice,
+  sellPrice,
+  townShopStock,
+  SHOP_STAPLES,
+  SHOP_TIERS,
+  BAG_UPGRADES,
+  openTiers,
+  nextBagUpgrade,
+  buyBagUpgrade,
+  bagCapacity,
+} from '../src/core/Shop.js';
 import { recruitChance, RECRUITMENT } from '../src/core/Recruitment.js';
 import { gummiIq, IQ_SKILLS } from '../src/core/IQ.js';
-import { RANKS } from '../src/core/Profile.js';
+import { RANKS, rankFor } from '../src/core/Profile.js';
 import { STARTING_LEVEL, STARTING_MONEY } from '../src/core/TownSession.js';
 import { CHALLENGE_LEVEL, CHALLENGE_PRIZE, clearRankPoints } from '../src/core/Expedition.js';
 import { EntityManager } from '../src/entities/EntityManager.js';
@@ -108,10 +122,12 @@ export const HERO_SPECIES = personalityData.natures.map((n) => n.speciesId);
 
 /**
  * @param {number} globalFloor
- * @returns {any} Zona de floors.json de ese piso global
+ * @param {number} [bonus] - Niveles de más de la mazmorra (`levelBonus`)
+ * @returns {any} Zona de floors.json de ese piso global, con los niveles subidos (`scaledZone`)
  */
-export function zoneAt(globalFloor) {
-  return floorsData.zones.find((z) => globalFloor >= z.floors[0] && globalFloor <= z.floors[1]) ?? null;
+export function zoneAt(globalFloor, bonus = 0) {
+  const zone = floorsData.zones.find((z) => globalFloor >= z.floors[0] && globalFloor <= z.floors[1]) ?? null;
+  return scaledZone(zone, bonus);
 }
 
 /** @param {number} globalFloor @returns {boolean} Si es el piso del jefe de su zona */
@@ -126,10 +142,11 @@ export function isBossFloor(globalFloor) {
  * `levelRange` de la zona, donde `base` va del mínimo al máximo a lo largo de
  * la zona.
  * @param {number} globalFloor
+ * @param {number} [bonus] - Niveles de más de la mazmorra (`levelBonus`)
  * @returns {{ level: number, p: number }[]}
  */
-export function wildLevelDistribution(globalFloor) {
-  const zone = zoneAt(globalFloor);
+export function wildLevelDistribution(globalFloor, bonus = 0) {
+  const zone = zoneAt(globalFloor, bonus);
   const [minL, maxL] = zone.levelRange;
   const span = Math.max(1, zone.floors[1] - zone.floors[0]);
   const base = minL + (maxL - minL) * ((globalFloor - zone.floors[0]) / span);
@@ -146,9 +163,13 @@ export function wildLevelDistribution(globalFloor) {
   return [...dist].map(([level, p]) => ({ level, p }));
 }
 
-/** @param {number} globalFloor @returns {number} Nivel medio de los salvajes del piso */
-export function meanWildLevel(globalFloor) {
-  return wildLevelDistribution(globalFloor).reduce((s, d) => s + d.level * d.p, 0);
+/**
+ * @param {number} globalFloor
+ * @param {number} [bonus] - Niveles de más de la mazmorra (`levelBonus`)
+ * @returns {number} Nivel medio de los salvajes del piso
+ */
+export function meanWildLevel(globalFloor, bonus = 0) {
+  return wildLevelDistribution(globalFloor, bonus).reduce((s, d) => s + d.level * d.p, 0);
 }
 
 /**
@@ -185,9 +206,13 @@ function baseExpOf(speciesId) {
   return SPECIES.get(speciesId)?.baseExp || 50;
 }
 
-/** @param {number} globalFloor @returns {number} Experiencia media de un salvaje del piso */
-export function expPerEnemy(globalFloor) {
-  const levels = wildLevelDistribution(globalFloor);
+/**
+ * @param {number} globalFloor
+ * @param {number} [bonus] - Niveles de más de la mazmorra (`levelBonus`)
+ * @returns {number} Experiencia media de un salvaje del piso
+ */
+export function expPerEnemy(globalFloor, bonus = 0) {
+  const levels = wildLevelDistribution(globalFloor, bonus);
   let total = 0;
   for (const s of speciesMix(zoneAt(globalFloor))) {
     for (const l of levels) total += s.p * l.p * calculateExpGained(baseExpOf(s.id), l.level);
@@ -195,9 +220,13 @@ export function expPerEnemy(globalFloor) {
   return total;
 }
 
-/** @param {number} globalFloor @returns {number} Experiencia media de los salvajes de un piso */
-export function expPerFloor(globalFloor) {
-  return expectedEnemies(globalFloor) * expPerEnemy(globalFloor);
+/**
+ * @param {number} globalFloor
+ * @param {number} [bonus] - Niveles de más de la mazmorra (`levelBonus`)
+ * @returns {number} Experiencia media de los salvajes de un piso
+ */
+export function expPerFloor(globalFloor, bonus = 0) {
+  return expectedEnemies(globalFloor) * expPerEnemy(globalFloor, bonus);
 }
 
 /**
@@ -238,7 +267,7 @@ export function zoneSummary(zone) {
 
 /**
  * @typedef {{
- *   dungeonId: string, name: string, floors: [number, number],
+ *   dungeonId: string, name: string, floors: [number, number], bonus: number,
  *   entry: number, atBoss: number | null, exit: number,
  *   wild: [number, number], boss: { name: string, level: number } | null,
  *   byFloor: { floor: number, level: number }[]
@@ -258,17 +287,21 @@ export function creationExp(level) {
 /**
  * Nivel del equipo al hacer unas mazmorras en orden, una vez cada una. Sube de
  * nivel con `grantExperience`, como en el juego. Sin `xp`, el equipo empieza
- * con la experiencia con la que se crea a su nivel (`creationExp`).
+ * con la experiencia con la que se crea a su nivel (`creationExp`). Los niveles
+ * de cada mazmorra suben con `levelBonus` según las completadas antes (`cleared`
+ * y las que van delante en la lista).
  * @param {{ id: string, name: string, floors: [number, number] }[]} dungeons
- * @param {{ level?: number, xp?: number, killRate?: number }} [start]
+ * @param {{ level?: number, xp?: number, killRate?: number, cleared?: string[] }} [start]
  * @returns {{ dungeons: DungeonProgress[], level: number, xp: number }}
  */
-export function simulateProgress(dungeons, { level = STARTING_LEVEL, xp = creationExp(level), killRate = 1 } = {}) {
+export function simulateProgress(dungeons, { level = STARTING_LEVEL, xp = creationExp(level), killRate = 1, cleared = [] } = {}) {
   const info = { speciesId: 133, name: 'Equipo', level, xp, currentMoves: [] };
   const fighter = { hp: 1, maxHp: 1, bonusStats: null };
   const gain = (amount) => grantExperience(info, fighter, amount, pokemonData, movesData);
+  const done = [...cleared];
   const out = [];
   for (const dungeon of dungeons) {
+    const bonus = levelBonus(dungeon.id, done);
     const entry = info.level;
     let atBoss = null;
     const byFloor = [];
@@ -277,17 +310,19 @@ export function simulateProgress(dungeons, { level = STARTING_LEVEL, xp = creati
       byFloor.push({ floor: f, level: info.level });
       if (isBossFloor(f)) {
         atBoss = info.level;
-        gain(bossExp(zoneAt(f)));
+        gain(bossExp(zoneAt(f, bonus)));
       } else {
-        levels.push(...wildLevelDistribution(f).map((d) => d.level));
-        gain(killRate * expPerFloor(f));
+        levels.push(...wildLevelDistribution(f, bonus).map((d) => d.level));
+        gain(killRate * expPerFloor(f, bonus));
       }
     }
-    const lastZone = zoneAt(dungeon.floors[1]);
+    const lastZone = zoneAt(dungeon.floors[1], bonus);
+    done.push(dungeon.id);
     out.push({
       dungeonId: dungeon.id,
       name: dungeon.name,
       floors: dungeon.floors,
+      bonus,
       entry,
       atBoss,
       exit: info.level,
@@ -305,8 +340,90 @@ export function simulateProgress(dungeons, { level = STARTING_LEVEL, xp = creati
  */
 export function storyAndPostgame(killRate) {
   const story = simulateProgress(STORY_DUNGEONS, { killRate });
-  const postgame = simulateProgress(POSTGAME_DUNGEONS, { level: story.level, xp: story.xp, killRate });
+  const postgame = simulateProgress(POSTGAME_DUNGEONS, afterStory(story, killRate));
   return { story, postgame };
+}
+
+/**
+ * Cómo sale el equipo de la historia, para seguir con el posjuego.
+ * @param {{ dungeons: DungeonProgress[], level: number, xp: number }} story
+ * @param {number} killRate
+ */
+function afterStory(story, killRate) {
+  return { level: story.level, xp: story.xp, killRate, cleared: story.dungeons.map((d) => d.dungeonId) };
+}
+
+/**
+ * @template T
+ * @param {T[]} list
+ * @returns {T[][]} Todas las ordenaciones de la lista
+ */
+function permutations(list) {
+  if (list.length <= 1) return [list];
+  return list.flatMap((x, i) => permutations([...list.slice(0, i), ...list.slice(i + 1)]).map((rest) => [x, ...rest]));
+}
+
+/**
+ * El posjuego tras la historia en cada orden posible de las mazmorras que se
+ * hacen en cualquier orden (los tres picos), y después las demás (el jardín).
+ * @param {number} killRate
+ * @returns {{ order: string[], dungeons: DungeonProgress[] }[]}
+ */
+export function postgameOrders(killRate) {
+  const story = simulateProgress(STORY_DUNGEONS, { killRate });
+  const free = anyOrderDungeons();
+  const loose = POSTGAME_DUNGEONS.filter((d) => free.has(d.id));
+  const after = POSTGAME_DUNGEONS.filter((d) => !free.has(d.id));
+  return permutations(loose).map((order) => ({
+    order: order.map((d) => d.id),
+    dungeons: simulateProgress([...order, ...after], afterStory(story, killRate)).dungeons,
+  }));
+}
+
+/**
+ * @typedef {{
+ *   dungeonId: string, name: string, position: number, bonus: number,
+ *   wild: [number, number], boss: { name: string, level: number } | null,
+ *   entry: [number, number], atBoss: [number, number] | null, gap: [number, number] | null
+ * }} OrderSummary
+ * Una mazmorra del posjuego en un puesto (0 = la primera que se hace), con el
+ * rango de lo que sale en los órdenes que la ponen ahí.
+ */
+
+/**
+ * Resume `postgameOrders` por mazmorra y puesto.
+ * @param {{ order: string[], dungeons: DungeonProgress[] }[]} orders
+ * @returns {OrderSummary[]}
+ */
+export function orderSummary(orders) {
+  /** @type {Map<string, { position: number, runs: DungeonProgress[] }>} */
+  const groups = new Map();
+  for (const { dungeons } of orders) {
+    dungeons.forEach((d, position) => {
+      const key = `${d.dungeonId}#${position}`;
+      if (!groups.has(key)) groups.set(key, { position, runs: [] });
+      groups.get(key).runs.push(d);
+    });
+  }
+  /** @param {number[]} values @returns {[number, number]} */
+  const range = (values) => [Math.min(...values), Math.max(...values)];
+  const menu = POSTGAME_DUNGEONS.map((d) => d.id);
+  return [...groups.values()]
+    .map(({ position, runs }) => {
+      const [first] = runs;
+      return {
+        dungeonId: first.dungeonId,
+        name: first.name,
+        position,
+        bonus: first.bonus,
+        wild: first.wild,
+        boss: first.boss,
+        entry: range(runs.map((d) => d.entry)),
+        atBoss: first.boss ? range(runs.map((d) => d.atBoss)) : null,
+        gap: first.boss ? range(runs.map((d) => d.atBoss - d.boss.level)) : null,
+      };
+    })
+    .sort((a, b) => menu.indexOf(a.dungeonId) - menu.indexOf(b.dungeonId) || a.position - b.position);
 }
 
 /**
@@ -677,18 +794,31 @@ function levelAtFloor(progress, globalFloor) {
 }
 
 /**
+ * Niveles de más (`levelBonus`) de la mazmorra con la que una simulación pasa
+ * por un piso global.
+ * @param {DungeonProgress[]} progress
+ * @param {number} globalFloor
+ * @returns {number}
+ */
+export function bonusAtFloor(progress, globalFloor) {
+  return progress.find((d) => d.byFloor.some((f) => f.floor === globalFloor))?.bonus ?? 0;
+}
+
+/**
  * Combate contra los salvajes de cada zona (en su piso de en medio) y contra
- * cada jefe, con el nivel del equipo que da la simulación. Cada enfrentamiento
- * siembra el RNG por su cuenta: los jefes salen igual se calculen o no los
- * salvajes.
+ * cada jefe, con el nivel del equipo que da la simulación y los niveles de más
+ * que la mazmorra tenga en ella (`bonus`). Cada enfrentamiento siembra el RNG
+ * por su cuenta: los jefes salen igual se calculen o no los salvajes.
  * @param {DungeonProgress[]} progress - Historia y posjuego seguidos
  * @param {{ wilds?: boolean }} [options] - `wilds: false` calcula solo los jefes
  */
 export function combatTable(progress, { wilds = true } = {}) {
-  return floorsData.zones.map((zone, i) => {
-    const floor = midFloor(zone);
+  return floorsData.zones.map((baseZone, i) => {
+    const floor = midFloor(baseZone);
+    const bonus = bonusAtFloor(progress, floor);
+    const zone = scaledZone(baseZone, bonus);
     const heroLevel = levelAtFloor(progress, floor);
-    const wildLevel = Math.round(meanWildLevel(floor));
+    const wildLevel = Math.round(meanWildLevel(floor, bonus));
     let wild = null;
     if (wilds) {
       setSeed(MODEL_SEED + i);
@@ -701,19 +831,14 @@ export function combatTable(progress, { wilds = true } = {}) {
       const foe = makeBoss(zone);
       boss = { name: zone.boss.name, level: zone.boss.level, hp: foe.fighter.maxHp, hpMultiplier: bossHpMultiplier(zone.boss), heroLevel: bossHeroLevel, ...matchup(bossHeroLevel, [{ foe, p: 1 }]) };
     }
-    return { zone: zone.name, floor, heroLevel, wildLevel, wild, boss };
+    return { zone: zone.name, floor, bonus, heroLevel, wildLevel, wild, boss };
   });
 }
 
 // ─── Economía ────────────────────────────────────────────────────────────────
 
-/**
- * Precio de venta en la tienda. Réplica de `MerchantMenu.openSellMenu`.
- * @param {{ rarity?: number }} item
- */
-export function sellPrice(item) {
-  return Math.max(8, Math.min(120, Math.floor(12 / Math.max(0.05, item.rarity || 0.2))));
-}
+/** Lo que paga Kecleon por un objeto (core/Shop.js). */
+export { sellPrice };
 
 /**
  * Poké medios por salvaje derrotado. Réplica de GameEvents (`pokemon_fainted`):
@@ -832,21 +957,37 @@ export function bellyDrain(globalFloor) {
 }
 
 /**
+ * Poké que se recogen en una expedición completa a una mazmorra: salvajes
+ * derrotados, botín del jefe y tesoros de los eventos de piso.
+ * @param {{ floors: [number, number] }} dungeon
+ * @param {number} killRate
+ * @param {number} [bonus] - Niveles de más de la mazmorra (`levelBonus`)
+ * @returns {number}
+ */
+export function groundMoney(dungeon, killRate, bonus = 0) {
+  let ground = 0;
+  for (let f = dungeon.floors[0]; f <= dungeon.floors[1]; f++) {
+    const coins = wildLevelDistribution(f, bonus).reduce((s, d) => s + d.p * coinsPerKill(d.level), 0);
+    ground += killRate * expectedEnemies(f) * coins + treasureCoins(f);
+    if (isBossFloor(f)) ground += bossCoins(f);
+  }
+  return ground;
+}
+
+/**
  * Dinero de una expedición completa a una mazmorra (primera vez) y lo que se
  * gasta en comida, con los turnos por piso de `windTable`.
  * @param {{ id: string, floors: [number, number] }} dungeon
  * @param {number} killRate
  * @param {number} turnsPerFloor - Turnos medios por piso
+ * @param {number} [bonus] - Niveles de más de la mazmorra (`levelBonus`)
  */
-export function expeditionMoney(dungeon, killRate, turnsPerFloor) {
-  let ground = 0;
+export function expeditionMoney(dungeon, killRate, turnsPerFloor, bonus = 0) {
+  const ground = groundMoney(dungeon, killRate, bonus);
   let items = 0;
   let itemValue = 0;
   let belly = 0;
   for (let f = dungeon.floors[0]; f <= dungeon.floors[1]; f++) {
-    const coins = wildLevelDistribution(f).reduce((s, d) => s + d.p * coinsPerKill(d.level), 0);
-    ground += killRate * expectedEnemies(f) * coins + treasureCoins(f);
-    if (isBossFloor(f)) ground += bossCoins(f);
     items += expectedFloorItems(f);
     itemValue += expectedFloorItems(f) * floorItemValue(f);
     belly += (isBossFloor(f) ? 40 : turnsPerFloor) * bellyDrain(f);
@@ -865,8 +1006,9 @@ export function expeditionMoney(dungeon, killRate, turnsPerFloor) {
 }
 
 /**
- * Precios de la tienda del pueblo: lo básico y lo que puede salir como novedad
- * (con la frecuencia en 120 días), con su precio de compra y de venta.
+ * Precios de la tienda del pueblo: lo básico, lo que puede salir como novedad
+ * (con la frecuencia en 120 días) y lo de los surtidos de rango (`tier`: su
+ * nombre), con su precio de compra y de venta.
  */
 export function shopTable() {
   const days = 120;
@@ -874,10 +1016,15 @@ export function shopTable() {
   for (let day = 1; day <= days; day++) {
     for (const entry of townShopStock(day, itemsData)) seen.set(entry.id, (seen.get(entry.id) ?? 0) + 1);
   }
-  return [...seen].map(([id, n]) => {
+  const row = (id, days, tier = null) => {
     const item = ITEMS.get(id);
-    return { id, name: item.name, type: item.type, staple: SHOP_STAPLES.includes(id), days: n / days, buy: buyPrice(item), sell: sellPrice(item), fixed: item.price != null };
-  }).sort((a, b) => Number(b.staple) - Number(a.staple) || a.buy - b.buy || a.id.localeCompare(b.id));
+    return { id, name: item.name, type: item.type, staple: SHOP_STAPLES.includes(id), tier, days, buy: buyPrice(item), sell: sellPrice(item), fixed: item.price != null };
+  };
+  const tierOrder = (r) => (r.tier ? SHOP_TIERS.findIndex((t) => t.name === r.tier) : r.staple ? -1 : SHOP_TIERS.length);
+  return [
+    ...[...seen].map(([id, n]) => row(id, n / days)),
+    ...SHOP_TIERS.flatMap((tier) => tier.items.map((id) => row(id, 1, tier.name))),
+  ].sort((a, b) => tierOrder(a) - tierOrder(b) || a.buy - b.buy || a.id.localeCompare(b.id));
 }
 
 /**
@@ -898,6 +1045,115 @@ export function priceInversions(shop) {
     if (worse) out.push({ better, worse });
   }
   return out;
+}
+
+/** Misiones que cumple el equipo en cada expedición, en el modelo de gasto y de rango. */
+export const MISSIONS_PER_EXPEDITION = 1;
+
+/** @param {{ floors: [number, number] }} dungeon @returns {number} Piso global de en medio */
+function midDungeonFloor(dungeon) {
+  return Math.floor((dungeon.floors[0] + dungeon.floors[1]) / 2);
+}
+
+/**
+ * Lo que se gana en una expedición a una mazmorra, la primera vez: los Poké del
+ * suelo y `MISSIONS_PER_EXPEDITION` misiones medias. Sin vender objetos.
+ * @param {{ floors: [number, number] }} dungeon
+ * @param {number} killRate
+ * @returns {number}
+ */
+export function expeditionIncome(dungeon, killRate) {
+  return groundMoney(dungeon, killRate) + MISSIONS_PER_EXPEDITION * meanMissionMoney(midDungeonFloor(dungeon));
+}
+
+/**
+ * Puntos de rango de una expedición a una mazmorra, la primera vez: los de
+ * completarla y los de `MISSIONS_PER_EXPEDITION` misiones de su dificultad,
+ * con la mezcla de tipos del tablón.
+ * @param {import('../src/core/Dungeons.js').Dungeon} dungeon
+ * @returns {number}
+ */
+export function expeditionRankPoints(dungeon) {
+  const difficulty = difficultyFor(midDungeonFloor(dungeon));
+  const types = Object.entries(MISSION_RULES.types);
+  const total = types.reduce((s, [, t]) => s + t.weight, 0);
+  const mission = types.reduce((s, [type, t]) => s + (t.weight / total) * rewardPoints(type, difficulty), 0);
+  return clearRankPoints(dungeon, true) + MISSIONS_PER_EXPEDITION * mission;
+}
+
+/**
+ * @typedef {{ id: string, name: string, price: number, tier: string | null, upgrade: boolean }} Offer
+ */
+
+/**
+ * Lo que el Kecleon del pueblo vende siempre a un perfil: lo básico, los
+ * surtidos de rango abiertos y la siguiente mochila si ya la vende. Sin las
+ * novedades del día, que van al azar.
+ * @param {import('../src/core/Shop.js').ShopProfile} profile
+ * @returns {Offer[]}
+ */
+export function shopOffers(profile) {
+  return townShopStock(1, itemsData, profile)
+    .filter((entry) => SHOP_STAPLES.includes(entry.id) || entry.tier)
+    .map((entry) => ({ id: entry.id, name: entry.name, price: entry.price, tier: entry.tier ?? null, upgrade: !!entry.upgrade }));
+}
+
+/**
+ * En qué se puede gastar el dinero en cada tramo del juego: la historia y el
+ * posjuego en orden, una expedición a cada mazmorra (la primera vez, al ritmo
+ * dado) con `MISSIONS_PER_EXPEDITION` misiones. Por tramo:
+ * - el rango al entrar y los surtidos abiertos (por el rango o por la historia),
+ *   con lo que traen los que se acaban de abrir;
+ * - las mochilas que se compran al entrar si el equipo ahorra todo lo demás;
+ * - lo que se gana en la expedición (`expeditionIncome`) y lo más caro de lo que
+ *   se vende siempre que se paga con eso (`best`).
+ * @param {number} [killRate]
+ */
+export function spendingTable(killRate = KILL_RATES.tipico) {
+  const profile = { rankPoints: 0, clearedDungeons: [], story: { seen: [] }, upgrades: { bag: 0 } };
+  let savings = STARTING_MONEY;
+  /** @type {string[]} */
+  let opened = [];
+  return [...STORY_DUNGEONS, ...POSTGAME_DUNGEONS].map((dungeon) => {
+    const tiers = openTiers(profile);
+    const fresh = tiers.filter((t) => !opened.includes(t.id));
+    opened = tiers.map((t) => t.id);
+    const byStory = openTiers({ ...profile, rankPoints: 0 }).map((t) => t.id);
+    const freshOffers = shopOffers(profile).filter((o) => fresh.some((t) => t.id === o.tier));
+    const newTiers = fresh.map((t) => ({
+      id: t.id,
+      name: t.name,
+      byRank: !byStory.includes(t.id),
+      items: freshOffers.filter((o) => o.tier === t.id),
+    }));
+    const savingsAtEntry = savings;
+    const bought = [];
+    for (let next = nextBagUpgrade(profile); next?.open && savings >= next.price; next = nextBagUpgrade(profile)) {
+      savings = buyBagUpgrade(profile, savings).wallet;
+      bought.push({ price: next.price, capacity: next.capacity });
+    }
+    const income = expeditionIncome(dungeon, killRate);
+    const offers = shopOffers(profile);
+    const best = offers.filter((o) => o.price <= income).reduce((a, b) => (!a || b.price > a.price ? b : a), null);
+    const row = {
+      dungeonId: dungeon.id,
+      name: dungeon.name,
+      rank: rankFor(profile.rankPoints).name,
+      rankPoints: profile.rankPoints,
+      tiers: tiers.map((t) => t.name),
+      newTiers,
+      savingsAtEntry,
+      bought,
+      bagSlots: bagCapacity(profile),
+      income,
+      best,
+      offers,
+    };
+    savings += income;
+    profile.clearedDungeons.push(dungeon.id);
+    profile.rankPoints += expeditionRankPoints(dungeon);
+    return row;
+  });
 }
 
 // ─── Viento ──────────────────────────────────────────────────────────────────
@@ -1034,6 +1290,7 @@ export function windTable(runs = 6, fightTurns = new Map()) {
  */
 export function recruitTable(progress, killRate) {
   return DUNGEONS.filter((d) => !d.challenge).map((dungeon) => {
+    const bonus = progress.find((d) => d.dungeonId === dungeon.id)?.bonus ?? 0;
     let offers = 0;
     let chanceSum = 0;
     let n = 0;
@@ -1043,7 +1300,7 @@ export function recruitTable(progress, killRate) {
       const leader = levelAtFloor(progress, f);
       let floorChance = 0;
       for (const s of speciesMix(zoneAt(f))) {
-        for (const l of wildLevelDistribution(f)) {
+        for (const l of wildLevelDistribution(f, bonus)) {
           const c = recruitChance({ speciesId: s.id, captureRate: SPECIES.get(s.id).captureRate, targetLevel: l.level, leaderLevel: leader });
           floorChance += s.p * l.p * c;
           perSpecies.set(s.id, Math.max(perSpecies.get(s.id) ?? 0, c));
@@ -1057,9 +1314,9 @@ export function recruitTable(progress, killRate) {
     // Un recluta es el salvaje tal cual lo creó createPokemon: su nivel y la
     // experiencia con la que llega. Un miembro del equipo, justo al subir.
     const mid = Math.floor((dungeon.floors[0] + dungeon.floors[1] - 1) / 2);
-    const recruitLevel = Math.round(meanWildLevel(mid));
+    const recruitLevel = Math.round(meanWildLevel(mid, bonus));
     const next = expForLevel(recruitLevel + 1);
-    const kills = (amount) => amount / expPerEnemy(mid);
+    const kills = (amount) => amount / expPerEnemy(mid, bonus);
     return {
       dungeonId: dungeon.id,
       name: dungeon.name,
@@ -1109,10 +1366,11 @@ export function buildReport({ windRuns = 6 } = {}) {
   const fightTurns = new Map(combat.map((c) => [c.zone, c.wild.heroHits]));
   const wind = windTable(windRuns, fightTurns);
   const turnsPerFloor = new Map(wind.map((w) => [w.dungeonId, w.full]));
+  const bonusOf = new Map(typicalAll.map((d) => [d.dungeonId, d.bonus]));
   const economy = DUNGEONS.filter((d) => !d.challenge).map((d) => ({
     dungeonId: d.id,
     name: d.name,
-    ...expeditionMoney(d, KILL_RATES.tipico, turnsPerFloor.get(d.id)),
+    ...expeditionMoney(d, KILL_RATES.tipico, turnsPerFloor.get(d.id), bonusOf.get(d.id)),
   }));
   const towerTypical = challengeTower(KILL_RATES.tipico);
   const towerFull = challengeTower(KILL_RATES.todo);
@@ -1129,7 +1387,9 @@ export function buildReport({ windRuns = 6 } = {}) {
     },
     expConfig: EXPERIENCE,
     zones,
+    levelScaling: LEVEL_SCALING,
     progress: { full, typical },
+    orders: { full: orderSummary(postgameOrders(KILL_RATES.todo)), typical: orderSummary(postgameOrders(KILL_RATES.tipico)) },
     tower: { full: towerFull.dungeons, typical: towerTypical.dungeons, prize: CHALLENGE_PRIZE },
     combat,
     missions: missionTable(),
@@ -1137,6 +1397,9 @@ export function buildReport({ windRuns = 6 } = {}) {
     storyClearPoints: STORY_DUNGEONS.reduce((s, d) => s + clearRankPoints(d, true), 0),
     economy,
     shop: shopTable(),
+    spending: spendingTable(KILL_RATES.tipico),
+    bagUpgrades: BAG_UPGRADES.map((u) => ({ ...u, tier: SHOP_TIERS.find((t) => t.id === u.tier)?.name ?? u.tier })),
+    missionsPerExpedition: MISSIONS_PER_EXPEDITION,
     outlaw: { levelBonus: MISSION_RULES.outlaw.levelBonus, hpMultiplier: MISSION_RULES.outlaw.hpMultiplier },
     wind,
     recruit: recruitTable(typicalAll, KILL_RATES.tipico),
@@ -1180,10 +1443,20 @@ export const LIMITS = {
   bossLevelGap: [-4, 4],
   /** Los salvajes del posjuego empiezan a esta distancia (como mucho) del nivel de Mewtwo. */
   postgameStartGap: 6,
+  /** En cualquier orden, el equipo típico entra en un pico como mucho estos niveles por encima de su salvaje más fuerte. */
+  peakEntryOverWild: 0,
   /** El viento da este margen sobre el peor recorrido completo de un piso. */
   windMargin: 1.5,
   /** Un recluta tarda en subir su primer nivel como mucho estas veces lo que un miembro del equipo. */
   recruitSlowdown: 5,
+  /**
+   * En cada tramo, lo más caro que Kecleon vende siempre y se paga con una
+   * expedición cuesta al menos esta parte de lo que se gana en ella: si no,
+   * el dinero se acumula sin nada en qué gastarlo.
+   */
+  shopSinkShare: 0.15,
+  /** Lo que trae un surtido de rango se paga con, como mucho, estas expediciones del tramo en que se abre. */
+  shopMaxExpeditions: 2,
 };
 
 /**
@@ -1215,21 +1488,31 @@ export function findIssues(report) {
   }
 
   // Equipo frente a los jefes. Las mazmorras que se abren a la vez (los tres
-  // picos) se hacen en cualquier orden: la simulación va en el del menú, así
-  // que lo que pase en la segunda o la tercera es una nota, no un aviso
+  // picos) se hacen en cualquier orden y suben de nivel según cuántas se han
+  // hecho (`levelBonus`): con el ritmo típico se miran en todos los órdenes
+  // (`report.orders`), no solo en el del menú
   const parallel = anyOrderDungeons();
   const [lo, hi] = LIMITS.bossLevelGap;
+  /** @param {string} label @param {{ name: string, level: number }} boss @param {number} atBoss @param {string} [when] */
+  const arrival = (label, boss, atBoss, when = '') => {
+    const gap = atBoss - boss.level;
+    return `Equipo ${label} llega a ${boss.name} (${boss.level}) con nivel ${atBoss} (${gap > 0 ? '+' : ''}${gap})${when}.`;
+  };
+  /** @param {OrderSummary} o */
+  const place = (o) => ` si ${o.name} va en ${o.position + 1}.º lugar`;
   for (const [key, label] of [['typical', 'típico'], ['full', 'que lo derrota todo']]) {
     const { story, postgame } = report.progress[key];
     for (const d of [...story.dungeons, ...postgame.dungeons]) {
       if (!d.boss) continue;
       const gap = d.atBoss - d.boss.level;
-      const late = parallel.has(d.dungeonId) && parallel.get(d.dungeonId) > 0;
-      if (key === 'typical' && (gap < lo || gap > hi)) {
-        add('Experiencia', late ? 'nota' : 'aviso', `Equipo ${label} llega a ${d.boss.name} (${d.boss.level}) con nivel ${d.atBoss} (${gap > 0 ? '+' : ''}${gap})${late ? ' si hace su mazmorra después de las otras que se abren con ella' : ''}.`);
-      }
-      if (key === 'full' && gap > hi + 2) add('Experiencia', 'nota', `Equipo ${label} llega a ${d.boss.name} (${d.boss.level}) con nivel ${d.atBoss} (+${gap}).`);
+      if (key === 'typical' && !parallel.has(d.dungeonId) && (gap < lo || gap > hi)) add('Experiencia', 'aviso', arrival(label, d.boss, d.atBoss));
+      if (key === 'full' && gap > hi + 2) add('Experiencia', 'nota', arrival(label, d.boss, d.atBoss));
     }
+  }
+  for (const o of report.orders.typical) {
+    if (!o.boss || !parallel.has(o.dungeonId)) continue;
+    if (o.gap[0] < lo) add('Experiencia', 'aviso', arrival('típico', o.boss, o.atBoss[0], place(o)));
+    if (o.gap[1] > hi) add('Experiencia', 'aviso', arrival('típico', o.boss, o.atBoss[1], place(o)));
   }
 
   // Posjuego
@@ -1238,13 +1521,10 @@ export function findIssues(report) {
   if (mewtwo && Math.abs(firstPost.levelRange[0] - mewtwo.level) > LIMITS.postgameStartGap) {
     add('Posjuego', 'aviso', `El posjuego empieza con salvajes de nivel ${firstPost.levelRange[0]}, lejos de Mewtwo (${mewtwo.level}).`);
   }
-  for (const d of report.progress.typical.postgame.dungeons) {
-    if (d.entry <= d.wild[1]) continue;
-    if (parallel.get(d.dungeonId) > 0) {
-      add('Posjuego', 'nota', `${d.name} se hace en cualquier orden: si va después de las otras, el equipo típico entra con nivel ${d.entry}, por encima de todos sus salvajes (${d.wild.join('-')}).`);
-    } else {
-      add('Posjuego', 'aviso', `En ${d.name} el equipo típico entra con nivel ${d.entry}, por encima de todos sus salvajes (${d.wild.join('-')}).`);
-    }
+  for (const o of report.orders.typical) {
+    const free = parallel.has(o.dungeonId);
+    if (o.entry[1] <= o.wild[1] + (free ? LIMITS.peakEntryOverWild : 0)) continue;
+    add('Posjuego', 'aviso', `En ${o.name} el equipo típico entra con nivel ${o.entry[1]}, por encima de todos sus salvajes (${o.wild.join('-')})${free ? place(o) : ''}.`);
   }
 
   // Combate
@@ -1278,6 +1558,16 @@ export function findIssues(report) {
   }
   for (const { better, worse } of priceInversions(report.shop)) {
     add('Economía', 'aviso', `${better.name} (rareza ${ITEMS.get(better.id).rarity}) cuesta ${better.buy}, lo mismo o menos que ${worse.name} (rareza ${ITEMS.get(worse.id).rarity}), y hace más.`);
+  }
+  for (const s of report.spending) {
+    if (!s.best || s.best.price < LIMITS.shopSinkShare * s.income) {
+      add('Economía', 'aviso', `En ${s.name} se ganan ${fmt(s.income)} Poké por expedición y lo más caro que Kecleon vende siempre y se paga con eso es ${s.best ? `${s.best.name} (${s.best.price})` : 'nada'}: menos del ${Math.round(LIMITS.shopSinkShare * 100)} %.`);
+    }
+    for (const tier of s.newTiers) {
+      for (const o of tier.items.filter((i) => i.price > LIMITS.shopMaxExpeditions * s.income)) {
+        add('Economía', 'aviso', `${tier.name} se abre en ${s.name} con ${o.name} a ${o.price} Poké: más de ${LIMITS.shopMaxExpeditions} expediciones de ese tramo (${fmt(s.income)} cada una).`);
+      }
+    }
   }
 
   // Viento

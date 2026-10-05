@@ -1,0 +1,60 @@
+{
+  "town": {
+    "staples": ["apple", "oran_berry", "potion", "reviver_seed", "escape_rope", "antidote"],
+    "dailyExtras": 3,
+    "rotatingTypes": ["heal", "heal_percent", "food", "status_cure", "pp_restore", "pp_restore_full", "gummi", "seed", "revive", "held"]
+  },
+  "prices": { "rarityBase": 18, "min": 8, "max": 250 },
+  "sell": { "rarityBase": 12, "min": 8, "max": 120, "priceShare": 0.3 },
+  "merchant": {
+    "stock": { "min": 4, "max": 5 },
+    "preferredTypes": ["heal", "food", "pp_restore", "pp_restore_full", "seed", "evolution_stone", "stat_boost", "gummi", "status_cure", "escape", "revive", "full_heal"],
+    "preferredItems": ["apple", "big_apple", "oran_berry", "ether", "max_elixir", "potion", "super_potion", "reviver_seed", "escape_rope", "antidote", "paralyze_heal", "burn_heal", "awakening", "full_heal"],
+    "always": [
+      { "id": "apple" },
+      { "id": "potion" },
+      { "id": "oran_berry" },
+      { "id": "ether", "upToFloor": 8 },
+      { "id": "reviver_seed", "fromFloor": 10 }
+    ],
+    "surchargePerFloor": 0.04,
+    "maxSurcharge": 1.5,
+    "earlyDiscount": { "upToFloor": 5, "factor": 0.65, "items": ["apple", "potion", "ether", "oran_berry"] }
+  },
+  "tiers": [
+    {
+      "id": "bronce",
+      "name": "Surtido Bronce",
+      "rank": "bronce",
+      "unlock": { "cleared": "bosque_verde" },
+      "items": ["red_gummi", "blue_gummi", "yellow_gummi", "green_gummi", "clear_gummi"]
+    },
+    {
+      "id": "plata",
+      "name": "Surtido Plata",
+      "rank": "plata",
+      "unlock": { "cleared": "monte_lunar" },
+      "items": ["full_restore", "fire_stone", "water_stone", "thunder_stone", "leaf_stone", "moon_stone"]
+    },
+    {
+      "id": "oro",
+      "name": "Surtido Oro",
+      "rank": "oro",
+      "unlock": { "cleared": "isla_volcanica" },
+      "items": ["munch_belt", "guard_scarf"]
+    },
+    {
+      "id": "diamante",
+      "name": "Surtido Diamante",
+      "rank": "diamante",
+      "unlock": { "cleared": "jardin_primer_sueno" },
+      "items": ["rare_candy"]
+    }
+  ],
+  "bag": {
+    "upgrades": [
+      { "slots": 8, "price": 1000, "tier": "bronce" },
+      { "slots": 8, "price": 3000, "tier": "plata" }
+    ]
+  }
+}

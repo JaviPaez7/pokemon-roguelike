@@ -63,6 +63,35 @@ function signed(value) {
 }
 
 /**
+ * Un rango de niveles `[a, b]` («58-59»), o uno solo si coinciden.
+ * @param {[number, number]} range
+ */
+function span([a, b]) {
+  return a === b ? String(a) : `${a}-${b}`;
+}
+
+/**
+ * Un rango de diferencias de nivel `[a, b]` («-1 a 0»), o una sola si coinciden.
+ * @param {[number, number]} range
+ */
+function signedSpan([a, b]) {
+  return a === b ? signed(a) : `${signed(a)} a ${signed(b)}`;
+}
+
+/**
+ * «a, b y c».
+ * @param {string[]} items
+ */
+function list(items) {
+  return items.length > 1 ? `${items.slice(0, -1).join(', ')} y ${items.at(-1)}` : items.join('');
+}
+
+/** @param {number} bonus - Niveles de más de la mazmorra (`levelBonus`) */
+function extra(bonus) {
+  return bonus ? ` (+${bonus})` : '';
+}
+
+/**
  * @param {string[]} headers
  * @param {(string | number)[][]} rows
  */
@@ -118,6 +147,11 @@ out.push(
     ]),
   ),
 );
+for (const g of report.levelScaling) {
+  const names = g.dungeons.map((id) => report.progress.typical.postgame.dungeons.find((d) => d.dungeonId === id)?.name ?? id);
+  para('');
+  para(`${list(names)} se hacen en cualquier orden: sus niveles (salvajes, jefe, amistosos, forajidos y escoltas) suben ${list(g.levels.map((v) => `+${v}`))} según cuántos de los otros se han completado ya (levelScaling en dungeons.json). En esta tabla, sin subir.`);
+}
 
 /**
  * @param {any[]} typical
@@ -130,7 +164,7 @@ function progressTable(typical, full) {
       const f = full[i];
       return [
         t.name,
-        t.wild.join('-'),
+        `${t.wild.join('-')}${extra(t.bonus)}`,
         t.boss ? `${t.boss.name} ${t.boss.level}` : '—',
         `${t.entry} / ${f.entry}`,
         t.boss ? `${t.atBoss} / ${f.atBoss}` : '—',
@@ -145,6 +179,26 @@ sub('1.2 Historia en orden, sin repetir');
 out.push(progressTable(report.progress.typical.story.dungeons, report.progress.full.story.dungeons));
 sub('1.3 Posjuego, justo después de Mewtwo (en el orden del menú)');
 out.push(progressTable(report.progress.typical.postgame.dungeons, report.progress.full.postgame.dungeons));
+para('');
+para('En cualquier orden: cada mazmorra en cada puesto (1.º = la primera que se hace tras Mewtwo), con lo que sale en todos los órdenes que la ponen ahí.');
+para('');
+out.push(
+  table(
+    ['Mazmorra', 'Puesto', 'Salvajes', 'Jefe', 'Entrada (típ./todo)', 'Ante el jefe (típ./todo)', 'Equipo − jefe (típ./todo)'],
+    report.orders.typical.map((t, i) => {
+      const f = report.orders.full[i];
+      return [
+        t.name,
+        `${t.position + 1}.º`,
+        `${t.wild.join('-')}${extra(t.bonus)}`,
+        t.boss ? `${t.boss.name} ${t.boss.level}` : '—',
+        `${span(t.entry)} / ${span(f.entry)}`,
+        t.boss ? `${span(t.atBoss)} / ${span(f.atBoss)}` : '—',
+        t.boss ? `${signedSpan(t.gap)} / ${signedSpan(f.gap)}` : '—',
+      ];
+    }),
+  ),
+);
 sub('1.4 Torre del Desafío (copias de nivel 5, los 50 pisos seguidos)');
 out.push(progressTable(report.tower.typical, report.tower.full));
 para('');
@@ -161,7 +215,7 @@ out.push(
       c.zone,
       c.floor,
       c.heroLevel,
-      c.wildLevel,
+      `${c.wildLevel}${extra(c.bonus)}`,
       `${hits(c.wild.heroHits)} (${hits(c.wild.heroHitsBest)})`,
       pct(c.wild.heroDamagePct),
       `${hits(c.wild.foeHits)} (${hits(c.wild.foeHitsWorst)}, ${c.wild.worstHero})`,
@@ -176,9 +230,9 @@ const bosses = report.combat.filter((c) => c.boss);
 out.push(
   table(
     ['Jefe', 'Nv.', 'PS', 'Nv. equipo', 'Golpes para derrotarlo (mejor)', 'Daño del prota', 'Golpes que aguanta el prota (peor)', 'Daño del jefe', 'Turnos en estados', 'Acciones del jefe/turno'],
-    bosses.map(({ boss: b }) => [
+    bosses.map(({ boss: b, bonus }) => [
       b.name,
-      b.level,
+      `${b.level}${extra(bonus)}`,
       `${b.hp} (×${n(b.hpMultiplier, 2)})`,
       b.heroLevel,
       `${hits(b.heroHits)} (${hits(b.heroHitsBest)})`,
@@ -223,13 +277,32 @@ sub('3.3 Tienda del pueblo');
 out.push(
   table(
     ['Objeto', 'Tipo', 'Sale', 'Compra', 'Venta'],
-    report.shop.map((s) => [s.name, s.type, s.staple ? 'siempre' : `${pct(s.days)} de los días`, `${s.buy}${s.fixed ? ' (fijo)' : ''}`, s.sell]),
+    report.shop.map((s) => [s.name, s.type, s.staple ? 'siempre' : s.tier ? `siempre desde ${s.tier}` : `${pct(s.days)} de los días`, `${s.buy}${s.fixed ? ' (fijo)' : ''}`, s.sell]),
   ),
 );
 para('');
-para('Compra: `price` de items.json o `floor(18 / rareza)` entre 8 y 250 (core/Shop.js). Venta: `floor(12 / rareza)` entre 8 y 120 (MerchantMenu).');
+para('Compra: `price` de items.json o `floor(18 / rareza)` entre 8 y 250 (core/Shop.js, shop.json). Venta: una parte de `price` o, si no tiene, `floor(12 / rareza)` entre 8 y 120. El Kecleon Mercader de las mazmorras cobra lo mismo con su recargo por piso.');
+para(`Surtidos de rango (shop.json): se abren con el rango o con la historia, lo que llegue antes. Los objetos de un surtido no salen entre las novedades del día. Mochila más grande: ${report.bagUpgrades.map((u) => `+${u.slots} huecos por ${n(u.price)} (${u.tier})`).join(', ')}; se compran una vez y en orden.`);
 sub('3.4 Al caer');
 para('Se pierden todo el dinero de la cartera y toda la mochila salvo los objetos únicos; el banco, el almacén y la plantilla no se tocan (Profile.defeatLosses). Las misiones cumplidas sin cobrar vuelven a quedar pendientes.');
+sub(`3.5 En qué gastar, por tramo (ritmo típico, ${report.missionsPerExpedition} misión por expedición)`);
+out.push(
+  table(
+    ['Mazmorra', 'Rango al entrar', 'Se abre', 'Mochila al entrar', 'Se gana por expedición', 'Lo más caro que se paga con una'],
+    report.spending.map((s) => [
+      s.name,
+      `${s.rank} (${n(s.rankPoints)})`,
+      s.newTiers.length
+        ? s.newTiers.map((t) => `${t.name}${t.byRank ? ' (por rango)' : ''}: ${n(Math.min(...t.items.map((i) => i.price)))}-${n(Math.max(...t.items.map((i) => i.price)))}`).join('; ')
+        : '—',
+      `${s.bagSlots}${s.bought.length ? ` (compra ${s.bought.map((b) => n(b.price)).join(' y ')})` : ''}`,
+      n(s.income),
+      s.best ? `${s.best.name} ${n(s.best.price)} (${pct(s.best.price / s.income)})` : '—',
+    ]),
+  ),
+);
+para('');
+para('Se gana: Poké del suelo y las misiones, sin vender objetos. Mochila: se compra al entrar si el equipo ha ahorrado todo lo demás. «Lo más caro»: de lo que Kecleon vende siempre (lo básico, los surtidos abiertos y la siguiente mochila), sin las novedades del día.');
 
 // ─── 4. Otros ────────────────────────────────────────────────────────────────
 

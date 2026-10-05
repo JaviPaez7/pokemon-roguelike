@@ -27,6 +27,7 @@ import { saveLifetimeStats } from '../ui/menus/StatsMenu.js';
 import { claimRewards, revertDoneMissions, MISSION_TYPE_NAMES } from './Missions.js';
 import { playStory, rescueText } from './StorySession.js';
 import { isUniqueItem } from './Items.js';
+import { bagCapacity, openTiers, newlyOpenTiers } from './Shop.js';
 import { joinEscortGuests, greetEscortGuests } from '../systems/MissionSystem.js';
 
 /** Kit con el que se entra en la Torre del Desafío. */
@@ -149,6 +150,7 @@ export function endExpedition(game, outcome) {
   const challenge = !!dungeon.challenge;
   const lost = outcome === 'defeated' || outcome === 'blown';
   const lines = [];
+  const tiersBefore = openTiers(profile).map((tier) => tier.id);
 
   if (challenge) {
     // Lo de dentro se queda dentro: vuelven la mochila y el dinero de verdad
@@ -174,7 +176,8 @@ export function endExpedition(game, outcome) {
     const claimed = claimRewards(profile, {
       bag: game.inventory,
       wallet: game.coins,
-      maxSlots: game.maxInventorySize,
+      // La mochila de fuera: al volver de la Torre ya es la de verdad
+      maxSlots: bagCapacity(profile),
       itemName,
     });
     game.coins = claimed.wallet;
@@ -199,6 +202,8 @@ export function endExpedition(game, outcome) {
     lines.push(`+${points} puntos de rango.`);
     if (newRank) lines.push(`¡El equipo sube a rango ${newRank.name}!`);
   }
+  const newTiers = newlyOpenTiers(tiersBefore, profile);
+  if (newTiers.length) lines.push(`Kecleon amplía su tienda: ${newTiers.map((tier) => tier.name).join(', ')}.`);
 
   recordLifetimeStats(game, outcome === 'cleared');
   profile.day += 1;
