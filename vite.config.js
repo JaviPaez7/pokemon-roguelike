@@ -37,6 +37,8 @@ export default defineConfig(({ mode }) => ({
               name: 'datos',
               test: new RegExp(`${DATA}(pokemon|moves|items|types|evolutions|floors|dungeons|tilesets|town|personality|recruitment|iq|tips|missions|music)\\.json$`),
             },
+            // Reglas del combate (ataque básico y pesos de la IA), con los demás datos
+            { name: 'datos', test: new RegExp(`${DATA}combat\\.json$`) },
             { name: 'libs', test: /node_modules/ },
           ],
         },

@@ -9,6 +9,29 @@ import { random } from '../core/Random.js';
 import { heldStatMultiplier, heldPreventsStatus, heldName } from '../core/HeldItems.js';
 import { hasIqSkill } from '../core/IQ.js';
 import { aiCanUse } from '../core/MoveSlots.js';
+import { AI_WEIGHTS } from '../core/CombatRules.js';
+import { moveRange } from './MoveTargeting.js';
+
+/** Golpes de un movimiento de 2 a 5 golpes (`multi_hit`) y su probabilidad. */
+const MULTI_HIT_ODDS = [
+  { hits: 2, p: 0.35 },
+  { hits: 3, p: 0.35 },
+  { hits: 4, p: 0.15 },
+  { hits: 5, p: 0.15 },
+];
+
+/**
+ * Golpes medios por turno de un movimiento: los de dos golpes, 2; los de 2 a 5,
+ * 3,1 de media; los que cargan o recargan ocupan dos turnos (0,5).
+ * @param {{ effect?: string | null } | null | undefined} move
+ * @returns {number}
+ */
+export function hitsPerTurn(move) {
+  if (move?.effect === 'multi_hit_2') return 2;
+  if (move?.effect === 'multi_hit') return MULTI_HIT_ODDS.reduce((s, o) => s + o.hits * o.p, 0);
+  if (move?.effect === 'charge' || move?.effect === 'recharge') return 0.5;
+  return 1;
+}
 
 /**
  * Calcula el daño de un movimiento
@@ -295,8 +318,9 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
     }
   }
 
-  // STAB (Same Type Attack Bonus)
-  if ((attackerInfo.types || []).includes(move.type)) {
+  // STAB (Same Type Attack Bonus). `stab` en el movimiento manda (el ataque
+  // básico no tiene tipo y lo dice combat.json); si no, el tipo del atacante
+  if (move.stab ?? (attackerInfo.types || []).includes(move.type)) {
     damage = Math.floor(damage * 1.5);
     result.isSTAB = true;
   }
@@ -415,14 +439,15 @@ export function calculateDamage(attacker, defender, move, attackerInfo, defender
 }
 
 /**
- * Obtiene el multiplicador de efectividad de tipo
+ * Obtiene el multiplicador de efectividad de tipo. Un ataque sin tipo (el
+ * básico) es neutro contra todo.
  * @param {Object} typeChart - { chart: { attackType: { defType: multiplier } } }
- * @param {string} attackType - Tipo del movimiento
+ * @param {string | null | undefined} attackType - Tipo del movimiento
  * @param {string} defenseType - Tipo del defensor
  * @returns {number} Multiplicador (0, 0.5, 1, o 2)
  */
 function getTypeMultiplier(typeChart, attackType, defenseType) {
-  if (!typeChart || !typeChart.chart) return 1;
+  if (!attackType || !typeChart || !typeChart.chart) return 1;
   const attackRow = typeChart.chart[attackType];
   if (!attackRow) return 1;
   const mult = attackRow[defenseType];
@@ -667,15 +692,17 @@ export function executeMove(params) {
     return { success: true, damage: dmg, effectiveness: 1, isCritical: false, isSTAB: false, messages, defenderFainted };
   }
 
-    let hits = 1;
+  let hits = 1;
   if (move.effect === 'multi_hit_2') {
     hits = 2;
   } else if (move.effect === 'multi_hit') {
     const rand = random();
-    if (rand < 0.35) hits = 2;
-    else if (rand < 0.70) hits = 3;
-    else if (rand < 0.85) hits = 4;
-    else hits = 5;
+    let acc = 0;
+    hits = MULTI_HIT_ODDS.at(-1).hits;
+    for (const odds of MULTI_HIT_ODDS) {
+      acc += odds.p;
+      if (rand < acc) { hits = odds.hits; break; }
+    }
   }
 
   let totalDamage = 0;
@@ -1777,117 +1804,368 @@ export function processStatusEffects(entityId, entityManager) {
   return { canAct, damage: statusDamage, messages };
 }
 
+
+// ─── IA: qué movimiento elegir ───────────────────────────────────────────────
+
+/** Estados mayores: un Pokémon solo tiene uno a la vez (applyEffect). */
+const MAJOR_STATUS = ['burn', 'poison', 'paralyze', 'freeze', 'sleep'];
+
+/** Tipos inmunes a cada estado (applyEffect). */
+const STATUS_IMMUNE_TYPES = {
+  burn: ['fire'],
+  paralyze: ['electric'],
+  poison: ['poison', 'steel'],
+  badly_poison: ['poison', 'steel'],
+  freeze: ['ice'],
+};
+
+/** Habilidades que evitan cada estado (applyEffect). */
+const STATUS_IMMUNE_ABILITIES = {
+  paralyze: ['limber'],
+  sleep: ['insomnia', 'vital_spirit'],
+  confuse: ['oblivious'],
+};
+
+/** Bajadas de características del objetivo y habilidades que las evitan (applyEffect). */
+const STAT_DOWNS = {
+  stat_down_attack: { stat: 'attack', blockedBy: ['clear_body', 'hyper_cutter'] },
+  stat_down_defense: { stat: 'defense', blockedBy: ['clear_body'] },
+  stat_down_defense_2: { stat: 'defense', blockedBy: ['clear_body'] },
+  stat_down_speed: { stat: 'speed', blockedBy: ['clear_body'] },
+  stat_down_accuracy: { stat: 'accuracy', blockedBy: ['clear_body'] },
+  stat_down_special: { stat: 'spDef', blockedBy: [] },
+};
+
+/** Subidas de características propias: la característica que sube (applyEffect). */
+const STAT_UPS = {
+  stat_up_attack: 'attack', stat_up_attack_2: 'attack',
+  stat_up_defense: 'defense', stat_up_defense_2: 'defense',
+  stat_up_speed: 'speed', stat_up_speed_2: 'speed',
+  stat_up_special: 'spAtk', stat_up_spAtk: 'spAtk',
+  stat_up_special_2: 'spDef', stat_up_spDef: 'spDef',
+  stat_up_evasion: 'evasion',
+};
+
+/** Movimientos cuyo daño no sale de la potencia (calculateDamage). */
+const FIXED_DAMAGE = ['fixed_20', 'fixed_40', 'level_damage', 'half_hp', 'random_damage', 'counter'];
+
+/** Movimientos que la IA valora aparte: curarse, Venganza y los que copian. */
+const SPECIAL_EFFECTS = ['heal_self', 'rest', 'bide', 'transform', 'conversion', 'mimic'];
+
 /**
- * Selecciona el mejor movimiento para un enemigo
- * @param {Object} attackerInfo - PokemonInfo del atacante
- * @param {Object} defenderInfo - PokemonInfo del defensor
- * @param {Object} movesData - Datos de movimientos (moves.json)
- * @param {Object} typeChart - Datos de tipos
- * @param {Object} attackerFighter - Fighter del atacante
- * @param {Object} defenderFighter - Fighter del defensor
- * @returns {Object|null} Mejor movimiento disponible
+ * @typedef {{
+ *   attackerInfo: Object,
+ *   defenderInfo: Object,
+ *   typeChart: Object,
+ *   attackerFighter?: Object | null,
+ *   defenderFighter?: Object | null,
+ *   targetIsBoss?: boolean,
+ * }} AiContext
  */
-export function selectBestMove(attackerInfo, defenderInfo, movesData, typeChart, attackerFighter, defenderFighter) {
-  if (!attackerInfo.currentMoves || attackerInfo.currentMoves.length === 0) return null;
 
+/**
+ * Cómo lo trata la IA:
+ * - `attack`: quita PS (potencia, daño fijo, golpe fulminante o Metrónomo).
+ * - `special`: curarse, Venganza, Transformación, Conversión y Mimético, con su valor.
+ * - `status`: lo demás (estados, bajadas y subidas de características,
+ *   pantallas, Sustituto, Rugido, Teletransporte…), que se usa de vez en cuando.
+ * @param {Object} move
+ * @returns {'attack' | 'special' | 'status'}
+ */
+export function aiMoveKind(move) {
+  if ((move.power > 0 && move.damageClass !== 'status')
+    || FIXED_DAMAGE.includes(move.effect)
+    || move.effect === 'ohko'
+    || move.effect === 'random_move') return 'attack';
+  if (SPECIAL_EFFECTS.includes(move.effect)) return 'special';
+  return 'status';
+}
+
+/**
+ * Cuánto le queda por mover a una característica antes del tope de la IA
+ * (`statStageCap`): 1 sin cambios, 0 con el tope ya alcanzado.
+ * @param {number} moved - Niveles que ya se ha movido en esa dirección
+ * @returns {number} Entre 0 y 1
+ */
+function stageRoom(moved) {
+  const cap = Math.max(1, AI_WEIGHTS.statStageCap);
+  return Math.max(0, Math.min(1, (cap - moved) / cap));
+}
+
+/**
+ * Potencia que haría ese daño con la fórmula de calculateDamage a ese nivel y
+ * con características iguales. Así un daño fijo se compara con la potencia.
+ * @param {number} damage
+ * @param {number} level
+ * @returns {number}
+ */
+function powerForDamage(damage, level) {
+  return Math.max(0, ((damage - 2) * 50) / ((2 * (level || 1)) / 5 + 2));
+}
+
+/**
+ * Daño medio de los movimientos de daño fijo (calculateDamage).
+ * @param {Object} move
+ * @param {AiContext} ctx
+ * @returns {number}
+ */
+function fixedDamage(move, { attackerInfo, attackerFighter, defenderFighter }) {
+  const level = attackerInfo.level || 1;
+  switch (move.effect) {
+    case 'fixed_20': return 20;
+    case 'fixed_40': return 40;
+    case 'level_damage': return level;
+    case 'half_hp': return Math.floor((defenderFighter?.hp ?? 40) / 2);
+    case 'random_damage': return 0.5 + 0.75 * (attackerInfo.level || 20);
+    case 'counter': return 2 * (attackerFighter?.lastPhysicalDamageTaken || 0);
+    default: return 0;
+  }
+}
+
+/**
+ * @param {Object} move
+ * @param {Object} targetInfo
+ * @param {Object} typeChart
+ * @returns {number} Eficacia del tipo del movimiento contra los del objetivo
+ */
+function typeEffectiveness(move, targetInfo, typeChart) {
+  let eff = 1;
+  for (const t of (targetInfo?.types || [])) eff *= getTypeMultiplier(typeChart, move.type, t);
+  return eff;
+}
+
+/**
+ * Si el movimiento puede afectar a su objetivo: ni inmune por tipo ni por
+ * habilidad (Levitación, Absorbe Fuego, Absorbe Agua, Absorbe Elec., Pararrayos).
+ * Lo que va a uno mismo o al equipo se resuelve contra el propio usuario.
+ * @param {Object} move
+ * @param {AiContext} ctx
+ * @returns {boolean}
+ */
+function aiCanAffect(move, { attackerInfo, defenderInfo, typeChart }) {
+  const range = moveRange(move);
+  const targetInfo = range === 'self' || range === 'team' ? attackerInfo : defenderInfo;
+  if (typeEffectiveness(move, targetInfo, typeChart) === 0) return false;
+  const ability = getAbility(targetInfo);
+  const type = String(move.type || '').toLowerCase();
+  if (ability === 'levitate' && type === 'ground') return false;
+  if ((ability === 'flash_fire' || ability === 'flashfire') && type === 'fire') return false;
+  if ((ability === 'water_absorb' || ability === 'waterabsorb') && type === 'water') return false;
+  if ((ability === 'volt_absorb' || ability === 'voltabsorb') && type === 'electric') return false;
+  if ((ability === 'lightning_rod' || ability === 'lightningrod') && type === 'electric') return false;
+  return true;
+}
+
+/**
+ * Lo que vale para la IA un ataque o un movimiento especial, en unidades de
+ * potencia: un ataque de potencia 40 sin STAB, neutro y que no falla vale 40.
+ * Los pesos están en combat.json (`ai`).
+ *
+ * - Ataques: potencia × golpes por turno × STAB × eficacia (× `superEffective`
+ *   si es supereficaz) × precisión. El daño fijo (Tinieblas, Bomba Sónica…)
+ *   vale la potencia que haría ese daño a su nivel.
+ * - Curarse, según los PS que le quedan (`heal`). Venganza, Transformación,
+ *   Conversión, Mimético, Metrónomo y los golpes fulminantes, su valor.
+ *
+ * 0 si no sirve: no afecta al objetivo (inmune por tipo o por habilidad), Come
+ * Sueños contra un objetivo despierto, curarse con PS de sobra… Los estados
+ * no se valoran aquí, sino con `aiStatusValue`.
+ * @param {Object} move - Movimiento de moves.json o el ataque básico
+ * @param {AiContext} ctx
+ * @returns {number}
+ */
+export function aiMoveScore(move, ctx) {
+  const { attackerInfo, attackerFighter, defenderInfo, defenderFighter, typeChart } = ctx;
+  const W = AI_WEIGHTS;
+  const kind = aiMoveKind(move);
+  if (kind === 'status' || !aiCanAffect(move, ctx)) return 0;
+  const hpRatio = attackerFighter ? attackerFighter.hp / Math.max(1, attackerFighter.maxHp) : 1;
+  const accuracy = move.accuracy && move.accuracy < 100 ? move.accuracy / 100 : 1;
+  const effect = move.effect;
+
+  switch (effect) {
+    case 'bide':
+      if (attackerFighter?.biding) return W.bide.release;
+      return hpRatio > W.bide.startMinHp ? W.bide.start : W.bide.startLowHp;
+    case 'heal_self':
+    case 'rest':
+      return W.heal.find((h) => hpRatio < h.below)?.score ?? 0;
+    case 'transform':
+      return attackerFighter?._preTransform ? 0 : W.effects.transform;
+    case 'conversion': {
+      const target = defenderInfo?.types?.[0];
+      return !target || (attackerInfo.types || []).join() === target ? 0 : W.effects.conversion;
+    }
+    case 'mimic':
+      return (defenderInfo?.currentMoves || []).length ? W.effects.mimic : 0;
+    case 'random_move':
+      return W.effects.random_move;
+    case 'ohko':
+      return (attackerInfo.level || 1) >= (defenderInfo.level || 1) ? W.effects.ohko * accuracy : 0;
+    case 'drain_sleep':
+      // Come Sueños falla si el objetivo está despierto
+      if (!(defenderFighter?.statusEffects || []).some((s) => s.type === 'sleep')) return 0;
+      break;
+    default:
+      if (FIXED_DAMAGE.includes(effect)) {
+        return powerForDamage(fixedDamage(move, ctx), attackerInfo.level || 1) * accuracy;
+      }
+  }
+  const eff = typeEffectiveness(move, defenderInfo, typeChart);
+  if (getAbility(defenderInfo) === 'wonder_guard' && eff <= 1) return 0;
+  const stab = (move.stab ?? (attackerInfo.types || []).includes(move.type)) ? W.stab : 1;
+  return move.power * hitsPerTurn(move) * stab * eff * (eff >= 2 ? W.superEffective : 1) * accuracy;
+}
+
+/**
+ * Si un movimiento de estado aún sirve, entre 0 y 1:
+ * - 0 si el estado ya está puesto, el objetivo es inmune (por tipo, habilidad
+ *   u objeto) o ya tiene otro estado mayor, y si es un jefe para lo que no le
+ *   afecta (bajadas de características, Drenadoras, Anulación, Tóxico, Rugido).
+ * - Las bajadas y las subidas de características, lo que les queda hasta
+ *   `statStageCap` (1 sin cambios, ½ con uno, 0 en el tope). Las subidas, con
+ *   pocos PS (`status.setupMinHp`), por `status.setupLowHp`.
+ * - Rugido, Remolino y Teletransporte, solo con poca vida (`status.escapeBelowHp`).
+ * @param {Object} move
+ * @param {AiContext} ctx
+ * @returns {number}
+ */
+export function aiStatusValue(move, ctx) {
+  const { attackerFighter, defenderInfo, defenderFighter, targetIsBoss } = ctx;
+  const S = AI_WEIGHTS.status;
+  const effect = move.effect;
+  if (!effect || aiMoveKind(move) !== 'status' || !aiCanAffect(move, ctx)) return 0; // Salpicadura: nada
+  const own = attackerFighter || {};
+  const hpRatio = attackerFighter ? own.hp / Math.max(1, own.maxHp) : 1;
+  const statuses = defenderFighter?.statusEffects || [];
+  const types = defenderInfo?.types || [];
+  const ability = getAbility(defenderInfo);
+
+  if (STAT_UPS[effect]) {
+    return stageRoom(own.statModifiers?.[STAT_UPS[effect]] || 0) * (hpRatio > S.setupMinHp ? 1 : S.setupLowHp);
+  }
+  if (STATUS_IMMUNE_ABILITIES[effect]?.includes(ability)) return 0;
+  switch (effect) {
+    case 'sleep':
+    case 'paralyze':
+    case 'poison':
+    case 'badly_poison':
+    case 'burn':
+    case 'freeze':
+      if (statuses.some((s) => MAJOR_STATUS.includes(s.type))) return 0;
+      if (STATUS_IMMUNE_TYPES[effect]?.some((t) => types.includes(t))) return 0;
+      if (effect === 'sleep' && move.type === 'grass' && types.includes('grass')) return 0;
+      if (effect === 'badly_poison' && targetIsBoss) return 0;
+      return heldPreventsStatus(defenderInfo, effect) ? 0 : 1;
+    case 'confuse':
+      return statuses.some((s) => s.type === 'confuse') ? 0 : 1;
+    case 'leech_seed':
+      return targetIsBoss || types.includes('grass') || statuses.some((s) => s.type === 'leech_seed') ? 0 : 1;
+    case 'disable':
+      return targetIsBoss || (defenderInfo?.currentMoves || []).some((m) => m && m.enabled === false) ? 0 : 1;
+    case 'switch_out':
+      return !targetIsBoss && hpRatio < S.escapeBelowHp ? 1 : 0;
+    case 'flee':
+      return hpRatio < S.escapeBelowHp ? 1 : 0;
+    case 'reflect':
+      return own.reflect > 0 ? 0 : 1;
+    case 'light_screen':
+      return own.lightScreen > 0 ? 0 : 1;
+    case 'substitute':
+      return own.substitute > 0 || (own.hp ?? 1) <= Math.floor((own.maxHp ?? 1) / 4) ? 0 : 1;
+    case 'focus_energy':
+      return own.focusEnergy ? 0 : 1;
+    case 'protect_stats':
+      return own.protectStats > 0 ? 0 : 1;
+    case 'reset_stats': {
+      const worse = Object.values(own.statModifiers || {}).some((v) => v < 0);
+      const better = Object.values(defenderFighter?.statModifiers || {}).some((v) => v > 0);
+      return worse || better ? 1 : 0;
+    }
+    default: {
+      const down = STAT_DOWNS[effect];
+      if (!down) return 1;
+      if (targetIsBoss || defenderFighter?.protectStats > 0 || down.blockedBy.includes(ability)) return 0;
+      return stageRoom(-(defenderFighter?.statModifiers?.[down.stat] || 0));
+    }
+  }
+}
+
+/**
+ * Elige lo que hace la IA (salvajes, jefes y aliados):
+ * 1. Ataca con lo que más vale (`aiMoveScore`), con una variación al azar
+ *    (`randomFactor` de combat.json) para que no sea siempre lo mismo.
+ * 2. De vez en cuando usa un estado que aún sirva (`aiStatusValue`): con
+ *    probabilidad `status.chance` × lo que sirve el más útil. Si no tiene nada
+ *    que haga daño, los usa siempre que sirvan. Curarse cuando hace falta va
+ *    antes que un estado.
+ * Nunca elige lo que no sirve (un estado ya puesto, una característica en el
+ * tope, una cura con PS de sobra, algo a lo que el objetivo es inmune) ni lo
+ * que no puede usar: sin PP, anulado o reservado por el jugador (`aiCanUse`).
+ * @param {Object} attackerInfo - PokemonInfo del atacante
+ * @param {Object} defenderInfo - PokemonInfo del objetivo
+ * @param {Object[]} movesData - moves.json
+ * @param {Object} typeChart - types.json
+ * @param {Object} [attackerFighter] - Fighter del atacante
+ * @param {Object} [defenderFighter] - Fighter del objetivo
+ * @param {{
+ *   basicAttack?: Object | null,
+ *   canUse?: ((move: Object) => boolean) | null,
+ *   targetIsBoss?: boolean,
+ *   fallback?: boolean,
+ * }} [options]
+ *   - `basicAttack`: el ataque básico (`basicAttackMove`), como un ataque más.
+ *   - `canUse`: solo los movimientos que lo cumplan (los que alcanzan desde lejos).
+ *   - `targetIsBoss`: a los jefes no les bajan las características, ni les
+ *     afectan Drenadoras, Anulación, Tóxico ni Rugido.
+ *   - `fallback`: si nada sirve, el primer movimiento que pueda usar (sí, por defecto).
+ * @returns {Object|null} El movimiento (o el ataque básico), o null si no hay nada
+ */
+export function selectBestMove(attackerInfo, defenderInfo, movesData, typeChart, attackerFighter, defenderFighter, options = {}) {
+  const { basicAttack = null, canUse = null, targetIsBoss = false, fallback = true } = options;
+  const usable = (attackerInfo?.currentMoves || [])
+    .filter(aiCanUse)
+    .map((slot) => movesData.find((m) => m.id === slot.moveId))
+    .filter((move) => move && (!canUse || canUse(move)));
+  /** @type {AiContext} */
+  const ctx = { attackerInfo, defenderInfo, typeChart, attackerFighter, defenderFighter, targetIsBoss };
+  const W = AI_WEIGHTS;
+
+  /** @type {{ move: Object, score: number }[]} */
+  const scored = [];
+  /** @type {{ move: Object, useful: number }[]} */
+  const statuses = [];
+  for (const move of basicAttack ? [...usable, basicAttack] : usable) {
+    if (aiMoveKind(move) === 'status') {
+      const useful = aiStatusValue(move, ctx);
+      if (useful > 0) statuses.push({ move, useful });
+    } else {
+      const score = aiMoveScore(move, ctx);
+      if (score > 0) scored.push({ move, score });
+    }
+  }
+  const best = (kind) => Math.max(0, ...scored.filter((c) => aiMoveKind(c.move) === kind).map((c) => c.score));
+  const bestAttack = best('attack');
+
+  let pool = scored;
+  if (statuses.length && best('special') <= bestAttack) {
+    const useful = Math.max(...statuses.map((s) => s.useful));
+    if (bestAttack === 0 || random() < W.status.chance * useful) {
+      pool = statuses.map(({ move, useful: u }) => ({ move, score: u * (move.accuracy && move.accuracy < 100 ? move.accuracy / 100 : 1) }));
+    }
+  }
+
+  const [lo, hi] = W.randomFactor;
   let bestMove = null;
-  let bestScore = -1;
-
-  for (const moveSlot of attackerInfo.currentMoves) {
-    // Sin PP, anulado o reservado por el jugador (un aliado; los salvajes no reservan)
-    if (!aiCanUse(moveSlot)) continue;
-
-    const moveData = movesData.find(m => m.id === moveSlot.moveId);
-    if (!moveData) continue;
-
-    let score = moveData.power || 0;
-    // Valorar movimientos de estado / especiales
-    const hpRatio = attackerFighter ? attackerFighter.hp / Math.max(1, attackerFighter.maxHp) : 1;
-    if (['transform', 'conversion'].includes(moveData.effect)) {
-      score = 20;
-    }
-    if (moveData.effect === 'mimic') {
-      score = 45;
-    }
-    if (moveData.effect === 'bide') {
-      if (attackerFighter && attackerFighter.biding) score = 200;
-      else score = (hpRatio > 0.5 ? 40 : 10);
-    }
-    if (moveData.effect === 'random_move') {
-      score = 35; // Metrónomo sí hace algo
-    }
-
-    if (moveData.effect === 'heal_self' || moveData.effect === 'rest') {
-      if (hpRatio < 0.35) score = 140;
-      else if (hpRatio < 0.55) score = 90;
-      else score = 0;
-    } else if (['stat_up_attack', 'stat_up_attack_2', 'stat_up_defense', 'stat_up_defense_2',
-                 'stat_up_speed', 'stat_up_speed_2', 'stat_up_special', 'stat_up_spAtk',
-                 'stat_up_evasion'].includes(moveData.effect)) {
-      // Setup: útil al empezar el combate (PS altos)
-      score = hpRatio > 0.6 ? 55 : 15;
-    } else if (moveData.effect === 'half_hp') {
-      score = Math.max(40, Math.floor((defenderFighter?.hp || 40) / 2));
-    } else if (moveData.effect === 'fixed_40') {
-      score = 40;
-    } else if (moveData.effect === 'fixed_20' || moveData.effect === 'level_damage') {
-      score = moveData.effect === 'level_damage' ? (attackerInfo.level || 20) : 20;
-    } else if (moveData.effect === 'ohko') {
-      score = ((attackerInfo.level || 1) >= (defenderInfo.level || 1)) ? 70 : 0;
-    } else if (moveData.damageClass === 'status' && moveData.effect) {
-      let alreadyHasStatus = false;
-      if (defenderFighter && defenderFighter.statusEffects) {
-        alreadyHasStatus = defenderFighter.statusEffects.some(s => s.type === moveData.effect);
-      }
-      score = alreadyHasStatus ? 0 : 50;
-    }
-
-    // Bonus por STAB para ataques de daño
-    if ((attackerInfo.types || []).includes(moveData.type)) {
-      score *= 1.5;
-    }
-
-    // Bonus por efectividad (inmunidad = descartar también estados/OHKO)
-    let effectiveness = 1;
-    for (const defType of (defenderInfo.types || [])) {
-      const mult = getTypeMultiplier(typeChart, moveData.type, defType);
-      effectiveness *= mult;
-    }
-    if (effectiveness === 0) continue;
-    // Levitate vs Tierra, Absorbe Fuego, etc.
-    const defAb = getAbility(defenderInfo);
-    const mt = String(moveData.type || '').toLowerCase();
-    if (defAb === 'levitate' && mt === 'ground') continue;
-    if ((defAb === 'flash_fire' || defAb === 'flashfire') && mt === 'fire' && moveData.damageClass !== 'status') continue;
-    if (defAb === 'water_absorb' && mt === 'water' && moveData.damageClass !== 'status') continue;
-    if (defAb === 'volt_absorb' && mt === 'electric' && moveData.damageClass !== 'status') continue;
-    score *= effectiveness;
-    if (effectiveness >= 2) score *= 1.25;
-
-    // Penalización por baja precisión
-    if (moveData.accuracy && moveData.accuracy < 100) {
-      score *= moveData.accuracy / 100;
-    }
-
-    // Añadir algo de aleatoriedad para variedad
-    score *= (0.8 + random() * 0.4);
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestMove = moveData;
+  let bestScore = 0;
+  for (const { move, score } of pool) {
+    const rolled = score * (lo + random() * (hi - lo));
+    if (rolled > bestScore) {
+      bestScore = rolled;
+      bestMove = move;
     }
   }
-
-  // Si no hay movimiento ofensivo, usar el primero disponible (tampoco uno
-  // anulado ni reservado)
-  if (!bestMove) {
-    for (const moveSlot of attackerInfo.currentMoves) {
-      if (aiCanUse(moveSlot)) {
-        bestMove = movesData.find(m => m.id === moveSlot.moveId);
-        if (bestMove) break;
-      }
-    }
-  }
-
+  // Nada sirve: el primer movimiento que pueda usar (nunca uno anulado ni reservado)
+  if (!bestMove && fallback) bestMove = usable[0] ?? null;
   return bestMove;
 }

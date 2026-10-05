@@ -1,4 +1,4 @@
-import { test, expect, startInDungeon, playerPosition } from './fixtures.js';
+import { test, expect, startInDungeon, playerPosition, findFreeStep, walk } from './fixtures.js';
 
 /**
  * Deja al líder con un único movimiento (por nombre) con PP de sobra y quita
@@ -133,4 +133,38 @@ test('Mayús + dirección corre varias casillas de una vez', async ({ page }) =>
     .toBeGreaterThanOrEqual(2);
   // Parado al final: sin carrera pendiente
   await expect.poll(() => page.evaluate(() => window.game._run)).toBeNull();
+});
+
+test('el ataque básico no tiene tipo: un líder de tipo Normal daña a Gengar chocando con él', async ({ page }) => {
+  await startInDungeon(page);
+  await prepareLeader(page, 'Placaje');
+  // Líder de tipo Normal (como Meowth o Eevee), con PS de sobra; se apuntan sus golpes
+  await page.evaluate(() => {
+    const game = window.game;
+    const id = game.getPlayerId();
+    game.entityManager.getComponent(id, 'pokemonInfo').types = ['normal'];
+    const f = game.entityManager.getComponent(id, 'fighter');
+    f.maxHp = 999;
+    f.hp = 999;
+    window.__leaderHits = [];
+    game.eventBus.on('move_used', (d) => {
+      if (d.attackerId === id) window.__leaderHits.push({ moveId: d.moveId });
+    });
+    game.eventBus.on('damage_dealt', (d) => {
+      if (d.attackerId === id) window.__leaderHits.push({ damage: d.damage, effectiveness: d.effectiveness });
+    });
+  });
+  const step = await findFreeStep(page);
+  expect(step, 'hay una casilla libre al lado').not.toBeNull();
+  const me = await playerPosition(page);
+  const gengar = await spawnWild(page, me.x + step.dx, me.y + step.dy, 94, 5);
+  const hpBefore = await hpOf(page, gengar);
+
+  // Chocar es el ataque básico; con su precisión (95 %), bastan unos pocos intentos
+  for (let i = 0; i < 6 && (await hpOf(page, gengar)) >= hpBefore; i++) await walk(page, step.key);
+
+  expect(await hpOf(page, gengar)).toBeLessThan(hpBefore);
+  const hits = await page.evaluate(() => window.__leaderHits);
+  expect(hits.filter((h) => 'moveId' in h).every((h) => h.moveId === -1)).toBe(true);
+  expect(hits.find((h) => h.damage > 0)?.effectiveness).toBe(1);
 });

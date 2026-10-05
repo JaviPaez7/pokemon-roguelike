@@ -41,7 +41,7 @@
   "Vista Lince hace que tus ataques no fallen por precisión.",
   "La quemadura reduce el daño físico (Agallas lo anula).",
   "Si un objeto no hace efecto (PS llenos), no gastas turno.",
-  "Chocar con un enemigo es un ataque básico que no gasta PP.",
+  "Chocar con un enemigo es un ataque básico: no gasta PP y no tiene tipo, así que daña a cualquiera, también a un fantasma.",
   "Excavar y Vuelo tardan 2 turnos; mientras, no te alcanzan.",
   "Si te golpean mientras cargas un ataque (Rayo Solar, Cabezazo…), se interrumpe.",
   "Reflejo reduce a la mitad el daño físico, y Pantalla de Luz, el especial.",

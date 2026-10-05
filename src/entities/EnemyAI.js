@@ -9,13 +9,17 @@ import { getAbility } from '../systems/AbilitySystem.js';
 import { random } from '../core/Random.js';
 import { moveRange, lineDirectionTo, inRoomReach } from '../systems/MoveTargeting.js';
 import { aiCanUse, aiHasMove } from '../core/MoveSlots.js';
+import { selectBestMove } from '../systems/CombatSystem.js';
 
 /** Probabilidad de que un salvaje use un movimiento a distancia cuando puede. */
 const RANGED_CHANCE = 0.5;
 
 /**
  * Un movimiento con el que alcanzar al objetivo sin estar al lado: en línea
- * (alineado y sin muros) o de sala.
+ * (alineado y sin muros) o de sala. Lo elige `selectBestMove` entre los que
+ * llegan, con la misma valoración que de cerca: no repite un estado que ya
+ * está puesto ni baja una característica más allá del tope de la IA. Si
+ * ninguno sirve, se acerca.
  * @param {number} entityId
  * @param {number | null} targetId
  * @param {Object} game
@@ -23,21 +27,23 @@ const RANGED_CHANCE = 0.5;
  */
 function rangedAttack(entityId, targetId, game) {
   if (!game?.movesData || targetId == null) return null;
-  const info = game.entityManager.getComponent(entityId, 'pokemonInfo');
-  const usable = (info?.currentMoves || [])
-    .filter(aiCanUse)
-    .map(s => game.movesData.find(m => m.id === s.moveId))
-    .filter(m => m && (m.power > 0 || m.effect));
-  for (const move of usable) {
+  const em = game.entityManager;
+  const info = em.getComponent(entityId, 'pokemonInfo');
+  const targetInfo = em.getComponent(targetId, 'pokemonInfo');
+  if (!info || !targetInfo) return null;
+  /** @param {Object} move */
+  const reaches = (move) => {
     const range = moveRange(move);
-    if (range === 'line' && lineDirectionTo(game, entityId, targetId)) {
-      return { type: 'attack', targetId, moveId: move.id };
-    }
-    if (range === 'room' && inRoomReach(game, entityId, targetId)) {
-      return { type: 'attack', targetId, moveId: move.id };
-    }
-  }
-  return null;
+    if (range === 'line') return !!lineDirectionTo(game, entityId, targetId);
+    if (range === 'room') return inRoomReach(game, entityId, targetId);
+    return false;
+  };
+  const move = selectBestMove(info, targetInfo, game.movesData, game.typeChart, em.getComponent(entityId, 'fighter'), em.getComponent(targetId, 'fighter'), {
+    canUse: reaches,
+    targetIsBoss: em.hasComponent(targetId, 'boss') || em.hasComponent(targetId, 'isBoss'),
+    fallback: false,
+  });
+  return move ? { type: 'attack', targetId, moveId: move.id } : null;
 }
 
 /**
