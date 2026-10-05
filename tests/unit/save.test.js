@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { parseSave, migrateSave, SAVE_VERSION, MIGRATED_TEAM_NAME } from '../../src/core/SaveManager.js';
 import { profileDungeons } from '../../src/core/Profile.js';
 import { scenesFor, storyChapter, STORY } from '../../src/core/Story.js';
+import { expForLevel } from '../../src/systems/ExperienceSystem.js';
 
 /** Partida mínima con el formato de la versión 1 (antes de runSeed). */
 function saveV1(overrides = {}) {
@@ -235,7 +236,7 @@ function saveV5(overrides = {}) {
 describe('v5 → v6: la reserva para la IA se separa de Anulación', () => {
   it('un movimiento con enabled: false sin turnos de Anulación era una reserva', () => {
     const v6 = migrateSave(saveV5());
-    expect(v6.version).toBe(6);
+    expect(v6.version).toBe(SAVE_VERSION);
     // En la plantilla (fuera de combate)
     const [charmander, squirtle] = v6.profile.roster;
     expect(charmander.currentMoves[1]).toEqual({ moveId: 52, currentPP: 10, maxPP: 20, enabled: true, reserved: true });
@@ -277,6 +278,89 @@ describe('v5 → v6: la reserva para la IA se separa de Anulación', () => {
   });
 });
 
+/**
+ * Partida v6 con fichas creadas con 0 de experiencia (reclutas, protagonista,
+ * invitados) y otras que ya tienen de sobra, en la plantilla y en la
+ * expedición en curso.
+ */
+function saveV6(overrides = {}) {
+  return {
+    version: 6,
+    timestamp: 1,
+    profile: {
+      teamName: 'Equipo Aurora',
+      roster: [
+        { uid: 1, name: 'Charmander', level: 5, xp: 0 },
+        { uid: 2, name: 'Squirtle', level: 12, xp: 2000 },
+        { uid: 3, name: 'Mew', level: 60, xp: 0 },
+        { uid: 4, name: 'Rattata', level: 30 },
+        { uid: 5, name: 'Pidgey' },
+      ],
+      heroUid: 1,
+      clearedDungeons: [],
+      story: { seen: ['P-1'] },
+      flags: {},
+      stash: null,
+    },
+    bag: [],
+    wallet: 0,
+    run: {
+      dungeonId: 'bosque_verde',
+      party: [
+        { uid: 1, level: 7, xp: 100, isLeader: true },
+        { uid: 2, level: 9, xp: 800 },
+      ],
+      guests: [{ name: 'Caterpie', missionId: 'm1', level: 10, xp: 0 }],
+    },
+    ...overrides,
+  };
+}
+
+describe('v6 → v7: cada ficha, al menos con la experiencia de su nivel', () => {
+  it('quien tiene menos de la de su nivel sube al mínimo, en la plantilla, el equipo y los invitados', () => {
+    const v7 = migrateSave(saveV6());
+    expect(v7.version).toBe(7);
+    const [hero, , mew, rattata] = v7.profile.roster;
+    expect(hero.xp).toBe(expForLevel(5));
+    expect(mew.xp).toBe(expForLevel(60));
+    // Sin experiencia apuntada, también
+    expect(rattata.xp).toBe(expForLevel(30));
+    const [leader] = v7.run.party;
+    expect(leader.xp).toBe(expForLevel(7));
+    expect(v7.run.guests[0].xp).toBe(expForLevel(10));
+  });
+
+  it('nunca baja la experiencia ni cambia nada más', () => {
+    const v7 = migrateSave(saveV6());
+    const [, squirtle, mew, , pidgey] = v7.profile.roster;
+    expect(squirtle).toEqual(saveV6().profile.roster[1]);
+    expect(v7.run.party[1]).toEqual(saveV6().run.party[1]);
+    expect(mew).toEqual({ uid: 3, name: 'Mew', level: 60, xp: expForLevel(60) });
+    // Una ficha sin nivel se queda como está
+    expect(pidgey).toEqual({ uid: 5, name: 'Pidgey' });
+    expect(v7.run.guests[0]).toMatchObject({ name: 'Caterpie', missionId: 'm1' });
+    expect(v7.run.dungeonId).toBe('bosque_verde');
+    expect(v7.profile.story).toEqual({ seen: ['P-1'] });
+  });
+
+  it('sin expedición ni invitados, y sin modificar la entrada', () => {
+    const original = saveV6();
+    migrateSave(original);
+    expect(original).toEqual(saveV6());
+    expect(migrateSave(saveV6({ run: null })).run).toBeNull();
+    const base = saveV6();
+    expect(migrateSave(saveV6({ run: { ...base.run, guests: undefined } })).run.guests).toBeUndefined();
+  });
+
+  it('parseSave la migra y dice que venía de la v6 (loadGame guarda la copia de la original)', () => {
+    const result = parseSave(JSON.stringify(saveV6()));
+    expect(result.status).toBe('ok');
+    expect(result.migratedFrom).toBe(6);
+    expect(result.data.version).toBe(SAVE_VERSION);
+    expect(result.data.profile.roster[2].xp).toBe(expForLevel(60));
+  });
+});
+
 describe('parseSave', () => {
   it('sin partida devuelve none', () => {
     expect(parseSave(null)).toEqual({ status: 'none' });
@@ -307,7 +391,7 @@ describe('parseSave', () => {
       run: null,
     };
     const result = parseSave(JSON.stringify(beforePostgame));
-    expect(result).toEqual({ status: 'ok', data: { ...beforePostgame, version: 6 }, migratedFrom: 5 });
+    expect(result).toEqual({ status: 'ok', data: { ...beforePostgame, version: SAVE_VERSION }, migratedFrom: 5 });
     expect(profileDungeons(result.data.profile).filter((d) => d.postgame)).toHaveLength(3);
   });
 

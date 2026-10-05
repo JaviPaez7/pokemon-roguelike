@@ -15,10 +15,11 @@
  * «Réplica de …».
  *
  * Supuestos del modelo (los dice también el informe):
- * - El equipo sale del pueblo con el protagonista y el compañero a nivel 5 y 0
- *   de experiencia (como `createPokemon`). La experiencia de cada salvaje
- *   derrotado va entera a cada miembro en pie (ActionSystem), así que el nivel
- *   del equipo es el de cualquiera de ellos.
+ * - El equipo sale del pueblo con el protagonista y el compañero a nivel 5 y la
+ *   experiencia con la que los crea `createPokemon` (el mínimo de su nivel).
+ *   La experiencia de cada salvaje derrotado (`calculateExpGained`, con los
+ *   bonus de experience.json) va entera a cada miembro en pie (ActionSystem),
+ *   así que el nivel del equipo es el de cualquiera de ellos.
  * - Sin repetir mazmorras y sin contar misiones, casas de monstruos, caramelos
  *   ni amistosos: la única experiencia es la de los salvajes que aparecen al
  *   entrar en cada piso y la del jefe.
@@ -62,7 +63,7 @@ import { RANKS } from '../src/core/Profile.js';
 import { STARTING_LEVEL, STARTING_MONEY } from '../src/core/TownSession.js';
 import { CHALLENGE_LEVEL, CHALLENGE_PRIZE, clearRankPoints } from '../src/core/Expedition.js';
 import { EntityManager } from '../src/entities/EntityManager.js';
-import { calculateExpGained, expForLevel, grantExperience } from '../src/systems/ExperienceSystem.js';
+import { calculateExpGained, expForLevel, grantExperience, EXPERIENCE } from '../src/systems/ExperienceSystem.js';
 import { calculateDamage, selectBestMove } from '../src/systems/CombatSystem.js';
 import { checkEvolution } from '../src/systems/EvolutionSystem.js';
 import { spawnItems } from '../src/systems/ItemSystem.js';
@@ -250,15 +251,26 @@ export function zoneSummary(zone) {
  */
 
 /**
+ * Experiencia con la que llega un Pokémon de ese nivel: la que le da
+ * `createPokemon` (protagonista, compañero, reclutas, copias de la Torre…).
+ * @param {number} level
+ * @returns {number}
+ */
+export function creationExp(level) {
+  return makePokemon(HERO_SPECIES[0], level).info.xp;
+}
+
+/**
  * Nivel del equipo al hacer unas mazmorras en orden, una vez cada una. Sube de
- * nivel con `grantExperience`, como en el juego. Los niveles de cada mazmorra
- * suben con `levelBonus` según las completadas antes (`cleared` y las que van
- * delante en la lista).
+ * nivel con `grantExperience`, como en el juego. Sin `xp`, el equipo empieza
+ * con la experiencia con la que se crea a su nivel (`creationExp`). Los niveles
+ * de cada mazmorra suben con `levelBonus` según las completadas antes (`cleared`
+ * y las que van delante en la lista).
  * @param {{ id: string, name: string, floors: [number, number] }[]} dungeons
  * @param {{ level?: number, xp?: number, killRate?: number, cleared?: string[] }} [start]
  * @returns {{ dungeons: DungeonProgress[], level: number, xp: number }}
  */
-export function simulateProgress(dungeons, { level = STARTING_LEVEL, xp = 0, killRate = 1, cleared = [] } = {}) {
+export function simulateProgress(dungeons, { level = STARTING_LEVEL, xp = creationExp(level), killRate = 1, cleared = [] } = {}) {
   const info = { speciesId: 133, name: 'Equipo', level, xp, currentMoves: [] };
   const fighter = { hp: 1, maxHp: 1, bonusStats: null };
   const gain = (amount) => grantExperience(info, fighter, amount, pokemonData, movesData);
@@ -391,8 +403,8 @@ export function orderSummary(orders) {
 }
 
 /**
- * La Torre del Desafío: copias de nivel `CHALLENGE_LEVEL` (con 0 de experiencia)
- * por los 50 pisos seguidos.
+ * La Torre del Desafío: copias de nivel `CHALLENGE_LEVEL` (con la experiencia
+ * con la que se crean) por los 50 pisos seguidos.
  * @param {number} killRate
  */
 export function challengeTower(killRate) {
@@ -1097,10 +1109,11 @@ export function recruitTable(progress, killRate) {
       offers += killRate * expectedEnemies(f) * LEADER_KO_SHARE * floorChance;
     }
     const chances = [...perSpecies.values()];
-    // Un recluta llega con el nivel del salvaje y 0 de experiencia (createPokemon):
-    // para subir uno necesita (nivel + 1)³, no la diferencia con su nivel
+    // Un recluta es el salvaje tal cual lo creó createPokemon: su nivel y la
+    // experiencia con la que llega. Un miembro del equipo, justo al subir.
     const mid = Math.floor((dungeon.floors[0] + dungeon.floors[1] - 1) / 2);
     const recruitLevel = Math.round(meanWildLevel(mid, bonus));
+    const next = expForLevel(recruitLevel + 1);
     const kills = (amount) => amount / expPerEnemy(mid, bonus);
     return {
       dungeonId: dungeon.id,
@@ -1110,7 +1123,8 @@ export function recruitTable(progress, killRate) {
       max: Math.max(...chances),
       offers,
       recruitLevel,
-      killsToLevelUp: { member: kills(expForLevel(recruitLevel + 1) - expForLevel(recruitLevel)), recruit: kills(expForLevel(recruitLevel + 1)) },
+      recruitExp: creationExp(recruitLevel),
+      killsToLevelUp: { member: kills(next - expForLevel(recruitLevel)), recruit: kills(next - creationExp(recruitLevel)) },
     };
   });
 }
@@ -1161,6 +1175,7 @@ export function buildReport({ windRuns = 6 } = {}) {
   const report = {
     assumptions: {
       startLevel: STARTING_LEVEL,
+      startExp: creationExp(STARTING_LEVEL),
       startMoney: STARTING_MONEY,
       typicalKillRate: TYPICAL_KILL_RATE,
       leaderKoShare: LEADER_KO_SHARE,
@@ -1168,6 +1183,7 @@ export function buildReport({ windRuns = 6 } = {}) {
       windRuns,
       seed: MODEL_SEED,
     },
+    expConfig: EXPERIENCE,
     zones,
     levelScaling: LEVEL_SCALING,
     progress: { full, typical },
@@ -1341,7 +1357,7 @@ export function findIssues(report) {
   const slow = report.recruit.filter((r) => r.killsToLevelUp.recruit > LIMITS.recruitSlowdown * r.killsToLevelUp.member);
   if (slow.length) {
     const worst = slow.at(-1);
-    add('Reclutamiento', 'aviso', `Un recluta llega con 0 de experiencia: en ${worst.name} (nivel ${worst.recruitLevel}) necesita ${fmt(worst.killsToLevelUp.recruit)} salvajes para subir uno, frente a ${fmt(worst.killsToLevelUp.member)} de un miembro del equipo (código: createPokemon).`);
+    add('Reclutamiento', 'aviso', `Un recluta llega con ${fmt(worst.recruitExp)} de experiencia: en ${worst.name} (nivel ${worst.recruitLevel}) necesita ${fmt(worst.killsToLevelUp.recruit)} salvajes para subir uno, frente a ${fmt(worst.killsToLevelUp.member)} de un miembro del equipo (código: createPokemon).`);
   }
   return issues;
 }

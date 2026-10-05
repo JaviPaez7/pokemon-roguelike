@@ -120,7 +120,7 @@ const a = report.assumptions;
 out.push(MD ? '## Informe de equilibrio' : 'INFORME DE EQUILIBRIO — PokéRogue');
 para('');
 para(`Modelo: scripts/balance-model.mjs (semilla ${a.seed}; ${a.damageSamples} muestras de daño por pareja; ${a.windRuns} partidas por mazmorra para el viento).`);
-para(`Equipo: sale a nivel ${a.startLevel} con 0 de experiencia y ${a.startMoney} Poké. Toda la experiencia va entera a cada miembro en pie.`);
+para(`Equipo: sale a nivel ${a.startLevel} con ${n(a.startExp)} de experiencia (la mínima de su nivel) y ${a.startMoney} Poké. Toda la experiencia va entera a cada miembro en pie.`);
 para(`Ritmos: «todo» derrota a todos los salvajes de cada piso (el máximo sin repetir); «típico», al ${pct(a.typicalKillRate)}. Combate, economía y reclutamiento, con el típico.`);
 para('Protagonista típico: los nueve del test de personalidad, evolucionados por nivel y con su mejor movimiento o el ataque básico. Golpes: mediana de los nueve («peor»: el que menos aguanta).');
 
@@ -128,6 +128,10 @@ para('Protagonista típico: los nueve del test de personalidad, evolucionados po
 
 title('1. Curva de experiencia');
 sub('1.1 Experiencia por zona (pisos normales)');
+const xc = report.expConfig;
+const bonuses = xc.levelBonuses.map((b) => `+${n(b.bonus * 100)} % hasta el nivel ${b.upToLevel}`);
+para(`experience.json: EXP de un salvaje = EXP base × nivel / ${xc.divisor}, ${bonuses.join(' y ')}. Para subir al nivel N hacen falta N³ en total.`);
+para('');
 out.push(
   table(
     ['Zona', 'Pisos', 'Salvajes', 'Enemigos/piso', 'EXP/salvaje', 'EXP/piso', 'Jefe', 'EXP jefe'],
