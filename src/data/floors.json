@@ -124,7 +124,7 @@
         "id": 95,
         "level": 9,
         "name": "Onix",
-        "hpMultiplier": 2,
+        "hpMultiplier": 1.5,
         "moves": [
           88,
           33,
@@ -257,7 +257,13 @@
         "id": 36,
         "level": 20,
         "name": "Clefable",
-        "hpMultiplier": 2.2
+        "hpMultiplier": 2.2,
+        "moves": [
+          146,
+          3,
+          118,
+          47
+        ]
       }
     },
     {
